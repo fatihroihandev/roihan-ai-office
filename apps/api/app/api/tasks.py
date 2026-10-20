@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.db.models import Project, RoutingDecision, Task, TaskAttempt, TaskEvent
-from app.schemas.tasks import PlanBody, TaskCreate, TaskDetail, TaskOut
+from app.db.models import Execution, Project, RoutingDecision, Task, TaskAttempt, TaskEvent, TestResult, TestRun
+from app.schemas.tasks import PlanBody, TaskCreate, TaskDetail, TaskOut, TestRunOut
 from app.security import require_token
 from app.tasks import service
 from app.tasks.catalog import ROLES
@@ -94,6 +94,12 @@ def get_task(task_id: str, session: SessionDep):
         events=list(session.scalars(select(TaskEvent).where(TaskEvent.task_id == t.id).order_by(TaskEvent.seq))),
         routing=list(session.scalars(select(RoutingDecision).where(RoutingDecision.task_id == t.id)
                                      .order_by(RoutingDecision.created_at))),
+        executions=list(session.scalars(select(Execution).where(Execution.task_id == t.id).order_by(Execution.created_at))),
+        test_runs=[
+            TestRunOut.model_validate(r).model_copy(update={"results": [
+                x for x in session.scalars(select(TestResult).where(TestResult.test_run_id == r.id).order_by(TestResult.created_at))]})
+            for r in session.scalars(select(TestRun).where(TestRun.task_id == t.id).order_by(TestRun.created_at))
+        ],
     )
 
 

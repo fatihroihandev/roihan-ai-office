@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { api, FILE_KINDS, formatBytes, type FileKind, type Project, type ProjectFile } from "@/lib/api";
+import { tasksApi, type WorkspaceOverview } from "@/lib/tasksApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
 
@@ -17,10 +18,13 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [kind, setKind] = useState<FileKind>("requirement");
   const [busy, setBusy] = useState(false);
+  const [workspace, setWorkspace] = useState<WorkspaceOverview | null>(null);
+  const [viewing, setViewing] = useState<{ path: string; content: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
+    tasksApi.workspace(id).then((w) => !cancelled && setWorkspace(w), () => undefined);
     Promise.all([api.getProject(id), api.listFiles(id)]).then(
       ([p, f]) => {
         if (cancelled) return;
@@ -56,6 +60,12 @@ export default function ProjectDetailPage() {
       if (fileInput.current) fileInput.current.value = "";
     });
   };
+
+  const onViewFile = (path: string) =>
+    run(async () => {
+      const f = await tasksApi.workspaceFile(id, path);
+      setViewing({ path: f.path, content: f.content });
+    });
 
   const onToggleArchive = () =>
     run(async () => {
@@ -146,6 +156,45 @@ export default function ProjectDetailPage() {
                   ))}
                 </tbody>
               </table>
+            )}
+          </section>
+
+          <section className="card">
+            <h3>{t("workspace.title")}</h3>
+            {!workspace || workspace.files.length === 0 ? (
+              <p className="muted">{t("workspace.empty")}</p>
+            ) : (
+              <>
+                <h4>{t("workspace.files")}</h4>
+                <table><tbody>
+                  {workspace.files.map((f) => (
+                    <tr key={f.path}>
+                      <td><code>{f.path}</code> <span className="muted small">{formatBytes(f.size)}</span></td>
+                      <td className="actions">
+                        <button type="button" disabled={busy} onClick={() => onViewFile(f.path)}>{t("workspace.view")}</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody></table>
+                {viewing && (
+                  <>
+                    <p className="muted small"><code>{viewing.path}</code>{" "}
+                      <button type="button" onClick={() => setViewing(null)}>{t("workspace.close")}</button>
+                    </p>
+                    <pre className="output">{viewing.content}</pre>
+                  </>
+                )}
+                {workspace.commits.length > 0 && (
+                  <>
+                    <h4>{t("workspace.commits")}</h4>
+                    <ul>
+                      {workspace.commits.map((c) => (
+                        <li key={c.commit}><code>{c.commit}</code> {c.message} <span className="muted small">· {c.author}</span></li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </>
             )}
           </section>
         </>

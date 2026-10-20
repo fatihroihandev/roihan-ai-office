@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     ai_max_tokens_cap: int = 2048
     ai_max_prompt_chars: int = 20000
 
+    sandbox_backend: str = "none"  # none | wsl
+    sandbox_wsl_distro: str = "Ubuntu"
+    sandbox_timeout_s: int = 60
+    sandbox_memory_mb: int = 768
+    sandbox_max_output_kb: int = 64
+
     worker_enabled: bool = True
     worker_poll_interval_s: float = 1.0
     retry_backoff_base_s: float = 5.0
@@ -68,6 +74,10 @@ class Settings(BaseSettings):
             raise ValueError("MAX_CONCURRENT_TASKS >= 1 dan MAX_RETRIES_PER_TASK >= 0")
         if self.ollama_timeout_s < 1 or self.ai_max_tokens_cap < 1 or self.ai_max_prompt_chars < 1:
             raise ValueError("OLLAMA_TIMEOUT_S, AI_MAX_TOKENS_CAP, AI_MAX_PROMPT_CHARS harus >= 1")
+        if self.sandbox_backend not in {"none", "wsl"}:
+            raise ValueError("SANDBOX_BACKEND harus 'none' atau 'wsl'")
+        if self.sandbox_timeout_s < 1 or self.sandbox_memory_mb < 64 or self.sandbox_max_output_kb < 1:
+            raise ValueError("SANDBOX_TIMEOUT_S >= 1, SANDBOX_MEMORY_MB >= 64, SANDBOX_MAX_OUTPUT_KB >= 1")
         if self.worker_poll_interval_s <= 0 or self.retry_backoff_base_s < 0:
             raise ValueError("WORKER_POLL_INTERVAL_S harus > 0 dan RETRY_BACKOFF_BASE_S >= 0")
         if self.max_upload_mb < 1:

@@ -28,7 +28,7 @@ class Env:
     worker: TaskWorker
 
 
-def build_env(migrated_db, tmp_path, provider=None, executors=None, **kw) -> Env:
+def build_env(migrated_db, tmp_path, provider=None, executors=None, sandbox=None, **kw) -> Env:
     kw.setdefault("retry_backoff_base_s", 0.0)
     kw.setdefault("ollama_enabled", True)
     settings = Settings(_env_file=None, app_local_token=TOKEN, database_url=migrated_db, data_dir=tmp_path / "data",
@@ -38,7 +38,7 @@ def build_env(migrated_db, tmp_path, provider=None, executors=None, **kw) -> Env
     registry = build_registry(settings, {"ollama": provider})
     gateway, router = ModelGateway(registry, settings, sf), ModelRouter(registry, settings, sf)
     storage = ProjectStorage(settings.projects_dir)
-    worker = TaskWorker(settings, sf, gateway, router, storage, executors)
+    worker = TaskWorker(settings, sf, gateway, router, storage, executors, sandbox)
     return Env(settings, sf, provider, gateway, router, storage, worker)
 
 

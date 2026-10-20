@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import type { Project } from "@/lib/api";
-import { BOARD_COLUMNS, tasksApi, type Agent, type Task, type WorkerStatus } from "@/lib/tasksApi";
+import { BOARD_COLUMNS, tasksApi, type Agent, type SandboxStatus, type Task, type WorkerStatus } from "@/lib/tasksApi";
 import { useTaskEvents } from "@/lib/useTaskEvents";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
@@ -19,6 +19,8 @@ export default function TasksPage() {
   const [error, setError] = useState<string | null>(null);
   const [goal, setGoal] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sandbox, setSandbox] = useState<SandboxStatus | null>(null);
+  const [checking, setChecking] = useState(false);
   const projectRef = useRef(projectId);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function TasksPage() {
   useEffect(() => {
     let cancelled = false;
     tasksApi.projects().then((p) => !cancelled && setProjects(p), () => undefined);
+    tasksApi.sandbox().then((s) => !cancelled && setSandbox(s), () => undefined);
     return () => {
       cancelled = true;
     };
@@ -78,6 +81,18 @@ export default function TasksPage() {
       setGoal("");
     });
   };
+
+  async function onSelftest() {
+    setChecking(true);
+    try {
+      await tasksApi.sandboxSelftest();
+      setSandbox(await tasksApi.sandbox());
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setChecking(false);
+    }
+  }
 
   const hasDrafts = tasks.some((x) => x.status === "draft");
   const label = (key: string) => t(key as MessageKey);
@@ -123,6 +138,46 @@ export default function TasksPage() {
           </div>
           <p className="muted small">{t("tasks.plan.hint")}</p>
         </form>
+      </section>
+
+      <section className="card">
+        <h3>{t("sandbox.title")}</h3>
+        {!sandbox && <p className="muted">{t("common.loading")}</p>}
+        {sandbox && (
+          <>
+            <div className="chips">
+              <span className="badge" data-state={sandbox.available ? "active" : undefined}>
+                {t(sandbox.available ? "sandbox.available" : "sandbox.unavailable")}
+              </span>
+              <span className="badge">{sandbox.backend}</span>
+            </div>
+            {!sandbox.available && (
+              <>
+                <p className="muted">{sandbox.reason ? tOr(`block.${sandbox.reason}`, sandbox.reason) : ""}{sandbox.message ? ` — ${sandbox.message}` : ""}</p>
+                <p className="muted small">{t("sandbox.setupHint")}</p>
+              </>
+            )}
+            <p className="muted small">
+              {t("sandbox.limits")}: {t("sandbox.limit.time")} {sandbox.limits.timeout_s}s · {t("sandbox.limit.memory")} {sandbox.limits.memory_mb} MB ·{" "}
+              {t("sandbox.limit.network")} {t("sandbox.limit.networkOff")}
+            </p>
+            {sandbox.selftest && sandbox.selftest.checks.length > 0 && (
+              <details>
+                <summary>{t("sandbox.checks")} ({sandbox.selftest.checks.filter((c) => c.passed).length}/{sandbox.selftest.checks.length})</summary>
+                <ul>
+                  {sandbox.selftest.checks.map((c) => (
+                    <li key={c.name}>{c.passed ? "✓" : "✗"} {c.description}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {sandbox.configured_backend !== "none" && (
+              <button type="button" disabled={checking} onClick={onSelftest}>
+                {t(checking ? "sandbox.selftest.running" : "sandbox.selftest")}
+              </button>
+            )}
+          </>
+        )}
       </section>
 
       <section className="card">

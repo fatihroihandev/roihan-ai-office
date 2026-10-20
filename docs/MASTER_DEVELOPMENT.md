@@ -1538,6 +1538,30 @@ Temuan uji langsung dengan `qwen2.5-coder:7b` di CPU: rencana 6 task selesai sek
 
 **Exit criteria:** sistem dapat menjalankan task coding sederhana dan memverifikasi hasilnya dengan bukti.
 
+**Status (2026-10-20): kode selesai dan teruji dengan sandbox tiruan; verifikasi sandbox WSL asli belum dilakukan** (distro Ubuntu belum terpasang saat pekerjaan ini selesai). Exit criteria baru dianggap terpenuhi setelah uji isolasi lulus pada distro sungguhan dan satu task Developer + QA berjalan sampai selesai di sana.
+
+Yang dibangun:
+- **Workspace** (`workspace/source-code`) dengan akses terkurung: path relatif saja, tanpa `..`, tanpa awalan titik (`.git`, `.env`), tanpa symlink, ekstensi dibatasi, batas ukuran file/jumlah file/total, tulis atomik. Perubahan dicatat di Git (hook dimatikan; commit atas nama agent).
+- **Sandbox** (Bagian 14.2) berupa antarmuka dengan dua implementasi: `DisabledSandbox` (menolak semua eksekusi; bawaan) dan `WslSandbox` (distro WSL2 khusus). Per eksekusi: workspace disalin masuk lewat tar (hanya file reguler), jaringan kosong (`unshare --net`), namespace PID/IPC/UTS terpisah, user `sandbox` tanpa hak (setpriv, no-new-privs), environment kosong (`env -i`), batas memori/proses/ukuran file/CPU (`prlimit`) dan waktu (`timeout`), folder sementara dihapus sesudahnya. Sandbox hanya tersedia jika pemeriksaan dasar lolos (user, alat, **interop Windows mati, drive Windows tidak ter-mount**) dan 9 uji isolasi (selftest) lulus: non-root, tanpa jaringan, drive Windows tersembunyi, tidak bisa menulis area sistem, batas memori, loop tak berhenti dimatikan, environment bersih tanpa secret, batas proses, namespace PID terpisah. `run()` menolak jalan jika selftest belum lulus.
+- **Allowlist perintah**: agent tidak pernah memberi argv; ia memilih jenis perintah (`pytest`, `python_file`, `compile`) dan path yang divalidasi. Semua selain itu ditolak.
+- **Log eksekusi** (`executions`: perintah, status, exit code, durasi, keluaran terpotong dan disamarkan dari secret) dan **hasil tes** (`test_runs`, `test_results` dari laporan JUnit; cadangan ringkasan teks pytest; XML dengan DOCTYPE/ENTITY ditolak). Semua append-only.
+- **Developer**: menulis/mengubah file (keluaran dibatasi skema JSON), memverifikasi (compile, lalu pytest bila ada tes), memperbaiki hingga 2 putaran berdasarkan galat nyata, lalu commit. Gagal verifikasi = task `failed` (tidak pernah ditandai selesai). Aksi `documentation` hanya menulis `.md`/`.txt` dan tidak butuh sandbox.
+- **QA**: menulis `tests/test_*.py` (satu-satunya tempat yang boleh ditulisnya; tidak pernah mengubah kode produksi), menjalankan pytest di sandbox, dan menyimpan hasil per tes. Tes gagal = task `failed` dengan bukti; nol tes yang dijalankan **bukan** kelulusan.
+- Task Developer/QA tanpa sandbox yang lolos diblokir dengan alasan jelas (`sandbox_disabled`, `isolation_selftest_failed`, dst.) tanpa menulis file atau memanggil model.
+- UI: kartu status dan uji isolasi sandbox di halaman Task; eksekusi, hasil tes, file, dan commit di detail task; daftar file, isi, dan riwayat commit workspace di halaman proyek.
+- `scripts/setup_sandbox_wsl.ps1`/`.sh`: menyalin Ubuntu menjadi distro `roihan-sandbox` (Ubuntu asli tidak diubah), memasang python3/pytest, membuat user `sandbox`, dan mengunci distro (`/etc/wsl.conf`: tanpa automount, tanpa interop).
+
+Temuan desain: interop WSL memungkinkan kode di sandbox membuat berkas PE sendiri dan menjalankannya sebagai proses Windows, sehingga interop wajib dimatikan dan diperiksa **di luar** sandbox (di dalam namespace PID, `/proc` baru tidak memuat `binfmt_misc`). Drive Windows yang ter-mount dapat dibaca dan ditulis user Linux mana pun, sehingga juga diperiksa.
+
+Uji dengan `qwen2.5-coder:7b` asli (sandbox dipalsukan, tidak ada kode AI yang dijalankan): Developer menulis `calc.py` yang benar dalam sekitar 53 detik dan QA menulis 7 tes yang benar dalam sekitar 50 detik, dengan keluaran JSON valid berkat structured output. 400 tes backend dan 7 tes frontend lolos; uji mutasi (merusak kode secara sengaja) menunjukkan tes menangkap kerusakan pada aturan path QA, kelulusan tanpa tes, gerbang selftest, pemutusan jaringan, dan verifikasi Developer.
+
+Batasan yang diketahui:
+- Hanya Python (pytest) yang didukung; Node dan bahasa lain belum.
+- Tes ditulis AI, sehingga "lulus" berarti tes tersebut lulus, bukan bahwa tesnya memadai (pemeriksaan acceptance criteria adalah tugas Reviewer, Phase 6). Kode yang diuji juga dapat memalsukan laporan JUnit karena berjalan satu sandbox dengan pytest; keluaran stdout dan exit code tetap tercatat sebagai pembanding.
+- Intake source code yang sudah ada (zip/repo) belum ada.
+- Batas memori VM WSL global (`.wslconfig`) belum diterapkan; RAM laptop terbatas (15,4 GB) dan model 7B memakai sekitar 5 GB.
+- `.junit.xml` dan cache tidak masuk Git; file sementara di sandbox dihapus setiap eksekusi.
+
 ## Phase 6 — Reviewer, Reporting & Approval
 
 - Implementasikan Reviewer.

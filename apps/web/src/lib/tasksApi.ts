@@ -68,12 +68,66 @@ export type RoutingDecision = {
   candidates: { model: string; eligible: boolean; rejected_because: string[] }[];
 };
 
+export type Execution = {
+  id: string;
+  created_at: string;
+  kind: string;
+  argv: string[];
+  status: "ok" | "failed" | "timeout" | "error";
+  exit_code: number | null;
+  duration_ms: number | null;
+  timed_out: boolean;
+  output_truncated: boolean;
+  stdout: string;
+  stderr: string;
+  sandbox: string;
+};
+
+export type TestRun = {
+  id: string;
+  created_at: string;
+  status: "passed" | "failed" | "error";
+  source: string;
+  total: number;
+  passed: number;
+  failed: number;
+  errors: number;
+  skipped: number;
+  duration_ms: number | null;
+  results: { name: string; classname: string | null; outcome: string; message: string | null; duration_ms: number | null }[];
+};
+
+export type SandboxCheck = { name: string; description: string; passed: boolean; detail: string };
+export type SandboxReport = { passed: boolean; checks: SandboxCheck[]; ran_at: string | null; reason?: string; message?: string };
+export type SandboxStatus = {
+  configured_backend: string;
+  backend: string;
+  available: boolean;
+  reason: string | null;
+  message: string | null;
+  selftest: SandboxReport | null;
+  limits: { timeout_s: number; memory_mb: number; max_output_kb: number; network: boolean };
+};
+
+export type WorkspaceOverview = {
+  files: { path: string; size: number }[];
+  commits: { commit: string; author: string; date: string; message: string }[];
+};
+
 export type TaskDetail = Task & {
-  result: { output?: string; artifact?: string; created_task_ids?: string[] } | null;
+  result: {
+    output?: string;
+    artifact?: string;
+    created_task_ids?: string[];
+    files?: { path: string; bytes: number; new: boolean }[];
+    commit?: string | null;
+  } | null;
   depends_on: string[];
   attempts: Attempt[];
   events: TaskEvent[];
   routing: RoutingDecision[];
+  executions: Execution[];
+  test_runs: TestRun[];
 };
 
 export type Agent = {
@@ -109,6 +163,12 @@ export const tasksApi = {
   queueDrafts: (projectId: string) => apiFetch<Task[]>(`/api/projects/${projectId}/tasks/queue-drafts`, post("")),
   cancel: (id: string) => apiFetch<Task>(`/api/tasks/${id}/cancel`, post("")),
   retry: (id: string) => apiFetch<Task>(`/api/tasks/${id}/retry`, post("")),
+  sandbox: () => apiFetch<SandboxStatus>("/api/sandbox"),
+  sandboxSelftest: () => apiFetch<SandboxReport>("/api/sandbox/selftest", post("")),
+  workspace: (projectId: string) => apiFetch<WorkspaceOverview>(`/api/projects/${projectId}/workspace`),
+  workspaceFile: (projectId: string, path: string) =>
+    apiFetch<{ path: string; size: number; content: string }>(
+      `/api/projects/${projectId}/workspace/file?path=${encodeURIComponent(path)}`),
 };
 
 // Kolom papan task. failed dan interrupted digabung karena keduanya memerlukan keputusan manusia.

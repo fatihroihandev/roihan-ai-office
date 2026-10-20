@@ -118,9 +118,57 @@ class RoutingOut(BaseModel):
     created_at: datetime
 
 
+class ExecutionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    created_at: datetime
+    kind: str
+    argv: list
+    status: str
+    exit_code: int | None
+    duration_ms: int | None
+    timed_out: bool
+    output_truncated: bool
+    stdout: str
+    stderr: str
+    sandbox: str
+
+
+class TestResultOut(BaseModel):
+    __test__ = False
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    classname: str | None
+    outcome: str
+    message: str | None
+    duration_ms: int | None
+
+
+class TestRunOut(BaseModel):
+    __test__ = False
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    created_at: datetime
+    execution_id: str | None
+    status: str
+    source: str
+    total: int
+    passed: int
+    failed: int
+    errors: int
+    skipped: int
+    duration_ms: int | None
+    results: list[TestResultOut] = []
+
+
 class TaskDetail(TaskOut):
     result: dict | None
     depends_on: list[str]
     attempts: list[AttemptOut]
     events: list[EventOut]
     routing: list[RoutingOut]
+    executions: list[ExecutionOut] = []
+    test_runs: list[TestRunOut] = []

@@ -183,6 +183,59 @@ class RoutingDecision(IdMixin, Base):
     reasons: Mapped[list] = mapped_column(JSON, default=list)
 
 
+class Execution(IdMixin, Base):
+    """Log eksekusi perintah di sandbox (Bagian 14.1): perintah, waktu, status, exit code. Append-only."""
+
+    __tablename__ = "executions"
+    __table_args__ = (Index("ix_executions_task", "task_id"),)
+
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"))
+    attempt_id: Mapped[str | None] = mapped_column(default=None)
+    project_id: Mapped[str] = mapped_column()
+    kind: Mapped[str] = mapped_column()  # pytest | python_file | compile
+    argv: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column()  # ok | failed | timeout | error
+    exit_code: Mapped[int | None] = mapped_column(default=None)
+    duration_ms: Mapped[int | None] = mapped_column(default=None)
+    timed_out: Mapped[bool] = mapped_column(default=False)
+    output_truncated: Mapped[bool] = mapped_column(default=False)
+    stdout: Mapped[str] = mapped_column(Text, default="")
+    stderr: Mapped[str] = mapped_column(Text, default="")
+    sandbox: Mapped[str] = mapped_column(default="")
+
+
+class TestRun(IdMixin, Base):
+    __test__ = False  # bukan kelas tes pytest
+    __tablename__ = "test_runs"
+    __table_args__ = (Index("ix_test_runs_task", "task_id"),)
+
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"))
+    attempt_id: Mapped[str | None] = mapped_column(default=None)
+    execution_id: Mapped[str | None] = mapped_column(ForeignKey("executions.id", ondelete="RESTRICT"), default=None)
+    project_id: Mapped[str] = mapped_column()
+    status: Mapped[str] = mapped_column()  # passed | failed | error
+    source: Mapped[str] = mapped_column(default="junit")  # junit | stdout | none
+    total: Mapped[int] = mapped_column(default=0)
+    passed: Mapped[int] = mapped_column(default=0)
+    failed: Mapped[int] = mapped_column(default=0)
+    errors: Mapped[int] = mapped_column(default=0)
+    skipped: Mapped[int] = mapped_column(default=0)
+    duration_ms: Mapped[int | None] = mapped_column(default=None)
+
+
+class TestResult(IdMixin, Base):
+    __test__ = False
+    __tablename__ = "test_results"
+    __table_args__ = (Index("ix_test_results_run", "test_run_id"),)
+
+    test_run_id: Mapped[str] = mapped_column(ForeignKey("test_runs.id", ondelete="RESTRICT"))
+    name: Mapped[str] = mapped_column()
+    classname: Mapped[str | None] = mapped_column(default=None)
+    outcome: Mapped[str] = mapped_column()  # passed | failed | error | skipped
+    message: Mapped[str | None] = mapped_column(Text, default=None)
+    duration_ms: Mapped[int | None] = mapped_column(default=None)
+
+
 class AppendOnlyError(RuntimeError):
     pass
 
@@ -190,5 +243,5 @@ class AppendOnlyError(RuntimeError):
 @event.listens_for(Session, "before_flush")
 def _enforce_append_only(session, _ctx, _instances):
     for obj in list(session.dirty) + list(session.deleted):
-        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision)) and (obj in session.deleted or session.is_modified(obj)):
+        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult)) and (obj in session.deleted or session.is_modified(obj)):
             raise AppendOnlyError(f"{obj.__tablename__} bersifat append-only")

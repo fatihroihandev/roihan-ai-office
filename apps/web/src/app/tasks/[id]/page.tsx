@@ -120,6 +120,12 @@ export default function TaskDetailPage() {
               )}
               {task.result.output && <pre className="output">{task.result.output}</pre>}
               {task.result.artifact && <p className="muted small">{t("task.artifact")}: {task.result.artifact}</p>}
+              {task.result.files && task.result.files.length > 0 && (
+                <p className="muted small">
+                  {t("task.files")}: {task.result.files.map((f) => f.path).join(", ")}
+                  {task.result.commit ? ` · ${t("task.commit")} ${task.result.commit}` : ""}
+                </p>
+              )}
               {task.result.created_task_ids && (
                 <>
                   <p className="muted small">{t("task.createdTasks")}: {task.result.created_task_ids.length}</p>
@@ -167,6 +173,50 @@ export default function TaskDetailPage() {
                   </tr>
                 ))}
               </tbody></table>
+            </section>
+          )}
+
+          {task.test_runs.length > 0 && (
+            <section className="card">
+              <h3>{t("task.tests")}</h3>
+              {task.test_runs.map((r) => (
+                <div key={r.id}>
+                  <div className="chips">
+                    <span className="badge" data-task={r.status === "passed" ? "completed" : "failed"}>{r.status}</span>
+                    <span className="muted small">
+                      {r.passed} {t("task.tests.passed")} · {r.failed} {t("task.tests.failed")} · {r.errors} {t("task.tests.errors")} · {r.skipped} {t("task.tests.skipped")}
+                    </span>
+                  </div>
+                  <table><tbody>
+                    {r.results.map((x, i) => (
+                      <tr key={i}>
+                        <td>
+                          <span className="badge" data-task={x.outcome === "passed" ? "completed" : x.outcome === "skipped" ? undefined : "failed"}>{x.outcome}</span>{" "}
+                          {x.name}
+                          {x.message && <div className="bad small">{x.message}</div>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody></table>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {task.executions.length > 0 && (
+            <section className="card">
+              <h3>{t("task.executions")}</h3>
+              {task.executions.map((e) => (
+                <details key={e.id}>
+                  <summary>
+                    <span className="badge" data-task={e.status === "ok" ? "completed" : "failed"}>{e.status}</span>{" "}
+                    <strong>{e.kind}</strong> · {t("task.exec.exit")} {e.exit_code ?? "—"} · {fmtMs(e.duration_ms)} · {e.sandbox}
+                  </summary>
+                  <p className="muted small"><code>{e.argv.join(" ")}</code></p>
+                  {e.stdout && <pre className="output">{e.stdout}</pre>}
+                  {e.stderr && <pre className="output">{e.stderr}</pre>}
+                </details>
+              ))}
             </section>
           )}
 

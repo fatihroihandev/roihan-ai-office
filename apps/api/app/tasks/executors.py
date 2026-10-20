@@ -10,6 +10,9 @@ from sqlalchemy import select
 from app.config import Settings
 from app.db.models import ProjectFile, Task, TaskDependency
 from app.projects.storage import ProjectStorage
+from app.sandbox.base import Sandbox
+from app.workspace import git as workspace_git
+from app.workspace.files import WorkspaceFiles
 from app.providers.base import GenerateRequest, GenerateResult
 from app.providers.gateway import ModelGateway
 from app.routing.router import ModelRouter, TaskSnapshot
@@ -29,6 +32,14 @@ class ExecutorError(Exception):
         self.kind, self.message, self.retryable = kind, message, retryable
 
 
+class ExecutorBlocked(Exception):
+    """Task tidak dapat dikerjakan karena prasyarat belum ada (mis. sandbox). Task diblokir, bukan gagal."""
+
+    def __init__(self, reason: str, message: str):
+        super().__init__(message)
+        self.reason, self.message = reason, message
+
+
 @dataclass
 class ExecutorOutcome:
     output: str
@@ -46,6 +57,7 @@ class ExecutionContext:
     router: ModelRouter
     settings: Settings
     storage: ProjectStorage
+    sandbox: Sandbox | None = None
     provider: str | None = None
     model: str | None = None
     usage: dict = field(default_factory=lambda: {"prompt_tokens": 0, "completion_tokens": 0, "duration_ms": 0, "calls": 0})
@@ -62,6 +74,23 @@ class ExecutionContext:
         for k in ("prompt_tokens", "completion_tokens", "duration_ms"):
             self.usage[k] += getattr(res.usage, k) or 0
         return res
+
+    def workspace(self) -> WorkspaceFiles:
+        """Workspace proyek (workspace/source-code) beserta repositori Git-nya."""
+        root = self.storage.project_dir(self.task.project_id) / "workspace" / "source-code"
+        try:
+            workspace_git.ensure_repo(root)
+        except (workspace_git.GitError, OSError) as e:
+            raise ExecutorError("git_error", f"Git tidak dapat disiapkan: {e}", retryable=False) from e
+        return WorkspaceFiles(root)
+
+    async def require_sandbox(self) -> Sandbox:
+        if self.sandbox is None:
+            raise ExecutorBlocked("sandbox_disabled", "Sandbox belum dikonfigurasi")
+        st = await self.sandbox.status()
+        if not st.available:
+            raise ExecutorBlocked(st.reason or "sandbox_unavailable", st.message or "Sandbox tidak tersedia")
+        return self.sandbox
 
     def master_excerpt(self) -> str:
         return read_master_excerpt(self.session_factory, self.storage, self.task.project_id)
@@ -292,5 +321,8 @@ class LLMTextExecutor:
 
 
 def default_executors() -> dict[str, Executor]:
+    from app.engineering.agents import DeveloperExecutor, QAExecutor  # impor tunda: modul itu bergantung pada berkas ini
+
     text = LLMTextExecutor()
-    return {"manager": ManagerPlanExecutor(), "analyst": text, "reporter": text}
+    return {"manager": ManagerPlanExecutor(), "analyst": text, "reporter": text,
+            "developer": DeveloperExecutor(), "qa": QAExecutor()}

@@ -16,7 +16,8 @@ from app.projects.storage import ProjectStorage
 from app.providers.base import GatewayBlocked, ProviderError, ProviderErrorKind
 from app.providers.gateway import ModelGateway
 from app.routing.router import ModelRouter, RoutingError, TaskSnapshot
-from app.tasks.executors import ExecutionContext, Executor, ExecutorError, default_executors
+from app.sandbox.base import DisabledSandbox, Sandbox, SandboxUnavailable
+from app.tasks.executors import ExecutionContext, Executor, ExecutorBlocked, ExecutorError, default_executors
 from app.tasks.service import retry_delay
 from app.tasks.state import add_event, change_status
 
@@ -27,12 +28,13 @@ UNRESOLVED_DEPS = ("failed", "cancelled", "interrupted", "blocked")
 
 class TaskWorker:
     def __init__(self, settings: Settings, session_factory, gateway: ModelGateway, router: ModelRouter,
-                 storage: ProjectStorage, executors: dict[str, Executor] | None = None):
+                 storage: ProjectStorage, executors: dict[str, Executor] | None = None, sandbox: Sandbox | None = None):
         self._settings = settings
         self._sf = session_factory
         self._gateway = gateway
         self._router = router
         self._storage = storage
+        self._sandbox = sandbox or DisabledSandbox()
         self.executors = executors if executors is not None else default_executors()
         self._current: dict[str, tuple[asyncio.Future, str]] = {}   # task_id -> (future executor, attempt_id)
         self._cancel_requested: set[str] = set()
@@ -132,7 +134,8 @@ class TaskWorker:
         with self._sf() as s:
             task = s.get(Task, task_id)
             snapshot, role = TaskSnapshot.from_task(task), task.role
-        ctx = ExecutionContext(snapshot, attempt_id, self._sf, self._gateway, self._router, self._settings, self._storage)
+        ctx = ExecutionContext(snapshot, attempt_id, self._sf, self._gateway, self._router, self._settings, self._storage,
+                               sandbox=self._sandbox)
         fut = asyncio.ensure_future(self.executors[role].run(ctx))
         self._current[task_id] = (fut, attempt_id)
         self.current_task_id = task_id
@@ -151,7 +154,7 @@ class TaskWorker:
                 self._finish_failed(task_id, attempt_id, ctx, e.kind.value, e.message, e.retryable)
         except ExecutorError as e:
             self._finish_failed(task_id, attempt_id, ctx, e.kind, e.message, e.retryable)
-        except (GatewayBlocked, RoutingError) as e:
+        except (GatewayBlocked, RoutingError, ExecutorBlocked, SandboxUnavailable) as e:
             self._finish_blocked(task_id, attempt_id, ctx, e.reason, e.message)
         except Exception as e:  # kegagalan tak terduga: jangan diulang otomatis
             logger.exception("task gagal tak terduga", extra={"task_id": task_id})
