@@ -17,6 +17,7 @@ export default function TaskDetailPage() {
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [report, setReport] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -50,6 +51,14 @@ export default function TaskDetailPage() {
     }
   }
 
+  async function toggleReport() {
+    if (report !== null) {
+      setReport(null);
+      return;
+    }
+    await act(async () => setReport((await tasksApi.taskReport(id)).markdown));
+  }
+
   const label = (key: string) => t(key as MessageKey);
   const canQueue = task?.status === "draft";
   const canRetry = task && ["failed", "blocked", "interrupted"].includes(task.status);
@@ -69,6 +78,9 @@ export default function TaskDetailPage() {
             <div className="chips">
               <span className="badge" data-task={task.status}>{label(`status.task.${task.status}`)}</span>
               <span className="badge">{label(`role.${task.role}`)}</span>
+              {task.review_status && (
+                <span className="badge" data-task={task.review_status === "approved" ? "completed" : "failed"}>{label(`review.status.${task.review_status}`)}</span>
+              )}
               <span className="badge">{task.action_type}</span>
               <span className="badge" data-risk={task.risk_level}>{label(`risk.${task.risk_level}`)}</span>
               {task.difficulty_category && (
@@ -219,6 +231,93 @@ export default function TaskDetailPage() {
               ))}
             </section>
           )}
+
+          {task.reviews.filter((r) => r.task_id === task.id).map((r) => (
+            <section className="card" key={r.id}>
+              <h3>{t("task.review")}</h3>
+              <div className="chips">
+                <span className="badge" data-task={r.verdict === "approved" ? "completed" : "failed"}>{label(`review.verdict.${r.verdict}`)}</span>
+                {r.commit && <span className="badge">{t("task.commit")} {r.commit}</span>}
+                {r.evidence.rerun && (
+                  <span className="muted small">
+                    {t("review.rerun")}: {r.evidence.rerun.status} ({r.evidence.rerun.passed} {t("task.tests.passed")}, {r.evidence.rerun.failed} {t("task.tests.failed")})
+                  </span>
+                )}
+              </div>
+              {r.summary && <p>{r.summary}</p>}
+              {r.verdict_reasons.length > 0 && (
+                <>
+                  <h4>{t("review.reasons")}</h4>
+                  <ul>{r.verdict_reasons.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                </>
+              )}
+              <h4>{t("review.criteria")}</h4>
+              <table><tbody>
+                {r.criteria.map((c) => (
+                  <tr key={c.id}>
+                    <td>
+                      <span className="badge" data-task={c.met === true ? "completed" : "failed"}>{c.met === true ? t("review.met") : t("review.unmet")}</span>{" "}
+                      <strong>{c.criterion}</strong>
+                      <div className="muted small">{c.evidence}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody></table>
+              <h4>{t("review.findings")}</h4>
+              {r.findings.length === 0 ? <p className="muted">{t("review.noFindings")}</p> : (
+                <table><tbody>
+                  {r.findings.map((f, i) => (
+                    <tr key={i}>
+                      <td>
+                        <span className="badge" data-risk={f.severity}>{f.severity}</span> <span className="muted small">{f.category} · {f.source}</span>
+                        <div>{f.description}</div>
+                        {(f.file || f.suggestion) && (
+                          <div className="muted small">{f.file}{f.line ? `:${f.line}` : ""}{f.suggestion ? ` — ${f.suggestion}` : ""}</div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody></table>
+              )}
+              {r.unresolved_risks.length > 0 && (
+                <>
+                  <h4>{t("review.unresolvedRisks")}</h4>
+                  <ul>{r.unresolved_risks.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                </>
+              )}
+            </section>
+          ))}
+
+          {task.approvals.length > 0 && (
+            <section className="card">
+              <h3>{t("task.approvals")}</h3>
+              <table><tbody>
+                {task.approvals.map((a) => (
+                  <tr key={a.id}>
+                    <td>
+                      <span className="badge" data-task={a.status === "approved" ? "completed" : a.status === "pending" ? "pending_approval" : "failed"}>
+                        {label(`approval.status.${a.status}`)}
+                      </span>{" "}
+                      <span className="badge" data-risk={a.risk_level}>{label(`risk.${a.risk_level}`)}</span>
+                      <div className="muted small">
+                        {t("approvals.requestedBy")} {a.requested_by} · {t("approvals.expires")} {new Date(a.expires_at + "Z").toLocaleString()}
+                        {a.decided_by ? ` · ${t("approvals.decidedBy")} ${a.decided_by}` : ""}{a.used_at ? ` · ${t("approvals.usedOnce")}` : ""}
+                      </div>
+                      {a.decision_reason && <div className="muted small">{a.decision_reason}</div>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody></table>
+              {task.approvals.some((a) => a.status === "pending") && <p><Link className="button" href="/approvals">{t("tasks.openApprovals")}</Link></p>}
+            </section>
+          )}
+
+          <section className="card">
+            <h3>{t("task.report")}</h3>
+            <p className="muted small">{t("task.report.hint")}</p>
+            <button type="button" disabled={busy} onClick={toggleReport}>{t(report === null ? "task.report.show" : "task.report.hide")}</button>
+            {report !== null && <pre className="output">{report}</pre>}
+          </section>
 
           <section className="card">
             <h3>{t("task.events")}</h3>

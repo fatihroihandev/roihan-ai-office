@@ -26,6 +26,7 @@ export type Task = {
   last_error: string | null;
   last_error_kind: string | null;
   verification: { method: string; passed: boolean; criteria_checked?: boolean } | null;
+  review_status: "approved" | "changes_requested" | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -114,6 +115,47 @@ export type WorkspaceOverview = {
   commits: { commit: string; author: string; date: string; message: string }[];
 };
 
+export type Approval = {
+  id: string;
+  created_at: string;
+  task_id: string;
+  project_id: string;
+  action_type: string;
+  risk_level: "low" | "medium" | "high" | "critical";
+  status: "pending" | "approved" | "rejected" | "expired" | "cancelled";
+  payload: { title: string; description: string; role: string; action_type: string; acceptance_criteria: string[]; depends_on: string[] };
+  requested_by: string;
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_reason: string | null;
+  expires_at: string;
+  used_at: string | null;
+};
+
+export type ReviewFinding = {
+  severity: "low" | "medium" | "high" | "critical";
+  category: string;
+  file?: string | null;
+  line?: number | null;
+  description: string;
+  suggestion?: string | null;
+  source: "static" | "model";
+};
+
+export type CodeReview = {
+  id: string;
+  task_id: string;
+  reviewed_task_ids: string[];
+  commit: string | null;
+  verdict: "approved" | "changes_requested";
+  summary: string;
+  verdict_reasons: string[];
+  criteria: { id: string; criterion: string; met: boolean | null; evidence: string; grounded: boolean }[];
+  findings: ReviewFinding[];
+  unresolved_risks: string[];
+  evidence: { rerun?: { status: string; passed: number; failed: number; errors: number } | null };
+};
+
 export type TaskDetail = Task & {
   result: {
     output?: string;
@@ -128,6 +170,8 @@ export type TaskDetail = Task & {
   routing: RoutingDecision[];
   executions: Execution[];
   test_runs: TestRun[];
+  approvals: Approval[];
+  reviews: CodeReview[];
 };
 
 export type Agent = {
@@ -163,6 +207,11 @@ export const tasksApi = {
   queueDrafts: (projectId: string) => apiFetch<Task[]>(`/api/projects/${projectId}/tasks/queue-drafts`, post("")),
   cancel: (id: string) => apiFetch<Task>(`/api/tasks/${id}/cancel`, post("")),
   retry: (id: string) => apiFetch<Task>(`/api/tasks/${id}/retry`, post("")),
+  approvals: () => apiFetch<Approval[]>("/api/approvals?limit=100"),
+  approve: (id: string, reason?: string) => apiFetch<Approval>(`/api/approvals/${id}/approve`, post("", { reason: reason || null })),
+  reject: (id: string, reason?: string) => apiFetch<Approval>(`/api/approvals/${id}/reject`, post("", { reason: reason || null })),
+  taskReport: (id: string) => apiFetch<{ markdown: string; generated_at: string }>(`/api/tasks/${id}/report`),
+  projectReport: (id: string) => apiFetch<{ markdown: string; summary: string; tasks: number }>(`/api/projects/${id}/report`),
   sandbox: () => apiFetch<SandboxStatus>("/api/sandbox"),
   sandboxSelftest: () => apiFetch<SandboxReport>("/api/sandbox/selftest", post("")),
   workspace: (projectId: string) => apiFetch<WorkspaceOverview>(`/api/projects/${projectId}/workspace`),

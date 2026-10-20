@@ -5,7 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.db.models import Execution, Project, RoutingDecision, Task, TaskAttempt, TaskEvent, TestResult, TestRun
+from app.db.base import utcnow
+from app.db.models import (
+    Approval, CodeReview, Execution, Project, RoutingDecision, Task, TaskAttempt, TaskEvent, TestResult, TestRun,
+)
+from app.reporting.builder import build_project_report, build_task_report, next_steps, project_summary, unresolved_issues
 from app.schemas.tasks import PlanBody, TaskCreate, TaskDetail, TaskOut, TestRunOut
 from app.security import require_token
 from app.tasks import service
@@ -38,6 +42,10 @@ def _task_or_404(session: Session, task_id: str) -> Task:
     return t
 
 
+def _ttl(request: Request) -> int:
+    return request.app.state.settings.approval_ttl_hours
+
+
 def _guard(fn):
     try:
         return fn()
@@ -46,14 +54,14 @@ def _guard(fn):
 
 
 @router.post("/projects/{project_id}/plan", response_model=TaskOut, status_code=201)
-def create_plan(project_id: str, body: PlanBody, session: SessionDep):
+def create_plan(project_id: str, body: PlanBody, request: Request, session: SessionDep):
     """Manager menyusun rencana: dibuat sebagai task `planning` yang dikerjakan worker."""
     _project_or_404(session, project_id)
     t = service.create_task(session, project_id=project_id, title=f"Susun rencana: {body.goal[:80]}",
                             description=body.goal, role="manager", action_type="planning",
                             acceptance_criteria=["Rencana berisi task terukur dengan acceptance criteria"],
                             factors={"complexity": 3, "uncertainty": 3, "reasoning": 4})
-    service.queue_task(session, t)
+    service.queue_task(session, t, ttl_hours=_ttl(request))
     session.commit()
     return t
 
@@ -100,27 +108,30 @@ def get_task(task_id: str, session: SessionDep):
                 x for x in session.scalars(select(TestResult).where(TestResult.test_run_id == r.id).order_by(TestResult.created_at))]})
             for r in session.scalars(select(TestRun).where(TestRun.task_id == t.id).order_by(TestRun.created_at))
         ],
+        approvals=list(session.scalars(select(Approval).where(Approval.task_id == t.id).order_by(Approval.created_at))),
+        reviews=[r for r in session.scalars(select(CodeReview).where(CodeReview.project_id == t.project_id).order_by(CodeReview.created_at))
+                 if r.task_id == t.id or t.id in (r.reviewed_task_ids or [])],
     )
 
 
 @router.post("/tasks/{task_id}/queue", response_model=TaskOut)
-def queue_task(task_id: str, session: SessionDep):
-    t = _guard(lambda: service.queue_task(session, _task_or_404(session, task_id)))
+def queue_task(task_id: str, request: Request, session: SessionDep):
+    t = _guard(lambda: service.queue_task(session, _task_or_404(session, task_id), ttl_hours=_ttl(request)))
     session.commit()
     return t
 
 
 @router.post("/projects/{project_id}/tasks/queue-drafts", response_model=list[TaskOut])
-def queue_drafts(project_id: str, session: SessionDep):
+def queue_drafts(project_id: str, request: Request, session: SessionDep):
     _project_or_404(session, project_id)
-    tasks = _guard(lambda: service.queue_drafts(session, project_id))
+    tasks = _guard(lambda: service.queue_drafts(session, project_id, ttl_hours=_ttl(request)))
     session.commit()
     return tasks
 
 
 @router.post("/tasks/{task_id}/retry", response_model=TaskOut)
-def retry_task(task_id: str, session: SessionDep):
-    t = _guard(lambda: service.requeue_task(session, _task_or_404(session, task_id)))
+def retry_task(task_id: str, request: Request, session: SessionDep):
+    t = _guard(lambda: service.requeue_task(session, _task_or_404(session, task_id), ttl_hours=_ttl(request)))
     session.commit()
     return t
 
@@ -143,6 +154,23 @@ async def cancel_task(task_id: str, request: Request, session: SessionDep):
         _guard(lambda: service.cancel_task(session, t))
     session.commit()
     return t
+
+
+@router.get("/tasks/{task_id}/report")
+def task_report(task_id: str, session: SessionDep):
+    """Laporan task (Bagian 17): seluruh fakta berasal dari database dan dibuat saat diminta."""
+    _task_or_404(session, task_id)
+    markdown, facts = build_task_report(session, task_id)
+    return {"task_id": task_id, "generated_at": utcnow().isoformat(), "markdown": markdown,
+            "unresolved": unresolved_issues(facts), "next_steps": next_steps(facts)}
+
+
+@router.get("/projects/{project_id}/report")
+def project_report(project_id: str, session: SessionDep):
+    project = _project_or_404(session, project_id)
+    markdown, facts = build_project_report(session, project_id, project_name=project.name)
+    return {"project_id": project_id, "generated_at": utcnow().isoformat(), "markdown": markdown,
+            "summary": project_summary(facts), "tasks": len(facts)}
 
 
 @router.get("/agents")

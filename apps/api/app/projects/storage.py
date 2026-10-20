@@ -74,6 +74,17 @@ class ProjectStorage:
         os.replace(tmp, path)
         return path.relative_to(self.project_dir(project_id)).as_posix()
 
+    def write_report(self, project_id: str, name: str, text: str) -> str:
+        """Simpan laporan ke reports/<name>.md. Nama dibatasi ke huruf, angka, dan tanda hubung."""
+        if not re.fullmatch(r"[A-Za-z0-9-]{1,80}", name):
+            raise StorageError("Nama laporan tidak valid")
+        path = self.project_dir(project_id) / "reports" / f"{name}.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(text, encoding="utf-8")
+        os.replace(tmp, path)
+        return path.relative_to(self.project_dir(project_id)).as_posix()
+
     def resolve_file(self, project_id: str, relative_path: str) -> Path:
         base = self.project_dir(project_id)
         path = (base / relative_path).resolve()

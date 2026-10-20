@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.approvals import ApprovalOut, ReviewOut
 from app.tasks.catalog import ACTIONS, ROLES
 
 
@@ -64,6 +65,7 @@ class TaskOut(BaseModel):
     last_error: str | None
     last_error_kind: str | None
     verification: dict | None
+    review_status: str | None = None
     created_by: str
     created_at: datetime
     started_at: datetime | None
@@ -172,3 +174,5 @@ class TaskDetail(TaskOut):
     routing: list[RoutingOut]
     executions: list[ExecutionOut] = []
     test_runs: list[TestRunOut] = []
+    approvals: list[ApprovalOut] = []
+    reviews: list[ReviewOut] = []

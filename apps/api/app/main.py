@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, engineering, events, health, projects, tasks
+from app.api import ai, approvals, engineering, events, health, projects, tasks
 from app.config import Settings, get_settings
 from app.db.session import create_db_engine, create_session_factory
 from app.logging_config import correlation_id, new_correlation_id, setup_logging
@@ -86,6 +86,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
     app.include_router(tasks.router)
     app.include_router(events.router)
     app.include_router(engineering.router)
+    app.include_router(approvals.router)
     return app
 
 

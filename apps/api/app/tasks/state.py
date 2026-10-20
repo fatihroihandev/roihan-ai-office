@@ -9,11 +9,12 @@ STATUSES = ["draft", "pending_approval", "queued", "running", "blocked", "comple
 ALLOWED: dict[str, set[str]] = {
     "draft": {"pending_approval", "queued", "cancelled"},
     "pending_approval": {"queued", "cancelled"},
-    "queued": {"running", "blocked", "cancelled"},
+    # queued/blocked/failed/interrupted -> pending_approval: approval lama habis/terpakai dan tindakan berisiko perlu approval baru
+    "queued": {"running", "blocked", "cancelled", "pending_approval"},
     "running": {"completed", "failed", "blocked", "interrupted", "cancelled"},
-    "blocked": {"queued", "cancelled"},
-    "interrupted": {"queued", "failed", "cancelled"},
-    "failed": {"queued", "cancelled"},
+    "blocked": {"queued", "cancelled", "pending_approval"},
+    "interrupted": {"queued", "failed", "cancelled", "pending_approval"},
+    "failed": {"queued", "cancelled", "pending_approval"},
     "completed": set(),
     "cancelled": set(),
 }

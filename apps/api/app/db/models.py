@@ -119,6 +119,7 @@ class Task(IdMixin, Base):
     last_error_kind: Mapped[str | None] = mapped_column(default=None)
     result: Mapped[dict | None] = mapped_column(JSON, default=None)
     verification: Mapped[dict | None] = mapped_column(JSON, default=None)
+    review_status: Mapped[str | None] = mapped_column(default=None)  # approved | changes_requested (diisi Reviewer)
     created_by: Mapped[str] = mapped_column(default="ceo")
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
@@ -236,6 +237,47 @@ class TestResult(IdMixin, Base):
     duration_ms: Mapped[int | None] = mapped_column(default=None)
 
 
+class Approval(IdMixin, Base):
+    """Persetujuan manusia untuk satu tindakan spesifik (Bagian 12.5). Terikat pada sidik jari isi task."""
+
+    __tablename__ = "approvals"
+    __table_args__ = (Index("ix_approvals_task", "task_id"), Index("ix_approvals_status", "status"))
+
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"))
+    project_id: Mapped[str] = mapped_column()
+    kind: Mapped[str] = mapped_column(default="task_execution")
+    action_type: Mapped[str] = mapped_column()
+    risk_level: Mapped[str] = mapped_column()
+    status: Mapped[str] = mapped_column(default="pending")  # pending|approved|rejected|expired|cancelled
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    payload_hash: Mapped[str] = mapped_column()
+    requested_by: Mapped[str] = mapped_column(default="system")
+    decided_by: Mapped[str | None] = mapped_column(default=None)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    decision_reason: Mapped[str | None] = mapped_column(Text, default=None)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+
+class CodeReview(IdMixin, Base):
+    """Hasil review independen. Append-only."""
+
+    __tablename__ = "code_reviews"
+    __table_args__ = (Index("ix_code_reviews_task", "task_id"),)
+
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"))  # task Reviewer
+    project_id: Mapped[str] = mapped_column()
+    reviewed_task_ids: Mapped[list] = mapped_column(JSON, default=list)
+    commit: Mapped[str | None] = mapped_column(default=None)
+    verdict: Mapped[str] = mapped_column()  # approved | changes_requested
+    summary: Mapped[str] = mapped_column(Text, default="")
+    verdict_reasons: Mapped[list] = mapped_column(JSON, default=list)
+    criteria: Mapped[list] = mapped_column(JSON, default=list)
+    findings: Mapped[list] = mapped_column(JSON, default=list)
+    unresolved_risks: Mapped[list] = mapped_column(JSON, default=list)
+    evidence: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
 class AppendOnlyError(RuntimeError):
     pass
 
@@ -243,5 +285,5 @@ class AppendOnlyError(RuntimeError):
 @event.listens_for(Session, "before_flush")
 def _enforce_append_only(session, _ctx, _instances):
     for obj in list(session.dirty) + list(session.deleted):
-        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult)) and (obj in session.deleted or session.is_modified(obj)):
+        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult, CodeReview)) and (obj in session.deleted or session.is_modified(obj)):
             raise AppendOnlyError(f"{obj.__tablename__} bersifat append-only")

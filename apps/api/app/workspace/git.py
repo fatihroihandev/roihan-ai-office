@@ -1,6 +1,7 @@
 """Riwayat perubahan workspace lewat Git (Bagian 13.3). Perintah git tetap berjalan di host dan hanya
 menerima argumen dari kode kita (bukan dari agent); hook dimatikan agar isi workspace tidak dapat memicu eksekusi."""
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -57,3 +58,11 @@ def log(root: Path, limit: int = 20) -> list[dict]:
         h, author, when, subject = line.split("\x1f", 3)
         rows.append({"commit": h, "author": author, "date": when, "message": subject})
     return rows
+
+
+def show(root: Path, sha: str, max_chars: int = 4000) -> str:
+    """Ringkasan perubahan satu commit (stat + patch), dipotong. `sha` divalidasi agar hanya heksadesimal."""
+    if not re.fullmatch(r"[0-9a-f]{4,40}", sha or ""):
+        raise GitError("hash commit tidak valid")
+    out = _git(root, "show", "--stat", "--patch", "--no-color", "--format=commit %h%n%s", sha)
+    return out if len(out) <= max_chars else out[:max_chars] + "\n[...diff dipotong...]"

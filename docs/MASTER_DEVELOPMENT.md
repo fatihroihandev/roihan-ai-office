@@ -1579,6 +1579,36 @@ Batasan yang diketahui:
 
 **Exit criteria:** task dapat direview, dilaporkan, dan dihentikan ketika approval dibutuhkan.
 
+**Status (2026-10-20): selesai.**
+
+Yang dibangun:
+- **Approval Center** (Bagian 12.5): tabel `approvals` dengan status `pending|approved|rejected|expired|cancelled`; payload dan sidik jari SHA-256 dari isi tindakan (judul, deskripsi, role, aksi, risiko, acceptance criteria, dependensi); masa berlaku (`APPROVAL_TTL_HOURS`); sekali pakai (dikonsumsi saat task mulai berjalan); hanya manusia (`ceo`) yang dapat memutuskan, sedangkan agent, Manager, worker, dan sistem selalu ditolak; setiap keputusan masuk `audit_logs`; event `approval.required` dan `approval.resolved` dikirim lewat WebSocket. Ditegakkan di tiga lapis: saat antre (`pending_approval`), saat klaim worker (gerbang: approval harus ada, disetujui, belum terpakai, belum kedaluwarsa, dan masih cocok dengan isi task), dan di Model Router.
+- **Kebijakan risiko**: tindakan berisiko tidak diulang otomatis (Bagian 9.5), tidak dipulihkan otomatis setelah proses mati, dan retry manualnya meminta approval baru. Penolakan membatalkan task (dependen ikut terblokir); approval yang tidak dijawab kedaluwarsa dan membatalkan task.
+- **Reviewer** (Bagian 4.3 D): bukti deterministik (diff Git, pemindaian keamanan statis berbasis AST dan regex untuk eval/exec, os.system, subprocess shell=True, pickle/yaml tak aman, kredensial yang ditulis di kode, modul jaringan, dll.) ditambah tes yang **dijalankan ulang** di sandbox. Model hanya menilai tiap acceptance criteria dan menulis temuan (keluaran dibatasi skema). Verdict dihitung deterministik: `approved` hanya jika tes ulang lulus, semua criteria terbukti, dan tidak ada temuan `high`/`critical`. Klaim "criteria terpenuhi" ditolak jika buktinya tidak mengutip tes atau file nyata. Hasil disimpan di `code_reviews` (append-only) dan menandai `review_status` pada task yang direview.
+- **Reporter dan laporan** (Bagian 17): laporan 15 bagian sesuai format spesifikasi dibuat otomatis untuk setiap task yang selesai atau gagal (`reports/<task-id>.md`) dan on-demand lewat `GET /api/tasks/{id}/report` dan `GET /api/projects/{id}/report`. Seluruh fakta berasal dari database (file, commit, tes, eksekusi, review, approval, model, penggunaan, masalah, risiko, langkah berikutnya). Agent Reporter (aksi baru `report`, risiko rendah) menyusun laporan proyek; ringkasan model hanya diterima jika semua angkanya ada pada fakta, jika tidak diganti ringkasan deterministik.
+- UI: halaman Approval Center (`/approvals`) dengan rincian tindakan yang disetujui; banner approval di papan task; hasil review (verdict, alasan, criteria dengan bukti, temuan), riwayat approval, dan laporan di detail task; laporan proyek di halaman proyek.
+
+Perubahan pada tabel transisi status (Bagian 12.1), dicatat sebagai keputusan: `queued`, `blocked`, `failed`, dan `interrupted` kini boleh menuju `pending_approval`, supaya tindakan berisiko yang approval-nya habis, terpakai, atau tidak cocok lagi kembali meminta approval baru.
+
+Keputusan yang sengaja tidak diambil: approval untuk panggilan API berbayar belum dibuat karena belum ada adapter berbayar (gateway tetap menahannya). Agent Marketing belum ada, sehingga belum ada tindakan eksternal nyata yang dapat disetujui; mekanismenya sudah siap dan teruji dengan executor uji.
+
+Verifikasi: 520 tes backend dan 7 tes frontend lolos. Uji mutasi (merusak aturan secara sengaja): 16 dari 16 mutasi tertangkap, mencakup siapa pun boleh memutuskan, approval tidak sekali pakai, mengabaikan perubahan isi atau kedaluwarsa, retry otomatis tindakan berisiko, tanpa gerbang klaim, pemulihan otomatis, menyetujui tanpa tes ulang, mengabaikan tes ulang yang gagal, menerima klaim tanpa bukti, mengabaikan temuan berat, mengabaikan criteria yang belum terbukti, angka karangan model, dan eval yang tidak terdeteksi.
+Uji langsung ditemukan dua cacat yang sudah diperbaiki: urutan task yang direview (dan nomor criteria) tidak deterministik, serta satu tes rapuh.
+
+**Verifikasi langsung** (`qwen2.5-coder:7b` asli, sandbox WSL asli `roihan-sandbox`; kode AI hanya berjalan di dalam sandbox):
+- Developer (78 detik): menulis `calc.py` dan `tests/test_calc.py`; compile dan pytest lulus di sandbox, task `completed`.
+- QA (90 detik): task `failed` (`tests_failed`): 4 dari 20 tes gagal. Penyebabnya tes buatan QA sendiri yang memuat ekspektasi salah (mis. `add(5,3) == 2`), bukan kode Developer. Sistem tidak dapat membedakan bug kode dari bug tes secara otomatis; keputusan ada pada manusia.
+- Reviewer (90 detik): menjalankan ulang seluruh tes di sandbox (16 lulus, 4 gagal) sehingga verdict `changes_requested` dan task Developer ditandai `review_status=changes_requested`. Criteria "divide(1,0) melempar ValueError" terbukti (bukti merujuk `test_divide_by_zero`); criteria "add(1,2) == 3" ditolak karena buktinya hanya menyebut nama tes tanpa penjelasan (terlalu pendek untuk dianggap bukti); criteria "semua tes lulus" tidak terpenuhi.
+- Reporter (31 detik): laporan proyek dibuat; ringkasan model lolos validasi angka. Laporan otomatis tiap task memuat ke-15 bagian dan 5 berkas laporan tersimpan di `reports/`.
+- Reviewer terhadap kode yang sengaja salah dan memakai `eval` (70 detik): tes ulang gagal (0 lulus, 1 gagal), `eval` terdeteksi pemindai statis (`calc.py:6`, high) dan oleh model, tiga alasan verdict tercatat; `changes_requested`.
+- Approval: task `spend` tidak berjalan sebelum disetujui (0 percobaan); `analyst`, `manager`, dan `system` ditolak dengan `agent_cannot_approve`; CEO menyetujui lewat API, task berjalan sampai selesai (119 detik), approval tercatat terpakai dan izin pada task direset; penolakan membatalkan task tanpa satu pun percobaan; `audit_logs` dan event `approval.required`/`approval.resolved` tercatat.
+
+Keterbatasan yang terungkap dari uji langsung:
+- Model 7B kadang menulis temuan "pengisi" berseverity `low` (mis. "tidak ada keamanan yang diperbaiki"). Tidak memengaruhi verdict, tetapi mengotori daftar temuan.
+- Kegagalan tes belum diklasifikasikan sebagai bug kode atau bug tes, dan QA belum punya putaran perbaikan untuk tesnya sendiri. Karena Reviewer menjalankan ulang seluruh tes workspace, tes QA yang salah ikut menjatuhkan review atas kode Developer. Kandidat perbaikan berikutnya.
+- Bukti criteria yang hanya berupa nama tes (kurang dari 10 karakter) ditolak; ini sengaja konservatif.
+
+
 ## Phase 7 — Product Catalog & Release Gate
 
 - Tambahkan katalog produk.

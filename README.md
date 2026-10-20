@@ -6,7 +6,7 @@ Sumber acuan utama: [`docs/MASTER_DEVELOPMENT.md`](docs/MASTER_DEVELOPMENT.md). 
 
 ## Status
 
-Phase 0 sampai 5 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst, Reporter, Developer, dan QA dapat bekerja (Developer dan QA hanya jika sandbox lolos uji isolasi); Reviewer dan Marketing belum tersedia (task-nya diblokir secara jujur).
+Phase 0 sampai 6 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst, Reporter, Developer, QA, dan Reviewer dapat bekerja (Developer, QA, dan Reviewer yang menjalankan tes hanya jika sandbox lolos uji isolasi); agent Marketing belum tersedia (task-nya diblokir secara jujur). Tindakan berisiko tinggi atau kritis tidak berjalan sebelum CEO menyetujuinya di Approval Center (`/approvals`).
 
 ## Prasyarat Phase 0
 
@@ -80,6 +80,19 @@ powershell -ExecutionPolicy Bypass -File scripts\setup_sandbox_wsl.ps1
 Lalu isi `.env`: `SANDBOX_BACKEND=wsl` dan `SANDBOX_WSL_DISTRO=roihan-sandbox`, restart backend, dan buka halaman **Task**
 untuk melihat status sandbox dan hasil uji isolasi. Lapisan isolasi: tanpa jaringan, user tanpa hak khusus, environment
 kosong (tanpa secret), batas memori/proses/CPU/waktu, tanpa mount drive Windows, tanpa interop Windows.
+
+## Approval, review, dan laporan (Phase 6)
+
+- **Approval Center** (`/approvals`): tindakan berisiko `high`/`critical` (mis. `spend`, `publish`, `external_outreach`, `delete_data`) berhenti di
+  `pending_approval`. Persetujuan hanya dapat diberikan oleh manusia (pemegang token lokal), terikat pada isi tindakan (jika isi task berubah,
+  persetujuan batal), berlaku untuk **satu kali** eksekusi, dan kedaluwarsa otomatis (`APPROVAL_TTL_HOURS`, bawaan 24 jam). Tindakan berisiko tidak
+  pernah diulang otomatis; mengulangnya meminta approval baru. Setiap keputusan tercatat di `audit_logs`.
+- **Reviewer** (aksi `review`): menilai berdasarkan bukti, bukan klaim. Bukti: diff Git, pemindaian keamanan statis, dan tes yang **dijalankan ulang
+  sendiri** di sandbox. Verdict `approved` hanya jika tes ulang lulus, semua acceptance criteria terbukti (dengan bukti yang merujuk tes atau file
+  nyata), dan tidak ada temuan berat. Hasil tersimpan di `code_reviews`.
+- **Laporan**: setiap task yang selesai atau gagal otomatis menghasilkan `reports/<task-id>.md` dengan 15 bagian sesuai spesifikasi; seluruh fakta berasal
+  dari database. Agent Reporter (aksi `report`) menyusun laporan proyek; ringkasannya boleh ditulis model, tetapi dibuang jika memuat angka yang tidak ada
+  pada fakta. Laporan dapat dilihat di detail task dan halaman proyek.
 
 ## Tes
 

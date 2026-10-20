@@ -4,6 +4,7 @@ from datetime import timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.approvals import service as approvals
 from app.db.base import utcnow
 from app.db.models import Task, TaskDependency
 from app.routing.scoring import category, difficulty_score, normalize_factors
@@ -53,27 +54,37 @@ def dependency_ids(session: Session, task_id: str) -> list[str]:
     return list(session.scalars(select(TaskDependency.depends_on_id).where(TaskDependency.task_id == task_id)))
 
 
-def queue_task(session: Session, task: Task, actor: str = "ceo") -> Task:
+def queue_task(session: Session, task: Task, actor: str = "ceo", ttl_hours: int = approvals.DEFAULT_TTL_HOURS) -> Task:
     """draft -> queued, atau pending_approval jika tindakan berisiko tinggi (Bagian 9.3)."""
     if task.status != "draft":
         raise TaskError(f"Hanya task berstatus draft yang dapat diantrekan (status sekarang: {task.status})")
     if task.requires_approval and not task.approved:
-        return change_status(session, task, "pending_approval", reason=f"risk_{task.risk_level}", actor=actor)
+        change_status(session, task, "pending_approval", reason=f"risk_{task.risk_level}", actor=actor)
+        approvals.open_approval(session, task, ttl_hours)
+        return task
     return change_status(session, task, "queued", actor=actor)
 
 
-def queue_drafts(session: Session, project_id: str, actor: str = "ceo") -> list[Task]:
+def queue_drafts(session: Session, project_id: str, actor: str = "ceo", ttl_hours: int = approvals.DEFAULT_TTL_HOURS) -> list[Task]:
     drafts = session.scalars(select(Task).where(Task.project_id == project_id, Task.status == "draft")
                              .order_by(Task.created_at, Task.id)).all()
-    return [queue_task(session, t, actor) for t in drafts]
+    return [queue_task(session, t, actor, ttl_hours) for t in drafts]
 
 
-def requeue_task(session: Session, task: Task, actor: str = "ceo") -> Task:
-    """Retry manual: failed/blocked/interrupted -> queued dengan jatah retry otomatis yang baru."""
+def requeue_task(session: Session, task: Task, actor: str = "ceo", ttl_hours: int = approvals.DEFAULT_TTL_HOURS) -> Task:
+    """Retry manual: failed/blocked/interrupted -> queued dengan jatah retry otomatis yang baru.
+
+    Tindakan berisiko tinggi tidak boleh diulang tanpa approval baru (approval sekali pakai): task kembali ke
+    pending_approval dan meminta approval baru.
+    """
     if task.status not in {"failed", "blocked", "interrupted"}:
         raise TaskError(f"Task berstatus {task.status} tidak dapat dicoba ulang")
     task.attempts_baseline = task.attempt_count
     task.available_at = utcnow()
+    if task.requires_approval:
+        change_status(session, task, "pending_approval", reason="manual_retry_needs_approval", actor=actor)
+        approvals.open_approval(session, task, ttl_hours)
+        return task
     return change_status(session, task, "queued", reason="manual_retry", actor=actor)
 
 
@@ -81,7 +92,9 @@ def cancel_task(session: Session, task: Task, actor: str = "ceo") -> Task:
     """Pembatalan task yang tidak sedang berjalan. Task running dibatalkan lewat worker."""
     if task.status == "running":
         raise TaskError("Task sedang berjalan; batalkan melalui worker")
-    return change_status(session, task, "cancelled", reason="cancelled_by_user", actor=actor)
+    change_status(session, task, "cancelled", reason="cancelled_by_user", actor=actor)
+    approvals.cancel_open(session, task.id, "task dibatalkan")
+    return task
 
 
 def retry_delay(base_s: float, retries_used: int) -> timedelta:

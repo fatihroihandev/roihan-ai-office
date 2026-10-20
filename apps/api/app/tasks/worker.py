@@ -9,6 +9,7 @@ import logging
 
 from sqlalchemy import select
 
+from app.approvals import service as approvals
 from app.config import Settings
 from app.db.base import utcnow
 from app.db.models import Task, TaskAttempt, TaskDependency
@@ -17,6 +18,7 @@ from app.providers.base import GatewayBlocked, ProviderError, ProviderErrorKind
 from app.providers.gateway import ModelGateway
 from app.routing.router import ModelRouter, RoutingError, TaskSnapshot
 from app.sandbox.base import DisabledSandbox, Sandbox, SandboxUnavailable
+from app.reporting.builder import build_task_report
 from app.tasks.executors import ExecutionContext, Executor, ExecutorBlocked, ExecutorError, default_executors
 from app.tasks.service import retry_delay
 from app.tasks.state import add_event, change_status
@@ -52,7 +54,8 @@ class TaskWorker:
                     a.status, a.finished_at, a.error_kind = "interrupted", utcnow(), "interrupted"
                 change_status(s, t, "interrupted", reason="worker_restart")
                 ex = self.executors.get(t.role)
-                if ex is not None and ex.idempotent and self._retries_left(t) > 0:
+                # Tindakan berisiko bukan idempoten secara efektif (approval sekali pakai): tidak dipulihkan otomatis
+                if ex is not None and ex.idempotent and not t.requires_approval and self._retries_left(t) > 0:
                     t.available_at = utcnow()
                     change_status(s, t, "queued", reason="recovered")
                 recovered += 1
@@ -69,6 +72,10 @@ class TaskWorker:
 
         Diulang sampai stabil agar rantai dependensi (A <- B <- C) ikut terblokir/terbuka dalam satu siklus.
         """
+        with self._sf() as s:   # approval: kedaluwarsakan yang lewat waktu, pastikan tiap task menunggu punya permintaan
+            approvals.expire_due(s)
+            approvals.ensure_open_for_pending_tasks(s, self._settings.approval_ttl_hours)
+            s.commit()
         for _ in range(20):
             if not self._propagate_once():
                 return
@@ -111,6 +118,17 @@ class TaskWorker:
                 s.refresh(t)
                 if t.status != "queued":
                     continue
+                if t.requires_approval:
+                    # Gerbang approval di titik eksekusi (pertahanan berlapis): harus ada approval yang disetujui, belum
+                    # terpakai, belum kedaluwarsa, dan masih cocok dengan isi task. Selain itu minta approval baru.
+                    ap = approvals.valid_for_execution(s, t)
+                    if ap is None:
+                        change_status(s, t, "pending_approval", reason="approval_required")
+                        approvals.open_approval(s, t, self._settings.approval_ttl_hours)
+                        s.commit()
+                        continue
+                    approvals.consume(s, ap)
+                    t.approved = True
                 t.attempt_count += 1
                 attempt = TaskAttempt(task_id=t.id, number=t.attempt_count)
                 s.add(attempt)
@@ -165,6 +183,25 @@ class TaskWorker:
             self._current.pop(task_id, None)
             self._cancel_requested.discard(task_id)
             self.current_task_id = None
+            self._write_report(task_id)
+            with self._sf() as s:   # approval sekali pakai: izin tidak menempel pada task setelah percobaan selesai
+                t = s.get(Task, task_id)
+                if t is not None and t.approved:
+                    t.approved = False
+                    s.commit()
+
+    def _write_report(self, task_id: str) -> None:
+        """Setiap task yang selesai atau gagal menghasilkan laporan (Bagian 17). Gagal menulis laporan tidak menggagalkan task."""
+        try:
+            with self._sf() as s:
+                t = s.get(Task, task_id)
+                if t is None or t.status not in {"completed", "failed", "blocked", "cancelled", "interrupted"}:
+                    return
+                markdown, _ = build_task_report(s, task_id)
+                project_id = t.project_id
+            self._storage.write_report(project_id, task_id, markdown)
+        except Exception:
+            logger.exception("gagal menulis laporan task", extra={"task_id": task_id})
 
     def _close_attempt(self, s, attempt_id: str, ctx: ExecutionContext, status: str, *, kind=None, message=None, retryable=None):
         a = s.get(TaskAttempt, attempt_id)
@@ -190,7 +227,8 @@ class TaskWorker:
             self._close_attempt(s, attempt_id, ctx, "failed", kind=kind, message=message, retryable=retryable)
             t.last_error, t.last_error_kind = message, kind
             change_status(s, t, "failed", reason=kind, payload={"attempt": t.attempt_count, "retryable": retryable})
-            if retryable and self._retries_left(t) > 0:
+            # Tindakan berisiko tidak diulang otomatis tanpa approval baru (Bagian 9.5): retry manual meminta approval
+            if retryable and not t.requires_approval and self._retries_left(t) > 0:
                 used = t.attempt_count - t.attempts_baseline - 1
                 delay = retry_delay(self._settings.retry_backoff_base_s, used)
                 t.available_at = utcnow() + delay

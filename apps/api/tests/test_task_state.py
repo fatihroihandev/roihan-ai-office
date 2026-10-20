@@ -27,8 +27,12 @@ def test_transition_table_matches_spec():
     assert set(ALLOWED) == set(STATUSES)
     assert ALLOWED["draft"] == {"pending_approval", "queued", "cancelled"}
     assert ALLOWED["running"] == {"completed", "failed", "blocked", "interrupted", "cancelled"}
-    assert ALLOWED["failed"] == {"queued", "cancelled"}
-    assert ALLOWED["interrupted"] == {"queued", "failed", "cancelled"}
+    # Tambahan Phase 6: tindakan berisiko yang approval-nya habis atau terpakai harus kembali meminta approval baru
+    assert ALLOWED["failed"] == {"queued", "cancelled", "pending_approval"}
+    assert ALLOWED["interrupted"] == {"queued", "failed", "cancelled", "pending_approval"}
+    assert ALLOWED["queued"] == {"running", "blocked", "cancelled", "pending_approval"}
+    assert ALLOWED["blocked"] == {"queued", "cancelled", "pending_approval"}
+    assert ALLOWED["pending_approval"] == {"queued", "cancelled"}
     assert all(ALLOWED[s] == set() for s in TERMINAL)
 
 

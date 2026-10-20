@@ -321,8 +321,11 @@ class LLMTextExecutor:
 
 
 def default_executors() -> dict[str, Executor]:
-    from app.engineering.agents import DeveloperExecutor, QAExecutor  # impor tunda: modul itu bergantung pada berkas ini
+    # impor tunda: modul-modul ini bergantung pada berkas ini
+    from app.engineering.agents import DeveloperExecutor, QAExecutor
+    from app.reporting.agent import ReporterExecutor
+    from app.review.reviewer import ReviewerExecutor
 
     text = LLMTextExecutor()
-    return {"manager": ManagerPlanExecutor(), "analyst": text, "reporter": text,
-            "developer": DeveloperExecutor(), "qa": QAExecutor()}
+    return {"manager": ManagerPlanExecutor(), "analyst": text, "reporter": ReporterExecutor(text),
+            "developer": DeveloperExecutor(), "qa": QAExecutor(), "reviewer": ReviewerExecutor()}

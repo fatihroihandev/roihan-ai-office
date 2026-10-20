@@ -46,7 +46,9 @@ def test_high_risk_task_goes_to_pending_approval_not_queue(env):
     tid = add_task(env, pid, role="sales_client_relations", action_type="external_outreach")
     t = get(env, tid)
     assert (t.status, t.risk_level, t.requires_approval, t.approved) == ("pending_approval", "critical", True, False)
-    assert events_of(env, tid)[-1] == ("draft", "pending_approval", "risk_critical")
+    ev = events_of(env, tid)
+    assert ("draft", "pending_approval", "risk_critical") in ev
+    assert ev[-1] == (None, None, None)          # event approval.required (tidak punya status asal/tujuan)
 
 
 def test_queue_only_from_draft(env):

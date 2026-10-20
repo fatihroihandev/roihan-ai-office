@@ -11,7 +11,7 @@ PLANNABLE_ROLES = [r for r in ROLES if r != "manager"]
 
 # Tingkat risiko ditentukan aturan deterministik berdasarkan jenis tindakan, bukan oleh penilaian model.
 ACTION_RISK: dict[str, str] = {
-    "planning": "low", "analysis": "low", "documentation": "low", "review": "low",
+    "planning": "low", "analysis": "low", "documentation": "low", "review": "low", "report": "low",
     "code_change": "medium", "run_tests": "medium",
     "install_dependency": "high", "delete_data": "high", "security_config": "high", "network_access": "high",
     "external_outreach": "critical", "publish": "critical", "paid_api": "critical",

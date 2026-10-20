@@ -102,6 +102,12 @@ export default function TasksPage() {
       <AppHeader />
       <h2>{t("tasks.title")}</h2>
       {error && <p className="bad" role="alert">{error}</p>}
+      {tasks.some((x) => x.status === "pending_approval") && (
+        <p className="banner">
+          {tasks.filter((x) => x.status === "pending_approval").length} {t("tasks.approvalsWaiting")} ·{" "}
+          <Link href="/approvals">{t("tasks.openApprovals")}</Link>
+        </p>
+      )}
 
       <section className="card">
         <div className="row">
@@ -209,6 +215,9 @@ export default function TasksPage() {
                   <div className="chips">
                     <span className="badge" data-risk={x.risk_level}>{label(`risk.${x.risk_level}`)}</span>
                     {x.difficulty_category && <span className="badge">{label(`diff.${x.difficulty_category}`)}</span>}
+                    {x.review_status && (
+                      <span className="badge" data-task={x.review_status === "approved" ? "completed" : "failed"}>{label(`review.status.${x.review_status}`)}</span>
+                    )}
                     {x.attempt_count > 1 && <span className="badge">#{x.attempt_count}</span>}
                   </div>
                   {x.blocked_reason && <div className="muted small">{tOr(`block.${x.blocked_reason}`, x.blocked_reason)}</div>}

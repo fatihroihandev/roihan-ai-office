@@ -20,6 +20,7 @@ export default function ProjectDetailPage() {
   const [busy, setBusy] = useState(false);
   const [workspace, setWorkspace] = useState<WorkspaceOverview | null>(null);
   const [viewing, setViewing] = useState<{ path: string; content: string } | null>(null);
+  const [projectReport, setProjectReport] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -65,6 +66,12 @@ export default function ProjectDetailPage() {
     run(async () => {
       const f = await tasksApi.workspaceFile(id, path);
       setViewing({ path: f.path, content: f.content });
+    });
+
+  const onProjectReport = () =>
+    run(async () => {
+      if (projectReport !== null) return setProjectReport(null);
+      setProjectReport((await tasksApi.projectReport(id)).markdown);
     });
 
   const onToggleArchive = () =>
@@ -157,6 +164,14 @@ export default function ProjectDetailPage() {
                 </tbody>
               </table>
             )}
+          </section>
+
+          <section className="card">
+            <h3>{t("project.report")}</h3>
+            <button type="button" disabled={busy} onClick={onProjectReport}>
+              {projectReport === null ? t("project.report.show") : t("task.report.hide")}
+            </button>
+            {projectReport !== null && <pre className="output">{projectReport}</pre>}
           </section>
 
           <section className="card">

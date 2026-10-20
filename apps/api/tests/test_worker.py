@@ -89,7 +89,7 @@ def test_only_one_task_runs_at_a_time(migrated_db, tmp_path):
 def test_role_without_executor_is_blocked_honestly(migrated_db, tmp_path):
     env = build_env(migrated_db, tmp_path)
     pid = make_project(env)
-    tid = add_task(env, pid, role="reviewer", action_type="review")
+    tid = add_task(env, pid, role="market_research", action_type="analysis")   # Marketing: belum ada agent
     assert run(env.worker.run_once()) is False
     t = get(env, tid)
     assert (t.status, t.blocked_reason, t.last_error_kind, t.attempt_count) == ("blocked", "executor_not_available", "executor_not_available", 0)
@@ -193,17 +193,22 @@ def test_cancelled_dependency_blocks_dependent(migrated_db, tmp_path):
     assert get(env, b).status == "blocked" and env.provider.calls == []
 
 
-def test_routing_failure_blocks_instead_of_retrying(migrated_db, tmp_path):
+def test_task_needing_approval_never_reaches_the_router_or_model_without_it(migrated_db, tmp_path):
+    """Gerbang approval di titik klaim adalah lapisan pertama; router (test_routing) adalah lapisan kedua."""
     env = build_env(migrated_db, tmp_path)
     pid = make_project(env)
     tid = add_task(env, pid)
     with env.sf() as s:
-        s.get(Task, tid).requires_approval = True       # task berisiko tanpa approval tidak boleh dirutekan
+        s.get(Task, tid).requires_approval = True       # task berisiko yang sudah terlanjur antre tanpa approval
         s.commit()
     drain(env)
     t = get(env, tid)
-    assert (t.status, t.blocked_reason, t.attempt_count) == ("blocked", "approval_required", 1)
-    assert attempts(env, tid)[0].status == "blocked" and env.provider.calls == []
+    assert (t.status, t.attempt_count) == ("pending_approval", 0)
+    assert attempts(env, tid) == [] and env.provider.calls == []
+    from app.db.models import Approval
+    with env.sf() as s:
+        [ap] = s.query(Approval).filter_by(task_id=tid).all()
+        assert ap.status == "pending"
 
 
 def test_policy_block_from_gateway_blocks_task(migrated_db, tmp_path):
@@ -302,7 +307,7 @@ def test_unexpected_executor_exception_fails_without_retry(migrated_db, tmp_path
 
 
 def test_default_executors_cover_only_roles_that_can_really_work():
-    assert set(default_executors()) == {"manager", "analyst", "reporter", "developer", "qa"}
+    assert set(default_executors()) == {"manager", "analyst", "reporter", "developer", "qa", "reviewer"}
 
 
 def test_blocked_dependency_cascades_down_the_chain_and_recovers(migrated_db, tmp_path):
