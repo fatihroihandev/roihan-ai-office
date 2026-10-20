@@ -6,11 +6,12 @@ Sumber acuan utama: [`docs/MASTER_DEVELOPMENT.md`](docs/MASTER_DEVELOPMENT.md). 
 
 ## Status
 
-Phase 0 (Hardware & Environment) sedang berjalan. Belum ada aplikasi yang dapat dijalankan.
+Phase 0 selesai. Phase 1 (Foundation) selesai: backend FastAPI + SQLite + migration, frontend Next.js dengan pilihan bahasa Indonesia/Inggris, dan health check. Fitur lain belum tersedia.
 
 ## Prasyarat Phase 0
 
-- Python 3.10+
+- Python 3.10+ (diuji dengan 3.15)
+- Node.js 20+ (diuji dengan 24)
 - Git
 - [Ollama](https://ollama.com) dengan model `qwen2.5-coder:7b` (`ollama pull qwen2.5-coder:7b`)
 
@@ -26,4 +27,41 @@ Kode hasil model dijalankan sebagai subprocess lokal dengan timeout dan filter i
 
 ## Konfigurasi
 
-Salin `.env.example` ke `.env`. Secret tidak boleh di-commit.
+Salin `.env.example` ke `.env`, lalu isi `APP_LOCAL_TOKEN` dengan nilai acak (minimal 16 karakter), misalnya:
+
+```
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+Secret tidak boleh di-commit. Backend dan frontend sama-sama membaca `.env` di root repository.
+
+## Menjalankan
+
+Backend (`apps/api`):
+
+```
+cd apps/api
+python -m venv .venv
+.venv/Scripts/python -m pip install -r requirements.txt
+.venv/Scripts/python -m alembic upgrade head
+.venv/Scripts/python -m uvicorn app.main:get_app --factory --host 127.0.0.1 --port 8000
+```
+
+Frontend (`apps/web`):
+
+```
+cd apps/web
+npm install
+npm run dev
+```
+
+Buka http://localhost:3000. Token lokal hanya dipakai di sisi server Next.js (proxy `/api/health`) dan tidak dikirim ke browser.
+
+Endpoint backend: `GET /api/health` (publik, minimal) dan `GET /api/health/details` (perlu `Authorization: Bearer <APP_LOCAL_TOKEN>`).
+
+## Tes
+
+```
+cd apps/api && .venv/Scripts/python -m pytest
+cd apps/web && npm test && npm run lint && npm run typecheck
+```

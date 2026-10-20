@@ -1466,6 +1466,8 @@ Pengembangan mengikuti urutan dependensi, bukan urutan fitur yang paling menarik
 
 **Exit criteria:** frontend, backend, dan database dapat dijalankan serta diuji.
 
+**Status (2026-10-20): selesai.** Backend FastAPI (config tervalidasi, structured logging dengan correlation ID, SQLite WAL + Alembic, `audit_logs` append-only, `/api/health`), frontend Next.js dengan i18n Indonesia/Inggris, dan proxy sisi server untuk token lokal. Tes: 13 backend (pytest), 4 frontend (Vitest), lint, typecheck, dan build lolos. WebSocket belum termasuk (dijadwalkan di Phase 4). Catatan: `uvicorn[standard]` tidak dipakai karena pyyaml memerlukan compiler C++ pada Python 3.15 di perangkat ini.
+
 ## Phase 2 — Project & File Management
 
 - Buat project CRUD.
