@@ -99,3 +99,8 @@ ul { padding-left: 1.2rem; }
 .card.approval { border-left: 4px solid var(--warn); }
 .card.approval[data-risk="critical"], .card.approval[data-risk="high"] { border-left-color: var(--bad); }
 h4 { margin: 0.9rem 0 0.4rem; font-size: 0.95rem; }
+
+label.inline { display: inline-flex; flex-direction: row; align-items: center; gap: 0.4rem; margin: 0 0.75rem 0.4rem 0; }
+label.inline input { width: auto; }
+button.tab { padding: 0.25rem 0.7rem; font-size: 0.85rem; }
+button.tab.on { background: var(--accent); }

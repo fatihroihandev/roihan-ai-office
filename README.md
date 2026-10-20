@@ -6,7 +6,7 @@ Sumber acuan utama: [`docs/MASTER_DEVELOPMENT.md`](docs/MASTER_DEVELOPMENT.md). 
 
 ## Status
 
-Phase 0 sampai 6 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst, Reporter, Developer, QA, dan Reviewer dapat bekerja (Developer, QA, dan Reviewer yang menjalankan tes hanya jika sandbox lolos uji isolasi); agent Marketing belum tersedia (task-nya diblokir secara jujur). Tindakan berisiko tinggi atau kritis tidak berjalan sebelum CEO menyetujuinya di Approval Center (`/approvals`).
+Phase 0 sampai 7 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst, Reporter, Developer, QA, dan Reviewer dapat bekerja (Developer, QA, dan Reviewer yang menjalankan tes hanya jika sandbox lolos uji isolasi); agent Marketing belum tersedia (task-nya diblokir secara jujur). Tindakan berisiko tinggi atau kritis tidak berjalan sebelum CEO menyetujuinya di Approval Center (`/approvals`). Katalog produk dengan Product Release Gate tersedia di `/products`: Marketing hanya boleh memakai klaim produk yang terverifikasi.
 
 ## Prasyarat Phase 0
 
@@ -93,6 +93,21 @@ kosong (tanpa secret), batas memori/proses/CPU/waktu, tanpa mount drive Windows,
 - **Laporan**: setiap task yang selesai atau gagal otomatis menghasilkan `reports/<task-id>.md` dengan 15 bagian sesuai spesifikasi; seluruh fakta berasal
   dari database. Agent Reporter (aksi `report`) menyusun laporan proyek; ringkasannya boleh ditulis model, tetapi dibuang jika memuat angka yang tidak ada
   pada fakta. Laporan dapat dilihat di detail task dan halaman proyek.
+
+## Katalog Produk dan Release Gate (Phase 7)
+
+- **Katalog** (`/products`): produk milik sendiri dan layanan pengembangan dibedakan lewat `line`. Status pengembangan (`draft` sampai `archived`) melekat pada
+  **versi**; status produk mengikuti versi terkininya.
+- **Status dan izin pemasaran adalah dua hal berbeda.** Izin (`not_allowed`, `beta_only`, `allowed`) hanya dapat diberikan CEO, hanya jika Product Release Gate
+  lulus, dan **dihitung ulang setiap dibaca**: jika bukti berubah (klaim disengketakan, status turun, harga berubah) izin otomatis tidak berlaku.
+- **Klaim fitur** hanya `verified` jika punya bukti Engineering nyata: task implementasi yang selesai dan terverifikasi, tes yang lulus, tidak ada review yang
+  menolak, dan commit-nya termasuk dalam commit yang di-pin pada versi. Klaim tanpa bukti ditandai **BELUM TERVERIFIKASI** beserta alasannya. CEO dapat
+  menyatakan klaim secara manual (`attested`) dengan alasan tertulis; pernyataan itu tercatat di audit log dan dibedakan dari bukti sistem.
+- **Ringkasan resmi untuk Marketing** (`GET /api/products/{id}/versions/{vid}/marketing-brief`) adalah satu-satunya sumber informasi produk yang boleh dipakai
+  Marketing: hanya klaim terverifikasi (dan hanya jika diizinkan), batasan, harga yang disetujui, serta pernyataan wajib (mis. "produk ini masih beta").
+  **Linter klaim** (`POST .../check-claims`) menolak draf teks yang menyinggung klaim belum terverifikasi, memakai klaim mutlak ("terbaik", "100%", "tanpa bug"),
+  menyiratkan produk sudah rilis, tidak menyebut beta, atau menyebut harga yang belum disetujui.
+- Setelah memperbarui kode, jalankan `alembic upgrade head` (ada tabel baru).
 
 ## Tes
 

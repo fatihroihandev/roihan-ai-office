@@ -66,3 +66,15 @@ def show(root: Path, sha: str, max_chars: int = 4000) -> str:
         raise GitError("hash commit tidak valid")
     out = _git(root, "show", "--stat", "--patch", "--no-color", "--format=commit %h%n%s", sha)
     return out if len(out) <= max_chars else out[:max_chars] + "\n[...diff dipotong...]"
+
+
+def is_ancestor(root: Path, ancestor: str, descendant: str) -> bool:
+    """True jika commit `ancestor` adalah leluhur (atau sama dengan) `descendant`. Hash divalidasi heksadesimal."""
+    for h in (ancestor, descendant):
+        if not re.fullmatch(r"[0-9a-f]{4,40}", h or ""):
+            return False
+    try:
+        _git(root, "merge-base", "--is-ancestor", ancestor, descendant)
+        return True
+    except GitError:
+        return False

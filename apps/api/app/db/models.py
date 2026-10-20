@@ -278,6 +278,74 @@ class CodeReview(IdMixin, Base):
     evidence: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
+class Product(IdMixin, Base):
+    """Katalog produk (Bagian 5.3). `line` membedakan jalur bisnis: produk milik sendiri atau layanan pengembangan."""
+
+    __tablename__ = "products"
+
+    name: Mapped[str] = mapped_column()
+    line: Mapped[str] = mapped_column(default="owned_product")  # owned_product | service
+    description: Mapped[str | None] = mapped_column(Text, default=None)
+    target_customers: Mapped[str | None] = mapped_column(Text, default=None)
+    pricing_model: Mapped[str | None] = mapped_column(Text, default=None)
+    pricing_approved_value: Mapped[str | None] = mapped_column(Text, default=None)  # isi harga yang disetujui CEO
+    pricing_approved_by: Mapped[str | None] = mapped_column(default=None)
+    pricing_approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    project_id: Mapped[str | None] = mapped_column(ForeignKey("projects.id", ondelete="RESTRICT"), default=None)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+
+class ProductVersion(IdMixin, Base):
+    __tablename__ = "product_versions"
+    __table_args__ = (UniqueConstraint("product_id", "version", name="uq_product_version"), Index("ix_product_versions_product", "product_id"))
+
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"))
+    version: Mapped[str] = mapped_column()
+    status: Mapped[str] = mapped_column(default="draft")  # draft|in_development|internal_testing|beta|released|deprecated|archived
+    release_notes: Mapped[str | None] = mapped_column(Text, default=None)
+    commit: Mapped[str | None] = mapped_column(default=None)  # commit workspace yang menjadi dasar klaim versi ini
+    limitations: Mapped[list] = mapped_column(JSON, default=list)
+    limitations_confirmed: Mapped[bool] = mapped_column(default=False)  # CEO menyatakan memang tidak ada batasan yang diketahui
+    materials_reviewed: Mapped[bool] = mapped_column(default=False)
+    materials_reviewed_by: Mapped[str | None] = mapped_column(default=None)
+    materials_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    marketing_permission: Mapped[str] = mapped_column(default="not_allowed")  # not_allowed | beta_only | allowed (izin yang diberikan CEO)
+    permission_granted_by: Mapped[str | None] = mapped_column(default=None)
+    permission_granted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    permission_reason: Mapped[str | None] = mapped_column(Text, default=None)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class ProductFeature(IdMixin, Base):
+    """Klaim fitur. Hanya `verified` (bukti sistem) dan `attested` (pernyataan CEO beralasan) yang boleh dipromosikan."""
+
+    __tablename__ = "product_features"
+    __table_args__ = (Index("ix_product_features_version", "version_id"),)
+
+    version_id: Mapped[str] = mapped_column(ForeignKey("product_versions.id", ondelete="RESTRICT"))
+    text: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(default="unverified")  # verified|attested|unverified|disputed|withdrawn
+    evidence: Mapped[dict] = mapped_column(JSON, default=dict)
+    attested_by: Mapped[str | None] = mapped_column(default=None)
+    attested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    attestation_reason: Mapped[str | None] = mapped_column(Text, default=None)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class ProductReleaseCheck(IdMixin, Base):
+    """Riwayat evaluasi Product Release Gate. Append-only (termasuk evaluasi yang menolak)."""
+
+    __tablename__ = "product_release_checks"
+    __table_args__ = (Index("ix_release_checks_version", "version_id"),)
+
+    version_id: Mapped[str] = mapped_column(ForeignKey("product_versions.id", ondelete="RESTRICT"))
+    target: Mapped[str] = mapped_column()  # beta_only | allowed
+    ready: Mapped[bool] = mapped_column()
+    items: Mapped[list] = mapped_column(JSON, default=list)
+    evaluated_by: Mapped[str] = mapped_column(default="system")
+
+
 class AppendOnlyError(RuntimeError):
     pass
 
@@ -285,5 +353,5 @@ class AppendOnlyError(RuntimeError):
 @event.listens_for(Session, "before_flush")
 def _enforce_append_only(session, _ctx, _instances):
     for obj in list(session.dirty) + list(session.deleted):
-        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult, CodeReview)) and (obj in session.deleted or session.is_modified(obj)):
+        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult, CodeReview, ProductReleaseCheck)) and (obj in session.deleted or session.is_modified(obj)):
             raise AppendOnlyError(f"{obj.__tablename__} bersifat append-only")
