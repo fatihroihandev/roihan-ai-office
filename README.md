@@ -6,7 +6,7 @@ Sumber acuan utama: [`docs/MASTER_DEVELOPMENT.md`](docs/MASTER_DEVELOPMENT.md). 
 
 ## Status
 
-Phase 0 selesai. Phase 1 (Foundation) selesai: backend FastAPI + SQLite + migration, frontend Next.js dengan pilihan bahasa Indonesia/Inggris, dan health check. Fitur lain belum tersedia.
+Phase 0, 1, dan 2 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, serta manajemen proyek dan file (halaman `/projects`). Fitur agent belum tersedia.
 
 ## Prasyarat Phase 0
 
@@ -57,7 +57,9 @@ npm run dev
 
 Buka http://localhost:3000. Token lokal hanya dipakai di sisi server Next.js (proxy `/api/health`) dan tidak dikirim ke browser.
 
-Endpoint backend: `GET /api/health` (publik, minimal) dan `GET /api/health/details` (perlu `Authorization: Bearer <APP_LOCAL_TOKEN>`).
+Endpoint backend: `GET /api/health` (publik, minimal). Semua endpoint lain, termasuk `/api/health/details` dan `/api/projects/*`, memerlukan `Authorization: Bearer <APP_LOCAL_TOKEN>`. Dokumentasi interaktif: http://127.0.0.1:8000/docs.
+
+Setelah memperbarui kode, jalankan `alembic upgrade head` lagi dan restart backend. File proyek disimpan di `data/projects/<id>/` (`input/` untuk dokumen sumber, `workspace/` untuk hasil kerja).
 
 ## Tes
 

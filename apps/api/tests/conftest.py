@@ -23,8 +23,11 @@ def migrated_db(tmp_path):
 
 
 @pytest.fixture
-def settings(migrated_db):
-    return Settings(_env_file=None, app_local_token=TOKEN, database_url=migrated_db, ollama_enabled=False)
+def settings(migrated_db, tmp_path):
+    return Settings(
+        _env_file=None, app_local_token=TOKEN, database_url=migrated_db, ollama_enabled=False,
+        data_dir=tmp_path / "data", max_upload_mb=1,
+    )
 
 
 @pytest.fixture

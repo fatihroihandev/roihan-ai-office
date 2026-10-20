@@ -4,7 +4,7 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import health
+from app.api import health, projects
 from app.config import Settings, get_settings
 from app.db.session import create_db_engine, create_session_factory
 from app.logging_config import correlation_id, new_correlation_id, setup_logging
@@ -46,6 +46,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             correlation_id.reset(token)
 
     app.include_router(health.router)
+    app.include_router(projects.router)
     return app
 
 

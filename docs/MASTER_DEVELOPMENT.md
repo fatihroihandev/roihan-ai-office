@@ -1478,6 +1478,10 @@ Pengembangan mengikuti urutan dependensi, bukan urutan fitur yang paling menarik
 
 **Exit criteria:** proyek dapat dibuat dan dokumennya dapat dikelola dengan aman.
 
+**Status (2026-10-20): selesai.** CRUD proyek (soft delete), file intake dengan kategori `master`/`requirement`/`reference`/`asset`, struktur `input/` terpisah dari `workspace/`, metadata proyek (`metadata/project.json`), dan validasi unggahan: allowlist ekstensi per kategori, cek isi terhadap ekstensi, batas ukuran (default 10 MB), nama file disanitasi, tidak pernah menimpa file, SVG dan file executable ditolak. Setiap aksi tercatat di `audit_logs`. Tes: 52 backend (pytest) dan 7 frontend (Vitest) lolos, serta uji end-to-end lewat proxy.
+
+Belum termasuk (sengaja ditunda): intake source code yang sudah ada (zip/repo) dilakukan bersama workspace di Phase 5; pesan error dari backend belum diterjemahkan ke bahasa Inggris; identitas aktor audit masih tetap `ceo` (single-user).
+
 ## Phase 3 — Provider & AI Control Center
 
 - Implementasikan Ollama adapter.

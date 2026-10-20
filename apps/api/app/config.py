@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     require_approval_for_external_actions: bool = True
     redact_secrets_in_logs: bool = True
 
+    data_dir: Path = REPO_ROOT / "data"
+    max_upload_mb: int = 10
+
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     @model_validator(mode="after")
@@ -56,7 +59,17 @@ class Settings(BaseSettings):
             raise ValueError("BUDGET_ALLOW_PAID_CALLS=true memerlukan BUDGET_MONTHLY_LIMIT > 0")
         if self.max_concurrent_tasks < 1 or self.max_retries_per_task < 0:
             raise ValueError("MAX_CONCURRENT_TASKS >= 1 dan MAX_RETRIES_PER_TASK >= 0")
+        if self.max_upload_mb < 1:
+            raise ValueError("MAX_UPLOAD_MB harus >= 1")
         return self
+
+    @property
+    def projects_dir(self) -> Path:
+        return self.data_dir / "projects"
+
+    @property
+    def max_upload_bytes(self) -> int:
+        return self.max_upload_mb * 1024 * 1024
 
     @property
     def secret_values(self) -> list[str]:
