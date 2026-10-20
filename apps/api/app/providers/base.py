@@ -47,6 +47,7 @@ class GenerateRequest:
     temperature: float = 0.2
     num_ctx: int = 4096
     request_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    json_schema: dict | None = None  # structured output: keluaran dibatasi skema (jika provider mendukung)
 
 
 @dataclass

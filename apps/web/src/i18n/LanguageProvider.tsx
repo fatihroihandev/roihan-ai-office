@@ -1,9 +1,15 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { Lang, MessageKey, translate } from "./dictionaries";
+import { Lang, MessageKey, dictionaries, translate } from "./dictionaries";
 
-type Ctx = { lang: Lang; setLang: (lang: Lang) => void; t: (key: MessageKey) => string };
+type Ctx = {
+  lang: Lang;
+  setLang: (lang: Lang) => void;
+  t: (key: MessageKey) => string;
+  /** Terjemahan untuk kunci dinamis (mis. dari backend); memakai `fallback` jika kunci tidak ada. */
+  tOr: (key: string, fallback: string) => string;
+};
 
 const LanguageContext = createContext<Ctx | null>(null);
 
@@ -17,7 +23,12 @@ export function LanguageProvider({ initialLang, children }: { initialLang: Lang;
   }, []);
 
   const value = useMemo<Ctx>(
-    () => ({ lang, setLang, t: (key) => translate(lang, key) }),
+    () => ({
+      lang,
+      setLang,
+      t: (key) => translate(lang, key),
+      tOr: (key, fallback) => (dictionaries[lang] as Record<string, string>)[key] ?? fallback,
+    }),
     [lang, setLang],
   );
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

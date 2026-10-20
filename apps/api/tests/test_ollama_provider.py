@@ -108,3 +108,17 @@ def test_cancel_inflight_request():
         assert await p.cancel("req-cancel-1") is False  # sudah selesai
 
     run(scenario())
+
+
+def test_generate_sends_json_schema_as_format_only_when_given():
+    sent = []
+
+    def handler(request):
+        import json
+        sent.append(json.loads(request.content))
+        return httpx.Response(200, json={"response": "{}"})
+    p = provider(handler)
+    schema = {"type": "object", "properties": {"a": {"type": "string"}}}
+    run(p.generate("m", GenerateRequest("hai", json_schema=schema)))
+    run(p.generate("m", GenerateRequest("hai")))
+    assert sent[0]["format"] == schema and "format" not in sent[1]

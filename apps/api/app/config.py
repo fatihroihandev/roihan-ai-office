@@ -22,9 +22,13 @@ class Settings(BaseSettings):
     ollama_enabled: bool = True
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_default_model: str = "qwen2.5-coder:7b"
-    ollama_timeout_s: int = 300
+    ollama_timeout_s: int = 600
     ai_max_tokens_cap: int = 2048
     ai_max_prompt_chars: int = 20000
+
+    worker_enabled: bool = True
+    worker_poll_interval_s: float = 1.0
+    retry_backoff_base_s: float = 5.0
 
     openai_enabled: bool = False
     openai_api_key: str = ""
@@ -64,6 +68,8 @@ class Settings(BaseSettings):
             raise ValueError("MAX_CONCURRENT_TASKS >= 1 dan MAX_RETRIES_PER_TASK >= 0")
         if self.ollama_timeout_s < 1 or self.ai_max_tokens_cap < 1 or self.ai_max_prompt_chars < 1:
             raise ValueError("OLLAMA_TIMEOUT_S, AI_MAX_TOKENS_CAP, AI_MAX_PROMPT_CHARS harus >= 1")
+        if self.worker_poll_interval_s <= 0 or self.retry_backoff_base_s < 0:
+            raise ValueError("WORKER_POLL_INTERVAL_S harus > 0 dan RETRY_BACKOFF_BASE_S >= 0")
         if self.max_upload_mb < 1:
             raise ValueError("MAX_UPLOAD_MB harus >= 1")
         return self

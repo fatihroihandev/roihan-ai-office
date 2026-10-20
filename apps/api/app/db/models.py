@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, Index, UniqueConstraint, event
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint, event
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.db.base import Base, IdMixin, utcnow
@@ -89,6 +89,100 @@ class ModelUsage(IdMixin, Base):
     cost_idr: Mapped[float] = mapped_column(Float, default=0.0)
 
 
+class Task(IdMixin, Base):
+    __tablename__ = "tasks"
+    __table_args__ = (Index("ix_tasks_status", "status"), Index("ix_tasks_project", "project_id"))
+
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="RESTRICT"))
+    parent_task_id: Mapped[str | None] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"), default=None)
+    title: Mapped[str] = mapped_column()
+    description: Mapped[str] = mapped_column(Text, default="")
+    role: Mapped[str] = mapped_column()
+    action_type: Mapped[str] = mapped_column()
+    status: Mapped[str] = mapped_column(default="draft")
+    priority: Mapped[int] = mapped_column(default=0)
+    acceptance_criteria: Mapped[list] = mapped_column(JSON, default=list)
+    risk_level: Mapped[str] = mapped_column(default="low")
+    requires_approval: Mapped[bool] = mapped_column(default=False)
+    approved: Mapped[bool] = mapped_column(default=False)  # diisi oleh Approval Center (Phase 6)
+    difficulty_factors: Mapped[dict | None] = mapped_column(JSON, default=None)
+    difficulty_score: Mapped[float | None] = mapped_column(Float, default=None)
+    difficulty_category: Mapped[str | None] = mapped_column(default=None)
+    preferred_model: Mapped[str | None] = mapped_column(default=None)
+    requires_tools: Mapped[bool] = mapped_column(default=False)
+    attempt_count: Mapped[int] = mapped_column(default=0)
+    attempts_baseline: Mapped[int] = mapped_column(default=0)  # retry manual memberi jatah retry otomatis baru
+    max_retries: Mapped[int] = mapped_column(default=2)
+    available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    blocked_reason: Mapped[str | None] = mapped_column(default=None)
+    last_error: Mapped[str | None] = mapped_column(Text, default=None)
+    last_error_kind: Mapped[str | None] = mapped_column(default=None)
+    result: Mapped[dict | None] = mapped_column(JSON, default=None)
+    verification: Mapped[dict | None] = mapped_column(JSON, default=None)
+    created_by: Mapped[str] = mapped_column(default="ceo")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class TaskDependency(Base):
+    __tablename__ = "task_dependencies"
+
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True)
+    depends_on_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"), primary_key=True)
+
+
+class TaskAttempt(IdMixin, Base):
+    __tablename__ = "task_attempts"
+    __table_args__ = (Index("ix_task_attempts_task", "task_id"),)
+
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"))
+    number: Mapped[int] = mapped_column()
+    status: Mapped[str] = mapped_column(default="running")  # running|succeeded|failed|interrupted|cancelled|blocked
+    error_kind: Mapped[str | None] = mapped_column(default=None)
+    error_message: Mapped[str | None] = mapped_column(Text, default=None)
+    retryable: Mapped[bool | None] = mapped_column(default=None)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    provider: Mapped[str | None] = mapped_column(default=None)
+    model: Mapped[str | None] = mapped_column(default=None)
+    usage: Mapped[dict | None] = mapped_column(JSON, default=None)
+
+
+class TaskEvent(Base):
+    """Jejak kejadian task. `seq` monoton naik dan dipakai klien untuk mendeteksi event yang terlewat."""
+
+    __tablename__ = "task_events"
+    __table_args__ = (Index("ix_task_events_task", "task_id"), {"sqlite_autoincrement": True})
+
+    seq: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    task_id: Mapped[str] = mapped_column(String)
+    project_id: Mapped[str] = mapped_column(String)
+    type: Mapped[str] = mapped_column()
+    from_status: Mapped[str | None] = mapped_column(default=None)
+    to_status: Mapped[str | None] = mapped_column(default=None)
+    reason: Mapped[str | None] = mapped_column(default=None)
+    actor: Mapped[str] = mapped_column(default="system")
+    payload: Mapped[dict | None] = mapped_column(JSON, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class RoutingDecision(IdMixin, Base):
+    __tablename__ = "routing_decisions"
+    __table_args__ = (Index("ix_routing_task", "task_id"),)
+
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"))
+    attempt_id: Mapped[str | None] = mapped_column(default=None)
+    difficulty_score: Mapped[float | None] = mapped_column(Float, default=None)
+    difficulty_category: Mapped[str | None] = mapped_column(default=None)
+    risk_level: Mapped[str] = mapped_column(default="low")
+    provider: Mapped[str] = mapped_column()
+    model: Mapped[str] = mapped_column()
+    num_ctx: Mapped[int] = mapped_column()
+    candidates: Mapped[list] = mapped_column(JSON, default=list)
+    reasons: Mapped[list] = mapped_column(JSON, default=list)
+
+
 class AppendOnlyError(RuntimeError):
     pass
 
@@ -96,5 +190,5 @@ class AppendOnlyError(RuntimeError):
 @event.listens_for(Session, "before_flush")
 def _enforce_append_only(session, _ctx, _instances):
     for obj in list(session.dirty) + list(session.deleted):
-        if isinstance(obj, (AuditLog, ModelUsage)) and (obj in session.deleted or session.is_modified(obj)):
+        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision)) and (obj in session.deleted or session.is_modified(obj)):
             raise AppendOnlyError(f"{obj.__tablename__} bersifat append-only")

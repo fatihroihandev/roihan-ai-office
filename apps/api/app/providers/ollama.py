@@ -93,6 +93,8 @@ class OllamaProvider(ModelProvider):
         }
         if req.system:
             body["system"] = req.system
+        if req.json_schema:
+            body["format"] = req.json_schema
         start = time.perf_counter()
         try:
             async with self._client(self._timeout) as c:

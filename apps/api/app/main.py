@@ -1,30 +1,57 @@
+import asyncio
 import logging
 import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, health, projects
+from app.api import ai, events, health, projects, tasks
 from app.config import Settings, get_settings
 from app.db.session import create_db_engine, create_session_factory
 from app.logging_config import correlation_id, new_correlation_id, setup_logging
 from app.providers.base import ModelProvider
 from app.providers.gateway import ModelGateway
+from app.projects.storage import ProjectStorage
 from app.providers.registry import build_registry
+from app.routing.router import ModelRouter
+from app.tasks.executors import Executor
+from app.tasks.worker import TaskWorker
 
 logger = logging.getLogger("roihan.api")
 
 
-def create_app(settings: Settings | None = None, providers: dict[str, ModelProvider] | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, providers: dict[str, ModelProvider] | None = None,
+               executors: dict[str, Executor] | None = None) -> FastAPI:
     settings = settings or get_settings()
     setup_logging(settings.secret_values, settings.redact_secrets_in_logs)
 
-    app = FastAPI(title="Roihan Software House API", version=health.APP_VERSION)
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        task = None
+        if settings.worker_enabled:
+            worker = app.state.worker
+            task = asyncio.create_task(worker.run_forever())
+        yield
+        if task is not None:
+            app.state.worker.stop()
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+    app = FastAPI(title="Roihan Software House API", version=health.APP_VERSION, lifespan=lifespan)
     app.state.settings = settings
     app.state.engine = create_db_engine(settings.database_url)
     app.state.session_factory = create_session_factory(app.state.engine)
     app.state.registry = build_registry(settings, providers)
     app.state.gateway = ModelGateway(app.state.registry, settings, app.state.session_factory)
+    app.state.router = ModelRouter(app.state.registry, settings, app.state.session_factory)
+    app.state.ws_tickets = {}
+    if settings.worker_enabled or executors is not None:
+        app.state.worker = TaskWorker(settings, app.state.session_factory, app.state.gateway, app.state.router,
+                                      ProjectStorage(settings.projects_dir), executors)
 
     app.add_middleware(
         CORSMiddleware,
@@ -53,6 +80,8 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
     app.include_router(health.router)
     app.include_router(projects.router)
     app.include_router(ai.router)
+    app.include_router(tasks.router)
+    app.include_router(events.router)
     return app
 
 

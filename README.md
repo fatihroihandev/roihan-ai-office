@@ -6,7 +6,7 @@ Sumber acuan utama: [`docs/MASTER_DEVELOPMENT.md`](docs/MASTER_DEVELOPMENT.md). 
 
 ## Status
 
-Phase 0 sampai 3 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), serta AI Control Center (`/ai`: provider, registri model, uji model lokal, log penggunaan, kebijakan biaya). Fitur agent belum tersedia.
+Phase 0 sampai 4 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst dan Reporter dapat bekerja; Developer, QA, Reviewer, dan Marketing belum tersedia (task-nya diblokir secara jujur).
 
 ## Prasyarat Phase 0
 
@@ -58,6 +58,8 @@ npm run dev
 Buka http://localhost:3000. Token lokal hanya dipakai di sisi server Next.js (proxy `/api/health`) dan tidak dikirim ke browser.
 
 Endpoint backend: `GET /api/health` (publik, minimal). Semua endpoint lain, termasuk `/api/health/details` dan `/api/projects/*`, memerlukan `Authorization: Bearer <APP_LOCAL_TOKEN>`. Dokumentasi interaktif: http://127.0.0.1:8000/docs.
+
+Worker task berjalan di dalam proses backend (matikan dengan `WORKER_ENABLED=false`). Pembaruan real-time memakai WebSocket langsung ke `ws://127.0.0.1:8000`; jika port backend berbeda, set `NEXT_PUBLIC_API_WS_URL` di `apps/web/.env.local`. Tindakan berisiko tinggi tertahan di `pending_approval` sampai Approval Center (Phase 6) tersedia.
 
 AI lokal memerlukan Ollama berjalan dengan model `qwen2.5-coder:7b`. Panggilan API berbayar selalu diblokir. Setelah memperbarui kode, jalankan `pip install -r requirements.txt` dan `alembic upgrade head` lagi, lalu restart backend. File proyek disimpan di `data/projects/<id>/` (`input/` untuk dokumen sumber, `workspace/` untuk hasil kerja).
 

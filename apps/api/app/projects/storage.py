@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 
 from app.projects.uploads import KIND_DIRS, FileKind
@@ -61,6 +62,17 @@ class ProjectStorage:
                 candidate = f"{stem}-{n}{dot}{ext}"
         rel = dest.relative_to(base).as_posix()
         return candidate, rel, hashlib.sha256(data).hexdigest()
+
+    def write_artifact(self, project_id: str, task_id: str, text: str) -> str:
+        """Simpan hasil task ke artifacts/<task_id>.md. Nama dibatasi ke UUID agar tidak bisa keluar folder."""
+        if not re.fullmatch(r"[0-9a-f-]{36}", task_id):
+            raise StorageError("ID task tidak valid")
+        path = self.project_dir(project_id) / "artifacts" / f"{task_id}.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(text, encoding="utf-8")
+        os.replace(tmp, path)
+        return path.relative_to(self.project_dir(project_id)).as_posix()
 
     def resolve_file(self, project_id: str, relative_path: str) -> Path:
         base = self.project_dir(project_id)

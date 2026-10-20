@@ -1507,6 +1507,26 @@ Catatan: provider cloud (OpenAI, Gemini, Anthropic) terdaftar tetapi belum memil
 
 **Exit criteria:** Manager dapat membuat, mengantrekan, dan memonitor task secara konsisten.
 
+**Status (2026-10-20): selesai.**
+
+Yang dibangun:
+- Siklus hidup task dengan tabel transisi yang divalidasi backend (Bagian 12.1), `task_events` append-only dengan nomor urut `seq`, `task_attempts`, `task_dependencies`, dan `routing_decisions`.
+- Antrean berbasis database dengan worker satu-task-per-waktu (`max_concurrent_tasks`), prioritas, dependensi (task dependen otomatis diblokir jika dependensinya gagal, dibatalkan, terinterupsi, atau terblokir, dan dibuka kembali saat pulih), retry otomatis dengan backoff (maks. 2 retry per task, retry manual memberi jatah baru), dan recovery saat start (`running` menjadi `interrupted`, lalu dipulihkan jika executor idempoten dan jatah retry masih ada).
+- Model Router (Bagian 9.4): difficulty score, risiko deterministik berdasarkan jenis tindakan, pemeriksaan kemampuan dan konteks, kebijakan anggaran, preferensi model, dan pencatatan keputusan.
+- Manager (`planning`): menyusun draft task beserta dependensi dari tujuan dan dokumen proyek. Keluaran dibatasi skema JSON (structured output Ollama) dan divalidasi (role, action, dependensi hanya ke task sebelumnya sehingga tidak ada siklus). Draft tidak diantrekan otomatis; manusia yang meninjau.
+- Executor untuk Analyst dan Reporter (dokumen teks tersimpan sebagai artifact). Role lain (Developer, QA, Reviewer, Marketing) **sengaja belum ada executor**: task-nya diblokir dengan alasan `executor_not_available`, bukan disimulasikan.
+- Status agent diturunkan dari status task (`/api/agents`), bukan disimpan terpisah, sehingga tidak bisa menyimpang dari kondisi nyata.
+- Event real-time lewat WebSocket (`/api/ws`) dan REST catch-up (`/api/events?since=`); halaman `/tasks` (papan task, status agent, form rencana Manager) dan `/tasks/[id]` (percobaan, routing, riwayat kejadian, hasil).
+
+Keputusan implementasi:
+- Browser tidak dapat mengirim header Authorization pada WebSocket dan token lokal tidak boleh masuk ke browser. Klien meminta tiket sekali-pakai (berlaku 30 detik) lewat proxy server, lalu terhubung langsung ke backend; backend juga memeriksa header Origin. Setelah reconnect, frontend memuat ulang state dari API.
+- Worker berjalan di dalam proses API (dimulai oleh lifespan). Antrean memakai klaim bersyarat di database sehingga worker dapat dipindah ke proses terpisah tanpa mengubah antrean.
+- Tabel `agents` dan `departments` tidak dibuat; role didefinisikan di kode dan status dihitung dari task.
+- Task bertindakan risiko tinggi/kritis masuk `pending_approval` dan tidak akan dijalankan (router juga menolaknya) sampai Approval Center (Phase 6) tersedia.
+- `completed` pada task teks hanya berarti keluaran lengkap (tidak kosong dan tidak terpotong). Acceptance criteria belum diperiksa otomatis; itu pekerjaan Reviewer (Phase 6). Hal ini ditampilkan di UI.
+
+Temuan uji langsung dengan `qwen2.5-coder:7b` di CPU: rencana 6 task selesai sekitar 135 detik dan dokumen analisis sekitar 100 detik (6 sampai 7 token/detik). Tanpa batasan skema, model mengarang role yang tidak ada (`designer`), sehingga structured output diperlukan. Kualitas rencana model 7B masih perlu ditinjau manusia (misalnya salah memilih role/aksi), karena itu draft tidak diantrekan otomatis. Uji langsung juga menemukan dan memperbaiki dua bug: dependen dari task terblokir menggantung di antrean, dan status agent tetap `error` setelah keberhasilan yang lebih baru.
+
 ## Phase 5 — Developer, QA & Workspace
 
 - Implementasikan Developer Agent.
