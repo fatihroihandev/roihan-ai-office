@@ -214,10 +214,33 @@ def build_project_report(session: Session, project_id: str, task_ids: list[str] 
     return "\n".join(L).strip() + "\n", facts
 
 
-_NUM = re.compile(r"\d+")
+# Angka mandiri saja: tidak ikut angka di dalam UUID, hash commit, atau tanggal (bagian yang dipisahkan huruf atau tanda hubung)
+_NUM = re.compile(r"(?<![\w.-])\d+(?![\w-])")
 
 
-def numbers_grounded(narrative: str, body: str) -> bool:
-    """Setiap angka pada narasi model harus muncul pada fakta; jika tidak, narasi dibuang."""
-    known = set(_NUM.findall(body))
-    return all(n in known for n in _NUM.findall(narrative))
+def fact_numbers(facts_list: list[dict]) -> set[str]:
+    """Angka yang boleh muncul pada ringkasan model: hanya hitungan terstruktur dari database.
+
+    Sengaja BUKAN seluruh teks laporan: teks itu memuat UUID, hash, dan jam yang kebetulan mengandung angka kecil
+    apa pun, sehingga karangan model dapat lolos.
+    """
+    nums: set[int] = {len(facts_list)}
+    by_status: dict[str, int] = {}
+    for f in facts_list:
+        t = f["task"]
+        by_status[t["status"]] = by_status.get(t["status"], 0) + 1
+        nums |= {t["attempt_count"], len(f["files"]), len(f["executions"]), len(f["test_runs"]), len(f["reviews"]),
+                 len(f["approvals"]), len(f["acceptance_criteria"]) if "acceptance_criteria" in f else len(t["acceptance_criteria"])}
+        for r in f["test_runs"]:
+            nums |= {r["total"], r["passed"], r["failed"], r["errors"], r["skipped"]}
+        for r in f["reviews"]:
+            nums |= {len(r["criteria"]), len(r["findings"]), len(r["unresolved_risks"])}
+        u = f["usage"]
+        nums |= {u["calls"], u["prompt_tokens"], u["completion_tokens"]}
+    nums |= set(by_status.values())
+    return {str(n) for n in nums}
+
+
+def numbers_grounded(narrative: str, allowed: set[str]) -> bool:
+    """Setiap angka mandiri pada narasi model harus ada di himpunan fakta; jika tidak, narasi dibuang."""
+    return all(n in allowed for n in _NUM.findall(narrative))

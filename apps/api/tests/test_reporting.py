@@ -6,7 +6,7 @@ from sqlalchemy import select
 from app.db.models import Task
 from app.providers.base import ProviderError, ProviderErrorKind as K
 from app.reporting.builder import (
-    build_project_report, build_task_report, gather_facts, next_steps, numbers_grounded, project_summary, unresolved_issues,
+    build_project_report, build_task_report, fact_numbers, gather_facts, next_steps, numbers_grounded, project_summary, unresolved_issues,
 )
 from app.sandbox.base import ExecResult
 from tests.fakes import FakeProvider, FakeSandbox, pytest_fail, pytest_ok
@@ -115,11 +115,39 @@ def test_next_steps_follow_the_state():
 
 
 def test_numbers_must_be_grounded_in_the_facts():
-    body = "Total 3 task: 2 completed, 1 failed. Pengujian 5 lulus."
-    assert numbers_grounded("Dari 3 task, 2 selesai dan 1 gagal; 5 tes lulus.", body)
-    assert numbers_grounded("Tidak ada angka di sini.", body)
-    assert not numbers_grounded("Dari 3 task, 99 berhasil.", body)
-    assert not numbers_grounded("Selesai dalam 7 hari.", body)
+    allowed = {"3", "2", "1", "5"}
+    assert numbers_grounded("Dari 3 task, 2 selesai dan 1 gagal; 5 tes lulus.", allowed)
+    assert numbers_grounded("Tidak ada angka di sini.", allowed)
+    assert not numbers_grounded("Dari 3 task, 99 berhasil.", allowed)
+    assert not numbers_grounded("Selesai dalam 7 hari.", allowed)
+
+
+def test_digits_inside_ids_hashes_and_dates_never_ground_a_number():
+    """Regresi: angka dicocokkan dengan seluruh teks laporan sehingga '42' atau '9' kebetulan lolos dari UUID/hash/jam."""
+    assert not numbers_grounded("Sebanyak 42 task selesai dalam 9 jam.", {"1"})   # himpunan fakta tidak memuat 42 maupun 9
+    assert numbers_grounded("Satu task selesai.", {"1"})
+    from app.reporting.builder import _NUM
+    # Potongan UUID, hash, dan tanggal yang menempel pada huruf atau tanda hubung bukan angka mandiri
+    assert _NUM.findall("task 3d4291ab-4421-9f3e-1111-424242424242 commit de29eb1 tahun 2026-10-20 selesai") == []
+
+
+def test_fact_numbers_come_only_from_structured_counts(migrated_db, tmp_path):
+    env, pid, tid = finished_dev(migrated_db, tmp_path)
+    with env.sf() as s:
+        facts = [gather_facts(s, tid)]
+    allowed = fact_numbers(facts)
+    assert {"1", "2", "0"} <= allowed                           # 1 task, 2 tes lulus, 0 gagal
+    assert not ({"42", "99", "123"} & allowed)                  # angka acak tidak ikut
+    assert {"5", "7"} <= allowed                                # token prompt/jawaban (5 dan 7 dari provider uji) adalah fakta sah
+
+
+@pytest.mark.parametrize("seed", range(25))
+def test_invented_summary_is_always_discarded_regardless_of_random_ids(migrated_db, tmp_path, seed):
+    """Uuid, hash, dan jam berbeda pada setiap eksekusi; karangan model tidak boleh lolos pada satu pun."""
+    env, pid, dev = reporter_env(migrated_db, tmp_path, [gen(("calc.py", CALC)), "Sebanyak 42 task selesai dalam 9 jam."])
+    rt = report_task(env, pid, dev)
+    drain(env)
+    assert get(env, rt).verification["summary_source"] == "deterministik"
 
 
 def test_project_report_summarises_all_tasks(migrated_db, tmp_path):

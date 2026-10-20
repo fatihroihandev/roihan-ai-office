@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.db.models import Project, TaskDependency
 from app.providers.base import GatewayBlocked, ProviderError
-from app.reporting.builder import build_project_report, numbers_grounded, project_summary
+from app.reporting.builder import build_project_report, fact_numbers, numbers_grounded, project_summary
 from app.routing.router import RoutingError
 from app.tasks.executors import ExecutionContext, Executor, ExecutorOutcome
 
@@ -38,7 +38,7 @@ class ReporterExecutor:
         try:
             res = await ctx.generate(NARRATIVE_SYSTEM, f"FAKTA:\n{body[:5000]}\n\nTulis ringkasan eksekutif.", max_tokens=300, temperature=0.1)
             text = res.text.strip()
-            if text and not res.truncated and numbers_grounded(text, body):
+            if text and not res.truncated and numbers_grounded(text, fact_numbers(facts)):
                 summary, source = text, "model (angka divalidasi terhadap fakta)"
         except (ProviderError, RoutingError, GatewayBlocked) as e:
             logger.info("narasi model dilewati: %s", e)  # laporan tetap dibuat dari fakta
