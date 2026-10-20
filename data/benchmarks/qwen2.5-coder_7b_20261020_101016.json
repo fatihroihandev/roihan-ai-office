@@ -1,0 +1,256 @@
+{
+  "model": "qwen2.5-coder:7b",
+  "started_at": "2026-10-20T03:04:20.026877+00:00",
+  "options": {
+    "temperature": 0.2,
+    "num_ctx": 4096
+  },
+  "ollama_models": [
+    "qwen2.5-coder:7b"
+  ],
+  "json": {
+    "passed": 20,
+    "total": 20,
+    "rate": 1.0,
+    "runs": [
+      {
+        "id": "Buat halaman login dengan vali",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Buat halaman login dengan validasi email dan password\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 4,\n  \"tags\": [\"UI/UX\", \"HTML\", \"CSS\", \"JavaScript\"]\n}\n```"
+      },
+      {
+        "id": "Perbaiki bug tombol checkout t",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Perbaiki bug tombol checkout tidak merespons di Safari\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 3,\n  \"tags\": [\"bug\", \"checkout\", \"Safari\"]\n}\n```"
+      },
+      {
+        "id": "Migrasi database pelanggan dar",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Migrasi database pelanggan dari MySQL ke PostgreSQL\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 40,\n  \"tags\": [\"database\", \"migration\", \"MySQL\", \"PostgreSQL\"]\n}\n```"
+      },
+      {
+        "id": "Tambahkan fitur ekspor laporan",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Tambahkan fitur ekspor laporan penjualan ke PDF\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 5,\n  \"tags\": [\"feature_request\", \"PDF\", \"sales_report\", \"export_functionality\"]\n}\n```"
+      },
+      {
+        "id": "Optimalkan query dashboard yan",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Optimalkan query dashboard yang lambat lebih dari 5 detik\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 3,\n  \"tags\": [\"performance\", \"dashboard\", \"query optimization\"]\n}\n```"
+      },
+      {
+        "id": "Siapkan pipeline CI untuk menj",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Siapkan pipeline CI untuk menjalankan unit test otomatis\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 2,\n  \"tags\": [\"pipeline\", \"CI\", \"unit test\", \"otomatis\"]\n}\n```"
+      },
+      {
+        "id": "Tulis dokumentasi API untuk mo",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Tulis dokumentasi API untuk modul pembayaran\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 5,\n  \"tags\": [\"API\", \"Dokumentasi\", \"Pembayaran\", \"Modul\"]\n}\n```"
+      },
+      {
+        "id": "Implementasikan notifikasi ema",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Implementasikan notifikasi email saat pesanan dikirim\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 5,\n  \"tags\": [\"email\", \"notification\", \"order\", \"implementation\"]\n}\n```"
+      },
+      {
+        "id": "Ganti library autentikasi lama",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Ganti library autentikasi lama yang memiliki celah keamanan\",\n  \"priority\": \"high\",\n  \"estimated_hours\": 5,\n  \"tags\": [\"security\", \"authentication\", \"library update\"]\n}\n```"
+      },
+      {
+        "id": "Rancang skema database untuk m",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Rancang skema database untuk modul inventaris\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 10,\n  \"tags\": [\"database\", \"inventaris\", \"rancangan\"]\n}\n```"
+      },
+      {
+        "id": "Buat komponen tabel dengan sor",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Buat komponen tabel dengan sorting dan pagination\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 5,\n  \"tags\": [\"UI/UX\", \"React\", \"JavaScript\"]\n}\n```"
+      },
+      {
+        "id": "Tambahkan dark mode pada aplik",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Tambahkan dark mode pada aplikasi web\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 5,\n  \"tags\": [\"UI/UX\", \"frontend\", \"web development\"]\n}\n```"
+      },
+      {
+        "id": "Perbaiki memory leak pada work",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Perbaiki memory leak pada worker pengolah gambar\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 8,\n  \"tags\": [\"bug\", \"performance\", \"image processing\", \"memory management\"]\n}\n```"
+      },
+      {
+        "id": "Buat endpoint REST untuk manaj",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Buat endpoint REST untuk manajemen pengguna\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 5,\n  \"tags\": [\"REST\", \"API\", \"Pengguna\"]\n}\n```"
+      },
+      {
+        "id": "Siapkan backup database harian",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Siapkan backup database harian otomatis\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 2,\n  \"tags\": [\"backup\", \"database\", \"automation\", \"daily\"]\n}\n```"
+      },
+      {
+        "id": "Tambahkan rate limiting pada A",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Tambahkan rate limiting pada API publik\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 5,\n  \"tags\": [\"security\", \"api\", \"rate limiting\"]\n}\n```"
+      },
+      {
+        "id": "Buat landing page produk baru",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Buat landing page produk baru\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 5,\n  \"tags\": [\"web design\", \"landing page\", \"product launch\"]\n}\n```"
+      },
+      {
+        "id": "Lakukan code review untuk modu",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Lakukan code review untuk modul keranjang belanja\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 2,\n  \"tags\": [\"code review\", \"keranjang belanja\", \"development\"]\n}\n```"
+      },
+      {
+        "id": "Tulis test end-to-end untuk al",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Tulis test end-to-end untuk alur pendaftaran\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 8,\n  \"tags\": [\"testing\", \"end-to-end\", \"registration\"]\n}\n```"
+      },
+      {
+        "id": "Konfigurasi logging terstruktu",
+        "passed": true,
+        "output": "```json\n{\n  \"title\": \"Konfigurasi logging terstruktur untuk backend\",\n  \"priority\": \"medium\",\n  \"estimated_hours\": 8,\n  \"tags\": [\"logging\", \"backend\", \"performance\", \"security\"]\n}\n```"
+      }
+    ]
+  },
+  "codegen": {
+    "passed": 9,
+    "total": 10,
+    "rate": 0.9,
+    "runs": [
+      {
+        "id": "is_palindrome",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef is_palindrome(s):\n    cleaned = ''.join(c.lower() for c in s if c.isalnum())\n    return cleaned == cleaned[::-1]\n```"
+      },
+      {
+        "id": "fizzbuzz",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef fizzbuzz(n):\n    return ['Fizz' * (not i % 3) + 'Buzz' * (not i % 5) or str(i) for i in range(1, n + 1)]\n```"
+      },
+      {
+        "id": "flatten",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef flatten(lst):\n    return [item for sublist in lst for item in flatten(sublist)] if isinstance(lst, list) else [lst]\n```"
+      },
+      {
+        "id": "word_count",
+        "passed": false,
+        "note": "AssertionError",
+        "output": "```python\ndef word_count(text):\n    words = text.lower().split()\n    return {'word_count': len(words), 'letter_count': sum(len(word) for word in words), 'space_count': text.count(' ')}\n```"
+      },
+      {
+        "id": "merge_sorted",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef merge_sorted(list1, list2):\n    merged = []\n    i, j = 0, 0\n    while i < len(list1) and j < len(list2):\n        if list1[i] < list2[j]:\n            merged.append(list1[i])\n            i += 1\n        else:\n            merged.append(list2[j])\n            j += 1\n    while i < len(list1):\n        merged.append(list1[i])\n        i += 1\n    while j < len(list2):\n        merged.append(list2[j])\n        j += 1\n    return merged\n```"
+      },
+      {
+        "id": "fibonacci",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef fibonacci(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\n```"
+      },
+      {
+        "id": "roman_to_int",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef roman_to_int(s):\n    roman_dict = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}\n    total = 0\n    prev_value = 0\n    for char in reversed(s):\n        value = roman_dict[char]\n        if value < prev_value:\n            total -= value\n        else:\n            total += value\n        prev_value = value\n    return total\n```"
+      },
+      {
+        "id": "group_anagrams",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef group_anagrams(words):\n    anagrams = {}\n    for word in words:\n        sorted_word = ''.join(sorted(word))\n        if sorted_word in anagrams:\n            anagrams[sorted_word].append(word)\n        else:\n            anagrams[sorted_word] = [word]\n    return sorted([sorted(group) for group in anagrams.values()])\n```"
+      },
+      {
+        "id": "is_valid_parentheses",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef is_valid_parentheses(s: str) -> bool:\n    stack = []\n    mapping = {\")\": \"(\", \"}\": \"{\", \"]\": \"[\"}\n    for char in s:\n        if char in mapping.values():\n            stack.append(char)\n        elif char in mapping:\n            if not stack or mapping[char] != stack.pop():\n                return False\n        else:\n            return False\n    return not stack\n```"
+      },
+      {
+        "id": "chunk",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef chunk(lst, size):\n    return [lst[i:i+size] for i in range(0, len(lst), size)]\n```"
+      }
+    ]
+  },
+  "bugfix": {
+    "passed": 10,
+    "total": 10,
+    "rate": 1.0,
+    "runs": [
+      {
+        "id": "average",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef average(nums):\n    return sum(nums) / len(nums) if nums else 0\n```"
+      },
+      {
+        "id": "max_of",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef max_of(lst):\n    if not lst:\n        return None\n    m = lst[0]\n    for x in lst:\n        if x > m:\n            m = x\n    return m\n```"
+      },
+      {
+        "id": "count_vowels",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef count_vowels(s):\n    return sum(1 for c in s.lower() if c in 'aeiou')\n```"
+      },
+      {
+        "id": "factorial",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef factorial(n):\n    if n == 1:\n        return 1\n    return n * factorial(n - 1)\n```"
+      },
+      {
+        "id": "binary_search",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef binary_search(a, t):\n    lo, hi = 0, len(a) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if a[mid] == t:\n            return mid\n        if a[mid] < t:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1\n```"
+      },
+      {
+        "id": "remove_duplicates",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef remove_duplicates(lst):\n    return list(dict.fromkeys(lst))\n```"
+      },
+      {
+        "id": "is_even",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef is_even(n):\n    return n % 2 == 0\n```"
+      },
+      {
+        "id": "clamp",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef clamp(x, lo, hi):\n    return min(hi, max(lo, x))\n```"
+      },
+      {
+        "id": "second_largest",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef second_largest(nums):\n    s = sorted(set(nums))\n    return s[-2] if len(s) > 1 else None\n```"
+      },
+      {
+        "id": "reverse_words",
+        "passed": true,
+        "note": "",
+        "output": "```python\ndef reverse_words(s):\n    return ' '.join(word[::-1] for word in s.split(' '))[::-1]\n```"
+      }
+    ]
+  },
+  "speed": {
+    "avg_tok_per_s": 6.61
+  },
+  "finished_at": "2026-10-20T03:10:16.281334+00:00"
+}
