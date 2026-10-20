@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     ollama_enabled: bool = True
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_default_model: str = "qwen2.5-coder:7b"
+    ollama_timeout_s: int = 300
+    ai_max_tokens_cap: int = 2048
+    ai_max_prompt_chars: int = 20000
 
     openai_enabled: bool = False
     openai_api_key: str = ""
@@ -59,6 +62,8 @@ class Settings(BaseSettings):
             raise ValueError("BUDGET_ALLOW_PAID_CALLS=true memerlukan BUDGET_MONTHLY_LIMIT > 0")
         if self.max_concurrent_tasks < 1 or self.max_retries_per_task < 0:
             raise ValueError("MAX_CONCURRENT_TASKS >= 1 dan MAX_RETRIES_PER_TASK >= 0")
+        if self.ollama_timeout_s < 1 or self.ai_max_tokens_cap < 1 or self.ai_max_prompt_chars < 1:
+            raise ValueError("OLLAMA_TIMEOUT_S, AI_MAX_TOKENS_CAP, AI_MAX_PROMPT_CHARS harus >= 1")
         if self.max_upload_mb < 1:
             raise ValueError("MAX_UPLOAD_MB harus >= 1")
         return self

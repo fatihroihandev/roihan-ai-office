@@ -6,7 +6,7 @@ Sumber acuan utama: [`docs/MASTER_DEVELOPMENT.md`](docs/MASTER_DEVELOPMENT.md). 
 
 ## Status
 
-Phase 0, 1, dan 2 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, serta manajemen proyek dan file (halaman `/projects`). Fitur agent belum tersedia.
+Phase 0 sampai 3 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), serta AI Control Center (`/ai`: provider, registri model, uji model lokal, log penggunaan, kebijakan biaya). Fitur agent belum tersedia.
 
 ## Prasyarat Phase 0
 
@@ -59,7 +59,7 @@ Buka http://localhost:3000. Token lokal hanya dipakai di sisi server Next.js (pr
 
 Endpoint backend: `GET /api/health` (publik, minimal). Semua endpoint lain, termasuk `/api/health/details` dan `/api/projects/*`, memerlukan `Authorization: Bearer <APP_LOCAL_TOKEN>`. Dokumentasi interaktif: http://127.0.0.1:8000/docs.
 
-Setelah memperbarui kode, jalankan `alembic upgrade head` lagi dan restart backend. File proyek disimpan di `data/projects/<id>/` (`input/` untuk dokumen sumber, `workspace/` untuk hasil kerja).
+AI lokal memerlukan Ollama berjalan dengan model `qwen2.5-coder:7b`. Panggilan API berbayar selalu diblokir. Setelah memperbarui kode, jalankan `pip install -r requirements.txt` dan `alembic upgrade head` lagi, lalu restart backend. File proyek disimpan di `data/projects/<id>/` (`input/` untuk dokumen sumber, `workspace/` untuk hasil kerja).
 
 ## Tes
 

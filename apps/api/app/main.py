@@ -4,15 +4,18 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import health, projects
+from app.api import ai, health, projects
 from app.config import Settings, get_settings
 from app.db.session import create_db_engine, create_session_factory
 from app.logging_config import correlation_id, new_correlation_id, setup_logging
+from app.providers.base import ModelProvider
+from app.providers.gateway import ModelGateway
+from app.providers.registry import build_registry
 
 logger = logging.getLogger("roihan.api")
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, providers: dict[str, ModelProvider] | None = None) -> FastAPI:
     settings = settings or get_settings()
     setup_logging(settings.secret_values, settings.redact_secrets_in_logs)
 
@@ -20,6 +23,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.engine = create_db_engine(settings.database_url)
     app.state.session_factory = create_session_factory(app.state.engine)
+    app.state.registry = build_registry(settings, providers)
+    app.state.gateway = ModelGateway(app.state.registry, settings, app.state.session_factory)
 
     app.add_middleware(
         CORSMiddleware,
@@ -47,6 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(projects.router)
+    app.include_router(ai.router)
     return app
 
 

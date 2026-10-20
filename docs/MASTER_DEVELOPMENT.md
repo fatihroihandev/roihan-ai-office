@@ -1492,6 +1492,10 @@ Belum termasuk (sengaja ditunda): intake source code yang sudah ada (zip/repo) d
 
 **Exit criteria:** task AI lokal dapat dijalankan dengan error handling yang terukur.
 
+**Status (2026-10-20): selesai.** Kontrak `ModelProvider` dan Ollama adapter (health, daftar model, capabilities, generate, cancel; error dinormalisasi menjadi `unavailable`/`timeout`/`model_not_found`/`invalid_request`/`upstream_error`/`cancelled` beserta flag `retryable`), Model Capability Registry (nilai yang tidak dilaporkan provider disimpan sebagai `NULL`, bukan diasumsikan; hasil benchmark menempel otomatis), `ModelGateway` sebagai satu-satunya jalur pemanggilan model (menegakkan larangan API berbayar, antrean sesuai `max_concurrent_tasks`, dan mencatat setiap pemanggilan ke `model_usage` tanpa menyimpan isi prompt), endpoint `/api/providers`, `/api/models`, `/api/ai/generate`, `/api/usage`, `/api/budgets`, serta halaman `/ai`. Tes: 88 backend dan 7 frontend lolos, ditambah uji langsung ke Ollama (generate, model salah, API berbayar ditolak, cancel).
+
+Catatan: provider cloud (OpenAI, Gemini, Anthropic) terdaftar tetapi belum memiliki adapter, sehingga selalu diblokir; kalaupun adapter dibuat, panggilan berbayar tetap ditahan sampai Approval Center (Phase 6) tersedia. Streaming belum diimplementasikan, sehingga `supports_streaming` dan `supports_structured` bernilai `NULL`. Pemilihan model otomatis (Model Router, Bagian 9) dikerjakan di Phase 4.
+
 ## Phase 4 — Task Engine & Manager
 
 - Implementasikan task lifecycle.

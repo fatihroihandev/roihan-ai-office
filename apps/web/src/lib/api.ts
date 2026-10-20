@@ -39,10 +39,10 @@ function detailMessage(body: unknown): string | null {
   return null;
 }
 
-async function request<T>(path: string, init?: RequestInit, fallback = "Terjadi kesalahan"): Promise<T> {
+export async function apiFetch<T>(url: string, init?: RequestInit, fallback = "Terjadi kesalahan"): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`/api/projects${path}`, { cache: "no-store", ...init });
+    res = await fetch(url, { cache: "no-store", ...init });
   } catch {
     throw new ApiError(fallback, 0);
   }
@@ -52,6 +52,8 @@ async function request<T>(path: string, init?: RequestInit, fallback = "Terjadi 
   }
   return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
 }
+
+const request = <T,>(path: string, init?: RequestInit) => apiFetch<T>(`/api/projects${path}`, init);
 
 const json = (method: string, body: unknown): RequestInit => ({
   method,
