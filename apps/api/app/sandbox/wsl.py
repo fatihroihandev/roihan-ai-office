@@ -158,7 +158,13 @@ class WslSandbox(Sandbox):
         self._lock = asyncio.Lock()
 
     def _argv(self, script: str) -> list[str]:
-        return [self._wsl, "-d", self.distro, "-u", "root", "--exec", "sh", "-c", script]
+        """wsl.exe mem-parse ulang baris perintah (tanda kutip ganda dan baris baru mudah rusak). Karena itu skrip
+        dikirim sebagai base64 (hanya [A-Za-z0-9+/=]) dan dijalankan dengan `exec sh`, sehingga stdin tetap utuh
+        untuk arsip workspace."""
+        # Berkas skrip sementara menghapus dirinya sendiri pada baris pertama (berlaku untuk semua skrip, termasuk probe)
+        b64 = base64.b64encode(('rm -f "$0"\n' + script).encode()).decode()
+        loader = f"f=$(mktemp);printf %s {b64}|base64 -d>$f;exec sh $f"
+        return [self._wsl, "-d", self.distro, "-u", "root", "--exec", "sh", "-c", loader]
 
     async def _probe(self, script: str, timeout: float = 30) -> RawResult:
         return await self._runner(self._argv(script), None, timeout)
@@ -169,9 +175,6 @@ class WslSandbox(Sandbox):
             raw = await self._probe(
                 f"id -u {SANDBOX_USER} >/dev/null 2>&1 || {{ echo NO_USER; exit 3; }}; "
                 + "; ".join(f"command -v {t} >/dev/null 2>&1 || {{ echo MISSING:{t}; exit 4; }}" for t in REQUIRED_TOOLS)
-                # Kode di sandbox dapat membuat berkas PE sendiri; interop WSL akan menjalankannya sebagai proses Windows.
-                # Pemeriksaan ini harus di luar sandbox: /proc baru di dalam namespace PID tidak memuat binfmt_misc.
-                + "; ls /proc/sys/fs/binfmt_misc 2>/dev/null | grep -qi wslinterop && { echo INTEROP_ON; exit 5; }"
                 # Drive Windows (drvfs/9p) dapat dibaca dan ditulis oleh user Linux mana pun bila ter-mount.
                 + "; grep -qE ' /mnt/[a-z] ' /proc/mounts && { echo AUTOMOUNT_ON; exit 6; }"
                 + "; echo OK")
@@ -185,9 +188,6 @@ class WslSandbox(Sandbox):
         if "NO_USER" in text:
             return SandboxStatus(False, self.name, "sandbox_user_missing",
                                  f"User '{SANDBOX_USER}' belum ada di distro {self.distro}. Jalankan scripts/setup_sandbox_wsl.ps1")
-        if "INTEROP_ON" in text:
-            return SandboxStatus(False, self.name, "interop_enabled",
-                                 f"Interop Windows aktif di distro {self.distro}; jalankan scripts/setup_sandbox_wsl.ps1")
         if "AUTOMOUNT_ON" in text:
             return SandboxStatus(False, self.name, "automount_enabled",
                                  f"Drive Windows ter-mount di distro {self.distro}; jalankan scripts/setup_sandbox_wsl.ps1")

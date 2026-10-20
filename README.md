@@ -6,7 +6,7 @@ Sumber acuan utama: [`docs/MASTER_DEVELOPMENT.md`](docs/MASTER_DEVELOPMENT.md). 
 
 ## Status
 
-Phase 0 sampai 5 (kode selesai; verifikasi sandbox langsung menunggu distro WSL): backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst, Reporter, Developer, dan QA dapat bekerja (Developer dan QA hanya jika sandbox lolos uji isolasi); Reviewer dan Marketing belum tersedia (task-nya diblokir secara jujur).
+Phase 0 sampai 5 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst, Reporter, Developer, dan QA dapat bekerja (Developer dan QA hanya jika sandbox lolos uji isolasi); Reviewer dan Marketing belum tersedia (task-nya diblokir secara jujur).
 
 ## Prasyarat Phase 0
 

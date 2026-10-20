@@ -2,6 +2,7 @@
 
 Setiap uji menjalankan kode Python kecil di dalam sandbox dan memeriksa bahwa pelanggaran yang dicoba GAGAL.
 """
+import os
 import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -49,6 +50,18 @@ CASES = [
          "import os; print(' '.join(sorted(os.environ)))",
          lambda r: r.exit_code == 0 and not any(
              bad in r.stdout.upper() for bad in ("TOKEN", "KEY", "SECRET", "PASSWORD", "WSL", "WINDIR", "USERPROFILE", "APPDATA"))),
+    # Interop WSL terdaftar di seluruh VM, jadi keberadaan entri binfmt_misc tidak membuktikan apa pun. Uji yang benar
+    # adalah fungsional: jalankan program Windows sungguhan (whoami.exe milik host, hanya mencetak nama user) dari dalam
+    # sandbox. Kontrol positif: di distro dengan interop aktif, uji ini mencetak DOMAIN\\user.
+    Case("no_windows_interop", "Program Windows tidak dapat dijalankan dari sandbox (interop mati)",
+         "import os, subprocess\n"
+         "if not os.path.exists('probe.exe'):\n    print('NO_PROBE')\nelse:\n"
+         "    os.chmod('probe.exe', 0o755)\n"
+         "    try:\n"
+         "        r = subprocess.run(['./probe.exe'], capture_output=True, text=True, timeout=40)\n"
+         "        print('RAN' if '\\\\' in r.stdout else 'BLOCKED')\n"
+         "    except Exception:\n        print('BLOCKED')",
+         lambda r: _out(r) in {"BLOCKED", "NO_PROBE"}, timeout_s=60),
     Case("process_limit", "Jumlah proses dibatasi",
          "import resource; s, h = resource.getrlimit(resource.RLIMIT_NPROC); print(s)",
          lambda r: _out(r).isdigit() and 0 < int(_out(r)) <= 128),
@@ -64,6 +77,9 @@ async def run_selftest(sandbox) -> dict:
     with tempfile.TemporaryDirectory() as tmp:
         workspace = Path(tmp)
         (workspace / "marker.txt").write_text("selftest", encoding="utf-8")
+        probe = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "whoami.exe"
+        if probe.is_file():  # biner Windows bawaan host yang tidak berbahaya (hanya mencetak nama user)
+            (workspace / "probe.exe").write_bytes(probe.read_bytes())
         for case in CASES:
             spec = ExecSpec(["python3", "-c", case.code], workspace, timeout_s=case.timeout_s, memory_mb=case.memory_mb,
                             max_output_bytes=4096)

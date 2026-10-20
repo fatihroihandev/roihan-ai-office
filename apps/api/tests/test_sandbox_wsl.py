@@ -1,13 +1,14 @@
 import asyncio
 import base64
 import io
+import re
 import shlex
 import tarfile
 from pathlib import Path
 
 import pytest
 
-from app.sandbox.base import DisabledSandbox, ExecSpec, SandboxUnavailable
+from app.sandbox.base import DisabledSandbox, ExecResult, ExecSpec, SandboxUnavailable
 from app.sandbox.factory import build_sandbox
 from app.sandbox.selftest import CASES, run_selftest
 from app.sandbox.wsl import (
@@ -18,6 +19,13 @@ from app.workspace.files import WorkspaceFiles
 
 def run(coro):
     return asyncio.run(coro)
+
+
+def decode_script(argv: list[str]) -> str:
+    """Skrip dikirim ke wsl.exe sebagai base64; tes membacanya kembali dari loader."""
+    m = re.search(r"printf %s ([A-Za-z0-9+/=]+)\|base64 -d", argv[-1])
+    assert m, argv[-1]
+    return base64.b64decode(m.group(1)).decode()
 
 
 def spec(tmp_path, argv=None, **kw):
@@ -124,7 +132,7 @@ class Runner:
 
     async def __call__(self, argv, stdin, timeout):
         self.calls.append((argv, stdin, timeout))
-        script = argv[-1]
+        script = decode_script(argv)
         if "id -u sandbox" in script:
             return RawResult(self.probe_rc, self.probe.encode(), b"")
         if "while True" in script:                       # loop tak berhenti: dimatikan oleh batas waktu
@@ -135,12 +143,13 @@ class Runner:
         good = {
             "os.getuid": "1000", "socket.create_connection": "BLOCKED", "/mnt/c/Windows": "HIDDEN",
             "/etc/rsh_probe": "DENIED,DENIED,DENIED", "bytearray": "LIMITED", "os.environ": "HOME LANG PATH",
-            "RLIMIT_NPROC": "64", "/proc": "2",
+            "RLIMIT_NPROC": "64", "/proc": "2", "probe.exe": "BLOCKED",
         }
         for marker, answer in good.items():
             if marker in script:
                 if self.fail_case and self.fail_case in script:
-                    return {"os.getuid": "0", "socket.create_connection": "CONNECTED", "/mnt/c/Windows": "VISIBLE"}.get(marker, "BAD")
+                    return {"os.getuid": "0", "socket.create_connection": "CONNECTED", "/mnt/c/Windows": "VISIBLE",
+                            "probe.exe": "RAN"}.get(marker, "BAD")
                 return answer
         return ""   # while True: pass
 
@@ -156,6 +165,12 @@ def test_distro_name_is_validated():
     assert WslSandbox("Ubuntu-24.04").distro == "Ubuntu-24.04"
 
 
+def test_every_script_including_probes_removes_its_own_temp_file():
+    r = Runner()
+    run(sandbox(r).basic_checks())
+    assert decode_script(r.calls[0][0]).startswith('rm -f "$0"\n')
+
+
 def test_commands_target_the_dedicated_distro_via_exec(tmp_path):
     r = Runner()
     sb = sandbox(r)
@@ -164,9 +179,21 @@ def test_commands_target_the_dedicated_distro_via_exec(tmp_path):
     assert argv[:7] == ["wsl.exe", "-d", "Ubuntu", "-u", "root", "--exec", "sh"] and argv[7] == "-c"
 
 
+def test_script_transport_survives_wsl_exe_command_line_parsing(tmp_path):
+    """wsl.exe mem-parse ulang baris perintah: tanda kutip ganda dan baris baru merusak skrip. Loader tidak boleh memuatnya."""
+    sb = sandbox()
+    script = build_script(spec(tmp_path, argv=["python3", "-c", "print('a \"b\"')\nprint($HOME)"], collect_file=".junit.xml"))
+    assert '"' in script and "\n" in script                    # skrip aslinya memang berisi keduanya
+    argv = sb._argv(script)
+    assert '"' not in argv[-1] and "\n" not in argv[-1] and "\\" not in argv[-1]
+    assert decode_script(argv) == 'rm -f "$0"\n' + script          # tidak ada yang hilang saat transit
+    assert "exec sh" in argv[-1]                                 # stdin tetap utuh untuk arsip workspace
+    assert decode_script(argv).startswith('rm -f "$0"')          # berkas skrip sementara menghapus dirinya
+
+
 @pytest.mark.parametrize("probe,rc,reason", [
     ("NO_USER", 3, "sandbox_user_missing"), ("MISSING:unshare", 4, "sandbox_tool_missing"),
-    ("INTEROP_ON", 5, "interop_enabled"), ("AUTOMOUNT_ON", 6, "automount_enabled"),
+    ("AUTOMOUNT_ON", 6, "automount_enabled"),
     ("", 1, "distro_unavailable"),
 ])
 def test_basic_checks_report_actionable_reasons(probe, rc, reason):
@@ -221,7 +248,7 @@ def test_failed_isolation_check_makes_sandbox_unavailable(fail):
 def test_selftest_covers_the_documented_risk_areas():
     names = {c.name for c in CASES}
     assert {"non_root", "no_network", "no_windows_drives", "cannot_write_system", "memory_limit",
-            "timeout_kills_loop", "env_clean", "process_limit"} <= names
+            "timeout_kills_loop", "env_clean", "process_limit", "no_windows_interop"} <= names
 
 
 def test_selftest_treats_exceptions_as_failures():
@@ -255,16 +282,31 @@ def test_factory_follows_settings(settings):
     assert isinstance(wsl, WslSandbox) and wsl.distro == "Debian"
 
 
-def test_basic_checks_script_verifies_interop_and_drive_mounts_outside_the_sandbox():
+def test_basic_checks_script_verifies_drive_mounts_outside_the_sandbox():
     r = Runner()
     run(sandbox(r).basic_checks())
-    script = r.calls[0][0][-1]
-    assert "wslinterop" in script and "binfmt_misc" in script and "/proc/mounts" in script and "/mnt/[a-z]" in script
+    script = decode_script(r.calls[0][0])
+    assert "/proc/mounts" in script and "/mnt/[a-z]" in script
+    assert "binfmt_misc" not in script                    # entri binfmt bersifat global di VM; bukan bukti apa pun
 
 
-def test_interop_or_automount_makes_sandbox_unavailable_without_running_selftest():
-    for probe, rc, reason in (("INTEROP_ON", 5, "interop_enabled"), ("AUTOMOUNT_ON", 6, "automount_enabled")):
-        r = Runner(probe=probe, probe_rc=rc)
-        st = run(sandbox(r).status())
-        assert (st.available, st.reason) == (False, reason)
-        assert len(r.calls) == 1                         # berhenti di pemeriksaan dasar; kode tidak dijalankan
+def test_automount_makes_sandbox_unavailable_without_running_selftest():
+    r = Runner(probe="AUTOMOUNT_ON", probe_rc=6)
+    st = run(sandbox(r).status())
+    assert (st.available, st.reason) == (False, "automount_enabled")
+    assert len(r.calls) == 1                              # berhenti di pemeriksaan dasar; kode tidak dijalankan
+
+
+def test_interop_is_checked_functionally_by_running_a_real_windows_binary_in_the_sandbox():
+    case = next(c for c in CASES if c.name == "no_windows_interop")
+    assert "probe.exe" in case.code and "subprocess.run" in case.code
+    ok, bad = ExecResult(0, "BLOCKED", "", 5), ExecResult(0, "RAN", "", 5)
+    assert case.check(ok) and case.check(ExecResult(0, "NO_PROBE", "", 5)) and not case.check(bad)
+
+
+def test_selftest_fails_if_a_windows_process_can_be_launched():
+    r = Runner()
+    r.fail_case = "probe.exe"
+    st = run(sandbox(r).status())
+    assert (st.available, st.reason) == (False, "isolation_selftest_failed")
+    assert [c["name"] for c in st.details["selftest"]["checks"] if not c["passed"]] == ["no_windows_interop"]
