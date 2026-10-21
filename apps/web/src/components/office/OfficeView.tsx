@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { Component, useCallback, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { Dashboard } from "@/lib/dashboardApi";
 import { chooseMode, isModePref, layoutAvatars, ROOM_ORDER, type Capabilities, type ModePref, type RoomId } from "@/lib/office/model";
@@ -76,47 +75,58 @@ class Boundary extends Component<{ onError: () => void; children: ReactNode }, {
   }
 }
 
-export function OfficeView({ data, selected, onSelect }: { data: Dashboard; selected: string | null; onSelect: (role: string) => void }) {
-  const { t } = useLanguage();
+/** Mode tampilan (3D atau fallback 2D) beserta kemampuan perangkat dan pilihan pengguna. */
+export function useOfficeMode() {
   const caps = useSyncExternalStore(() => () => undefined, detectCaps, () => SERVER_CAPS);
   const pref = useSyncExternalStore(subscribePref, readPref, () => "auto" as ModePref);
   const [failed, setFailed] = useState(false);
   const onFail = useCallback(() => setFailed(true), []);
-  const mode = failed ? "2d" : chooseMode(pref, caps);
+  const setPref = useCallback((v: ModePref) => {
+    setFailed(false);
+    writePref(v);
+  }, []);
+  const mode: "3d" | "2d" = failed ? "2d" : chooseMode(pref, caps);
+  return { mode, pref, setPref, caps, failed, onFail };
+}
+
+export function ModeControls({ pref, setPref }: { pref: ModePref; setPref: (v: ModePref) => void }) {
+  const { t } = useLanguage();
+  return (
+    <div className="actions" role="group" aria-label={t("office.mode")}>
+      {(["auto", "3d", "2d"] as const).map((m) => (
+        <button key={m} type="button" aria-pressed={pref === m} onClick={() => setPref(m)}>{t(`office.mode.${m}` as MessageKey)}</button>
+      ))}
+    </div>
+  );
+}
+
+/** Area adegan: 3D memenuhi induknya; 2D menjadi kisi kartu biasa. */
+export function OfficeScene({ data, mode, onFail, selected, onSelect }: {
+  data: Dashboard; mode: "3d" | "2d"; onFail: () => void; selected: string | null; onSelect: (role: string) => void;
+}) {
+  const { t } = useLanguage();
   const avatars = useMemo(() => layoutAvatars(data.agents), [data.agents]);
   const roomLabels = useMemo(
     () => Object.fromEntries(ROOM_ORDER.map((r) => [r, t(`office.room.${r}` as MessageKey)])) as Record<RoomId, string>,
     [t],
   );
+  const roleLabels = useMemo(() => Object.fromEntries(data.agents.map((a) => [a.role, t(`role.${a.role}` as MessageKey)])), [data.agents, t]);
+  const statusLabels = useMemo(() => Object.fromEntries(data.agents.map((a) => [a.status, t(`agent.${a.status}` as MessageKey)])), [data.agents, t]);
   const problems = (data.tasks.failed ?? 0) + (data.tasks.blocked ?? 0);
   const hologram = [
     { text: `${t("office.stat.approvals")}: ${data.approvals_pending}`, color: data.approvals_pending > 0 ? "#ffb020" : "#39ff88" },
     { text: `${t("office.stat.activeTasks")}: ${(data.tasks.queued ?? 0) + (data.tasks.running ?? 0) + (data.tasks.pending_approval ?? 0)}`, color: "#00e5ff" },
     { text: `${t("office.stat.problems")}: ${problems}`, color: problems > 0 ? "#ff3860" : "#39ff88" },
   ];
-
+  if (mode === "2d") return <Office2D avatars={avatars} selected={selected} onSelect={onSelect} />;
   return (
-    <section className="card" aria-label={t("office.title")}>
-      <div className="row">
-        <h3 style={{ margin: 0 }}>{t("office.title")}</h3>
-        <div className="actions" role="group" aria-label={t("office.mode")}>
-          {(["auto", "3d", "2d"] as const).map((m) => (
-            <button key={m} type="button" aria-pressed={pref === m} onClick={() => { setFailed(false); writePref(m); }}>{t(`office.mode.${m}` as MessageKey)}</button>
-          ))}
-        </div>
-      </div>
-      {!caps.webgl && <p className="small muted">{t("office.noWebgl")}</p>}
-      {failed && <p className="small bad" role="alert">{t("office.failed")}</p>}
-      {mode === "3d" ? (
-        <div className="office3d" data-testid="office-3d">
-          <Boundary onError={onFail}>
-            <Office3D avatars={avatars} selected={selected} onSelect={onSelect} hologram={hologram} roomLabels={roomLabels} onFail={onFail} />
-          </Boundary>
-        </div>
-      ) : (
-        <Office2D avatars={avatars} selected={selected} onSelect={onSelect} />
-      )}
-      <p className="small muted">{t("office.legend")} <Link href="/tasks">{t("nav.tasks")}</Link></p>
-    </section>
+    <div className="scene" data-testid="office-3d">
+      <Boundary onError={onFail}>
+        <Office3D
+          avatars={avatars} selected={selected} onSelect={onSelect} hologram={hologram}
+          roomLabels={roomLabels} roleLabels={roleLabels} statusLabels={statusLabels} onFail={onFail}
+        />
+      </Boundary>
+    </div>
   );
 }

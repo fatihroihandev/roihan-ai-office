@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  chooseMode, layoutAvatars, poseOf, ROOMS, shouldApply, toneOf, WORKROOM, type AgentSnapshot, type RoomId,
+  chooseMode, layoutAvatars, loungeSeat, poseOf, ROOMS, shouldApply, toneOf, workSeat, WORKROOM, type AgentSnapshot, type RoomId,
 } from "./model";
 
 const ROLES = Object.keys(WORKROOM);
@@ -58,6 +58,16 @@ describe("penempatan avatar", () => {
     const keys = all.map((a) => `${a.room}:${a.position.join(",")}`);
     expect(new Set(keys).size).toBe(keys.length);
     for (const a of all) expect(inside(a.room, a.position), a.role).toBe(true);
+  });
+
+  it("kursi tetap: posisi sebuah role tidak bergeser ketika agent lain berubah status", () => {
+    const before = layoutAvatars(snap({ developer: { status: "working" } }));
+    const after = layoutAvatars(snap({ developer: { status: "working" }, qa: { status: "working" }, analyst: { status: "working" }, manager: { status: "planning" } }));
+    const pos = (av: ReturnType<typeof layoutAvatars>, r: string) => av.find((a) => a.role === r)!.position;
+    expect(pos(after, "developer")).toEqual(pos(before, "developer"));
+    expect(pos(after, "developer")).toEqual(workSeat("developer"));
+    expect(pos(after, "reporter")).toEqual(loungeSeat("reporter")); // yang tetap idle tidak berpindah
+    expect(pos(before, "reporter")).toEqual(pos(after, "reporter"));
   });
 
   it("membawa id dan judul task dari backend, serta antrean", () => {

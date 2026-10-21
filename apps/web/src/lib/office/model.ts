@@ -74,21 +74,36 @@ export type Avatar = {
   taskTitle: string | null;
 };
 
-// Urutan tetap per role dalam ruangan agar posisi stabil antar pembaruan.
+// Urutan tetap per role: kursi kerja dan kursi Lounge tiap role TETAP (tidak bergeser saat agent lain datang atau pergi),
+// sehingga meja tidak berpindah dan avatar hanya berjalan antara kursi kerja dan kursi Lounge-nya.
 const SEAT_ORDER = Object.keys(WORKROOM);
 
-function seatsIn(room: RoomId, roles: string[], role: string): [number, number] {
+function gridSeat(room: RoomId, count: number, index: number): [number, number] {
   const r = ROOMS[room];
-  const i = roles.indexOf(role);
-  const cols = Math.max(1, Math.min(roles.length, room === "lounge" ? 5 : 3));
-  const rows = Math.ceil(roles.length / cols);
-  const col = i % cols;
-  const row = Math.floor(i / cols);
-  const gapX = (r.size[0] - 2) / Math.max(1, cols - 1 || 1);
+  const cols = Math.max(1, Math.min(count, room === "lounge" ? 5 : 3));
+  const rows = Math.ceil(count / cols);
+  const col = index % cols;
+  const row = Math.floor(index / cols);
+  const gapX = cols > 1 ? (r.size[0] - 2) / (cols - 1) : 0;
   const gapZ = rows > 1 ? (r.size[1] - 2.4) / (rows - 1) : 0;
   const x = cols === 1 ? r.center[0] : r.center[0] - (r.size[0] - 2) / 2 + col * gapX;
   const z = rows === 1 ? r.center[1] : r.center[1] - (r.size[1] - 2.4) / 2 + row * gapZ;
   return [Math.round(x * 100) / 100, Math.round(z * 100) / 100];
+}
+
+const roundPoint = ([x, z]: [number, number]): [number, number] => [Math.round(x * 100) / 100, Math.round(z * 100) / 100];
+
+/** Kursi kerja tetap sebuah role di ruang kerjanya. Manager berdiri di sisi depan meja rapat. */
+export function workSeat(role: string): [number, number] {
+  const room = WORKROOM[role] ?? "lounge";
+  if (room === "meeting") return roundPoint([ROOMS.meeting.center[0], ROOMS.meeting.center[1] + 1.2]);
+  const mates = SEAT_ORDER.filter((r) => WORKROOM[r] === room);
+  return gridSeat(room, mates.length, Math.max(0, mates.indexOf(role)));
+}
+
+/** Kursi Lounge tetap sebuah role (Lounge menampung semua role bila semuanya idle). */
+export function loungeSeat(role: string): [number, number] {
+  return gridSeat("lounge", SEAT_ORDER.length, Math.max(0, SEAT_ORDER.indexOf(role)));
 }
 
 /**
@@ -97,29 +112,24 @@ function seatsIn(room: RoomId, roles: string[], role: string): [number, number] 
  * Agent yang menunggu approval, terblokir, atau error tetap di ruang kerjanya dengan pose yang berbeda dari "bekerja".
  */
 export function layoutAvatars(agents: AgentSnapshot[]): Avatar[] {
-  const byRole = new Map(agents.map((a) => [a.role, a]));
-  const roles = SEAT_ORDER.filter((r) => byRole.has(r)).concat(agents.map((a) => a.role).filter((r) => !SEAT_ORDER.includes(r)));
-  const placed = roles.map((role) => {
-    const a = byRole.get(role)!;
-    const workroom = WORKROOM[role] ?? "lounge";
+  return agents.map((a) => {
+    const workroom = WORKROOM[a.role] ?? "lounge";
     const pose = poseOf(a.status);
-    return { a, workroom, room: (pose === "idle" ? "lounge" : workroom) as RoomId, pose };
+    const room: RoomId = pose === "idle" ? "lounge" : workroom;
+    return {
+      role: a.role,
+      department: a.department,
+      status: a.status,
+      pose,
+      tone: toneOf(a.status),
+      room,
+      workroom,
+      position: room === "lounge" ? loungeSeat(a.role) : workSeat(a.role),
+      queued: a.queued,
+      taskId: a.current_task_id,
+      taskTitle: a.current_task_title,
+    };
   });
-  const inRoom = (room: RoomId) => placed.filter((p) => p.room === room).map((p) => p.a.role);
-  const sortedLounge = inRoom("lounge");
-  return placed.map(({ a, workroom, room, pose }) => ({
-    role: a.role,
-    department: a.department,
-    status: a.status,
-    pose,
-    tone: toneOf(a.status),
-    room,
-    workroom,
-    position: seatsIn(room, room === "lounge" ? sortedLounge : inRoom(room), a.role),
-    queued: a.queued,
-    taskId: a.current_task_id,
-    taskTitle: a.current_task_title,
-  }));
 }
 
 // ---------------------------------------------------------------- mode tampilan (3D atau fallback 2D)
