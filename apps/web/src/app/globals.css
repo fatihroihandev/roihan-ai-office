@@ -104,3 +104,28 @@ label.inline { display: inline-flex; flex-direction: row; align-items: center; g
 label.inline input { width: auto; }
 button.tab { padding: 0.25rem 0.7rem; font-size: 0.85rem; }
 button.tab.on { background: var(--accent); }
+
+/* Kantor virtual (Phase 10) */
+main[data-wide] { max-width: 1240px; }
+.officegrid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 1rem; align-items: start; }
+@media (max-width: 900px) { .officegrid { grid-template-columns: 1fr; } }
+.office3d { height: min(62vh, 560px); min-height: 320px; border-radius: 10px; overflow: hidden; border: 1px solid #2a2a55; background: #05060f; margin-top: 1rem; }
+.office2d { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+.office2d .room { border: 1px solid #2a2a55; border-radius: 10px; padding: 0.6rem 0.75rem; background: var(--bg); }
+.office2d .room h4 { margin: 0 0 0.4rem; }
+.office2d .room[data-room="ceo"] { border-color: #a855f7; }
+.office2d .room[data-room="engineering"] { border-color: #00b8ff; }
+.office2d .room[data-room="marketing"] { border-color: #ff2bd6; }
+.office2d .room[data-room="meeting"] { border-color: #7c5cff; }
+.office2d .room[data-room="lounge"] { border-color: #2dd4bf; }
+.office2d ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.agentchip { width: 100%; text-align: left; display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.agentchip[aria-pressed="true"] { outline: 2px solid var(--accent); }
+.agentchip .badge { margin-left: 0; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.stats div { border: 1px solid #2a2a55; border-radius: 8px; padding: 0.5rem; text-align: center; background: var(--bg); }
+.stats div[data-alert="true"] { border-color: var(--warn); }
+.stats strong { display: block; font-size: 1.4rem; }
+.stats span { font-size: 0.75rem; color: var(--muted); }
+.needs { padding-left: 1.1rem; }
+.actions button[aria-pressed="true"] { background: var(--accent); }

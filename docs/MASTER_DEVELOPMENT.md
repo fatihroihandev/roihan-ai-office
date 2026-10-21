@@ -1727,6 +1727,29 @@ Batasan yang diketahui:
 
 **Exit criteria:** status visual mengikuti status backend dan tetap konsisten setelah reconnect.
 
+**Status (2026-10-21): selesai.**
+
+Yang dibangun:
+- **Dashboard operasional** (`GET /api/dashboard`): satu potret konsisten yang memuat status 10 agent (diturunkan dari task, bukan disimpan), hitungan task per status, approval menunggu, **keputusan yang menunggu CEO** (approval, task terblokir, task gagal, konten dan draf outreach siap ditinjau, kotak keluar, data jatuh tempo retensi), ringkasan Marketing, pemakaian AI 24 jam (termasuk penanda API berbayar), dan status worker. Panel "Ringkasan CEO" menampilkan semuanya dengan tautan langsung.
+- **Kantor virtual** (`/office`): lima ruangan sesuai Bagian 7.2 (CEO Office, Engineering Room, Marketing Room, Meeting Room, Lounge) dengan tema cyberpunk: neon biru/ungu/magenta, lantai metalik mengilap, grid, skyline kota di balik kaca, papan merek "Build Today, Create Tomorrow", hologram ringkasan di CEO Office. Dirender dengan Three.js (React Three Fiber) memakai geometri prosedural tanpa aset eksternal (ringan).
+- **Avatar terhubung ke agent dan task**: setiap avatar adalah satu role agent; warna mengikuti departemen, cincin status mengikuti status backend (hijau bekerja, kuning menunggu approval/terblokir, merah error, redup idle), bergoyang hanya saat bekerja. Klik avatar atau kartu agent menampilkan task saat ini (tautan), antrean, dan status. **Agent tanpa task aktif selalu berada di Lounge** dan tidak pernah tampak bekerja; agent yang menunggu approval, terblokir, atau error tetap di ruang kerjanya dengan pose yang berbeda dari bekerja. Manager bekerja di Meeting Room.
+- **Logika terpisah dari render** (`lib/office/model.ts`): penempatan, pose, warna, pemilihan mode, dan aturan "potret terbaru menang" adalah fungsi murni yang diuji; komponen 3D hanya menggambar.
+- **WebSocket dan konsistensi setelah reconnect**: event hanya **memicu** pemuatan ulang potret (tidak membawa keadaan), potret dimuat ulang saat connect, tiap event, dan berkala (15 detik, karena status berbasis waktu seperti "baru selesai" berubah tanpa event). Respons yang lebih lama tidak menimpa yang lebih baru. Jika backend tidak terjangkau, potret terakhir tetap tampil dengan penanda **usang** beserta jamnya; lencana menunjukkan Realtime atau "menyambung ulang".
+- **Fallback 2D**: tampilan kartu per ruangan dengan data dan aturan penempatan yang sama; otomatis dipakai jika WebGL tidak tersedia, pengguna meminta gerak berkurang, konteks WebGL hilang, atau render 3D galat (error boundary); pilihan Otomatis/3D/2D tersimpan di browser. Seluruh fungsi penting tetap tersedia lewat menu; 3D bukan satu-satunya jalan.
+
+Verifikasi: 780 tes backend dan 31 tes frontend lolos; lint, typecheck, dan build bersih. Tes baru mencakup pemetaan 13 status ke pose dan warna, penempatan (idle di Lounge, ruang kerja per role, tidak ada dua avatar di titik yang sama, semua dalam batas ruangan), kesamaan tampilan dari potret yang sama apa pun riwayatnya, aturan respons lama tidak menimpa, pemilihan mode dan fallback, serta di backend: potret dashboard sama dengan `/api/agents`, berulang identik, dan hitungan AI hanya 24 jam terakhir.
+
+**Verifikasi langsung** (Microsoft Edge headless dengan WebGL perangkat lunak, backend uji berisi task berbagai status): kantor 3D tampil dengan kelima ruangan, label, dan avatar; Developer dan Market Research berstatus bekerja (cincin hijau), QA menunggu approval (kuning), Reviewer error (merah), Content terblokir (kuning), sedangkan agent tanpa task (Manager, Reporter, Lead Generation, Sales, dan Analyst yang selesainya sudah lewat 60 detik) berada di Lounge. Tanpa WebGL halaman otomatis menampilkan fallback 2D dengan penempatan yang sama. Lencana berubah menjadi "Realtime" setelah WebSocket tersambung (via tiket sekali pakai dan pemeriksaan Origin).
+
+Pengujian menemukan tiga hal yang diperbaiki: label ruangan di lantai tidak terbaca dan tertutup ruangan lain (kini sprite di tepi depan, jarak antar-ruang ditambah); avatar terlalu kecil pada jarak pandang awal (diperbesar, kamera didekatkan); dan aturan lint React melarang generator acak yang menugaskan ulang variabel saat render (skyline kini dihasilkan fungsi murni deterministik).
+
+Batasan yang diketahui:
+- Konsistensi setelah reconnect dibuktikan dengan sifat desain (keadaan hanya dari potret terbaru), tes fungsi murni, dan keterulangan potret backend; **belum ada uji otomatis di browser yang memutus dan menyambung ulang WebSocket** (belum ada Playwright). Uji manual: matikan backend, lihat penanda usang, nyalakan lagi.
+- Avatar belum beranimasi berjalan antar-ruangan (berpindah posisi seketika) dan belum ada model karakter detail; geometri sengaja sederhana. Performa 3D baru diukur secara kasar (perangkat lunak); profiling di perangkat nyata adalah bagian Phase 11.
+- Identitas merek (logo, palet, signage) belum diputuskan CEO (Bagian 27 no. 6); tulisan dan warna saat ini sementara.
+- Ruang CEO menampilkan hologram ringkasan, bukan kontrol interaktif; keputusan tetap diambil lewat halaman Approval dan lainnya.
+- Audit dependensi: dependensi runtime 0 kerentanan; 5 temuan tingkat tinggi hanya pada tooling pengembangan (eslint), ditangani pada audit keamanan Phase 11.
+
 ## Phase 11 — Reliability & Backup
 
 - Tambahkan backup database.

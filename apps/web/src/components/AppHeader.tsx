@@ -13,6 +13,7 @@ export function AppHeader() {
         <p className="tagline">{t("app.tagline")}</p>
         <nav>
           <Link href="/">{t("nav.home")}</Link>
+          <Link href="/office">{t("nav.office")}</Link>
           <Link href="/projects">{t("nav.projects")}</Link>
           <Link href="/tasks">{t("nav.tasks")}</Link>
           <Link href="/products">{t("nav.products")}</Link>

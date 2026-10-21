@@ -133,6 +133,15 @@ kosong (tanpa secret), batas memori/proses/CPU/waktu, tanpa mount drive Windows,
   yang baru berjalan setelah Anda mengantrekannya.
 - Batas (`OUTREACH_*`, `CONTENT_*` di `.env`) adalah usulan bawaan yang perlu dikonfirmasi CEO. Setelah memperbarui kode, jalankan `alembic upgrade head`.
 
+## Kantor virtual dan dashboard (Phase 10)
+
+- **Halaman `/office`** (menu "Kantor"): kantor cyberpunk 3D dengan CEO Office, Engineering, Marketing, Meeting Room, dan Lounge, ditambah panel **Ringkasan CEO**
+  (approval dan keputusan yang menunggu, task, Marketing, pemakaian AI, status worker). Status avatar hanya berasal dari backend: agent tanpa task aktif berada di
+  Lounge dan tidak pernah tampak bekerja.
+- **Mode tampilan**: Otomatis, 3D, atau 2D. 2D (kartu per ruangan) dipakai otomatis jika WebGL tidak tersedia, gerak berkurang diminta sistem operasi, atau 3D gagal.
+- **Realtime**: lencana "Realtime" berarti WebSocket tersambung; jika terputus, data dimuat berkala dan potret terakhir ditandai usang sampai tersambung lagi.
+- Tidak ada perubahan database pada fase ini; cukup mulai ulang backend dan jalankan `npm install` di `apps/web` (ada paket `three` dan `@react-three/fiber`).
+
 ## Tes
 
 ```

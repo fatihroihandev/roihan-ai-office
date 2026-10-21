@@ -12,6 +12,7 @@ export default function Home() {
       <AppHeader />
       <HealthStatus />
       <p>
+        <Link className="button" href="/office">{t("home.openOffice")}</Link>{" "}
         <Link className="button" href="/projects">{t("home.openProjects")}</Link>
       </p>
       <footer>{t("footer.phase")}</footer>
