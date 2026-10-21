@@ -16,6 +16,7 @@ export function AppHeader() {
           <Link href="/projects">{t("nav.projects")}</Link>
           <Link href="/tasks">{t("nav.tasks")}</Link>
           <Link href="/products">{t("nav.products")}</Link>
+          <Link href="/marketing">{t("nav.marketing")}</Link>
           <Link href="/approvals">{t("nav.approvals")}</Link>
           <Link href="/ai">{t("nav.ai")}</Link>
         </nav>

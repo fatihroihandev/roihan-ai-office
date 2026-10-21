@@ -19,6 +19,15 @@ class TaskCreate(BaseModel):
     factors: dict | None = None
     preferred_model: str | None = Field(default=None, max_length=100)
     requires_tools: bool = False
+    params: dict | None = Field(default=None)
+
+    @field_validator("params")
+    @classmethod
+    def _params(cls, v):
+        import json
+        if v is not None and len(json.dumps(v, ensure_ascii=False)) > 12000:
+            raise ValueError("params terlalu besar (maks. 12 KB)")
+        return v
 
     @field_validator("title")
     @classmethod
@@ -66,6 +75,7 @@ class TaskOut(BaseModel):
     last_error_kind: str | None
     verification: dict | None
     review_status: str | None = None
+    params: dict | None = None
     created_by: str
     created_at: datetime
     started_at: datetime | None

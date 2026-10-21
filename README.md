@@ -109,6 +109,18 @@ kosong (tanpa secret), batas memori/proses/CPU/waktu, tanpa mount drive Windows,
   menyiratkan produk sudah rilis, tidak menyebut beta, atau menyebut harga yang belum disetujui.
 - Setelah memperbarui kode, jalankan `alembic upgrade head` (ada tabel baru).
 
+## Marketing dan Sales (Phase 8)
+
+- **Halaman `/marketing`**: kebijakan data prospek, metrik, pipeline, peluang, draf outreach, intake prospek dari teks, dan riset pasar. Detail prospek di
+  `/marketing/leads/[id]` (asal data, rincian skor, interaksi, tindakan).
+- **Sumber dan privasi**: prospek hanya dari sumber yang diizinkan dan tercatat asalnya; data sensitif dan email pribadi ditolak; kontak disamarkan secara bawaan
+  dan membukanya tercatat di audit. Yang menolak (opt-out) masuk daftar jangan-hubungi (hash) dan tidak dapat didaftarkan ulang.
+- **Agent hanya mengusulkan**: Lead Generation mengekstrak hanya dari teks yang Anda tempel (fakta yang tidak ada di teks dibuang); Market Research menandai temuan
+  tanpa bukti sebagai belum terverifikasi; Sales menyusun draf dari ringkasan resmi produk dan wajib lolos linter klaim. **Tidak ada pengiriman otomatis**: Anda yang
+  mengirim, lalu mencatat "sudah saya kirim". Perpindahan tahap prospek memerlukan interaksi nyata yang Anda catat.
+- Kebijakan sumber dan retensi (`LEAD_*` di `.env`) adalah **usulan bawaan** yang perlu dikonfirmasi CEO; lihat Bagian 27 di dokumen master.
+- Setelah memperbarui kode, jalankan `alembic upgrade head` (ada tabel baru dan kolom `tasks.params`), lalu mulai ulang backend.
+
 ## Tes
 
 ```

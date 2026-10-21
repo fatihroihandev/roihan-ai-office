@@ -20,7 +20,7 @@ def create_task(session: Session, *, project_id: str, title: str, role: str, act
                 description: str = "", acceptance_criteria: list[str] | None = None,
                 depends_on: list[str] | None = None, priority: int = 0, factors: dict | None = None,
                 preferred_model: str | None = None, requires_tools: bool = False, max_retries: int = 2,
-                created_by: str = "ceo", parent_task_id: str | None = None) -> Task:
+                created_by: str = "ceo", parent_task_id: str | None = None, params: dict | None = None) -> Task:
     if role not in ROLES:
         raise TaskError(f"Role tidak dikenal: {role}")
     if action_type not in ACTION_RISK:
@@ -39,7 +39,7 @@ def create_task(session: Session, *, project_id: str, title: str, role: str, act
         role=role, action_type=action_type, priority=priority, acceptance_criteria=acceptance_criteria or [],
         risk_level=risk, requires_approval=needs_approval(risk), difficulty_factors=norm, difficulty_score=score,
         difficulty_category=category(score), preferred_model=preferred_model, requires_tools=requires_tools,
-        max_retries=max_retries, created_by=created_by,
+        max_retries=max_retries, created_by=created_by, params=params or None,
     )
     session.add(task)
     session.flush()

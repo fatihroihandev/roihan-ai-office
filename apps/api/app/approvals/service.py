@@ -36,10 +36,13 @@ def _naive(dt: datetime | None) -> datetime | None:
 def task_payload(session: Session, task: Task) -> dict:
     """Isi tindakan yang disetujui. Perubahan pada salah satu field ini membatalkan approval."""
     deps = sorted(session.scalars(select(TaskDependency.depends_on_id).where(TaskDependency.task_id == task.id)))
-    return {
+    payload = {
         "title": task.title, "description": task.description, "role": task.role, "action_type": task.action_type,
         "risk_level": task.risk_level, "acceptance_criteria": list(task.acceptance_criteria or []), "depends_on": deps,
     }
+    if task.params:      # parameter menentukan apa yang dilakukan (mis. prospek mana); hanya ikut jika ada agar approval lama tetap sah
+        payload["params"] = task.params
+    return payload
 
 
 def fingerprint(payload: dict) -> str:

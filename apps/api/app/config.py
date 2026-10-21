@@ -34,6 +34,13 @@ class Settings(BaseSettings):
 
     approval_ttl_hours: int = 24
 
+    # Kebijakan data prospek (Bagian 5 dan 15). Nilai bawaan adalah USULAN yang dapat diubah CEO lewat konfigurasi.
+    lead_allowed_sources: str = "public_website,public_registry,referral,inbound,event,manual"
+    lead_retention_no_interaction_days: int = 180
+    lead_retention_after_interaction_days: int = 730
+    lead_retention_auto_apply: bool = False   # bawaan: tandai yang jatuh tempo, anonimisasi menunggu keputusan CEO
+    lead_min_score_for_sales: int = 40
+
     worker_enabled: bool = True
     worker_poll_interval_s: float = 1.0
     retry_backoff_base_s: float = 5.0
@@ -80,6 +87,14 @@ class Settings(BaseSettings):
             raise ValueError("SANDBOX_BACKEND harus 'none' atau 'wsl'")
         if self.sandbox_timeout_s < 1 or self.sandbox_memory_mb < 64 or self.sandbox_max_output_kb < 1:
             raise ValueError("SANDBOX_TIMEOUT_S >= 1, SANDBOX_MEMORY_MB >= 64, SANDBOX_MAX_OUTPUT_KB >= 1")
+        allowed = {"public_website", "public_registry", "referral", "inbound", "event", "manual"}
+        listed = {x.strip() for x in self.lead_allowed_sources.split(",") if x.strip()}
+        if not listed or not listed <= allowed:
+            raise ValueError(f"LEAD_ALLOWED_SOURCES harus himpunan bagian dari {sorted(allowed)} dan tidak boleh kosong")
+        if self.lead_retention_no_interaction_days < 1 or self.lead_retention_after_interaction_days < 1:
+            raise ValueError("LEAD_RETENTION_* harus >= 1 hari")
+        if not 0 <= self.lead_min_score_for_sales <= 100:
+            raise ValueError("LEAD_MIN_SCORE_FOR_SALES harus 0..100")
         if self.approval_ttl_hours < 1:
             raise ValueError("APPROVAL_TTL_HOURS harus >= 1")
         if self.worker_poll_interval_s <= 0 or self.retry_backoff_base_s < 0:

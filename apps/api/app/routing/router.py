@@ -34,12 +34,13 @@ class TaskSnapshot:
     preferred_model: str | None
     requires_tools: bool
     priority: int
+    params: dict | None = None
 
     @classmethod
     def from_task(cls, t: Task) -> "TaskSnapshot":
         return cls(t.id, t.project_id, t.title, t.description, t.role, t.action_type, list(t.acceptance_criteria or []),
                    t.risk_level, t.requires_approval, t.approved, t.difficulty_score, t.difficulty_category,
-                   t.preferred_model, t.requires_tools, t.priority)
+                   t.preferred_model, t.requires_tools, t.priority, dict(t.params) if t.params else None)
 
 
 class RoutingError(Exception):

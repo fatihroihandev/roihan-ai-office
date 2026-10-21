@@ -120,6 +120,7 @@ class Task(IdMixin, Base):
     result: Mapped[dict | None] = mapped_column(JSON, default=None)
     verification: Mapped[dict | None] = mapped_column(JSON, default=None)
     review_status: Mapped[str | None] = mapped_column(default=None)  # approved | changes_requested (diisi Reviewer)
+    params: Mapped[dict | None] = mapped_column(JSON, default=None)  # rujukan terstruktur untuk executor (mis. lead_id, product_id)
     created_by: Mapped[str] = mapped_column(default="ceo")
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
@@ -346,6 +347,151 @@ class ProductReleaseCheck(IdMixin, Base):
     evaluated_by: Mapped[str] = mapped_column(default="system")
 
 
+class Company(IdMixin, Base):
+    """Data tingkat perusahaan (bukan data pribadi). Dedupe lewat normalized_name."""
+
+    __tablename__ = "companies"
+    __table_args__ = (Index("ix_companies_norm", "normalized_name"), Index("ix_companies_domain", "domain"))
+
+    name: Mapped[str] = mapped_column()
+    normalized_name: Mapped[str] = mapped_column()
+    domain: Mapped[str | None] = mapped_column(default=None)
+    industry: Mapped[str | None] = mapped_column(default=None)
+    size_band: Mapped[str] = mapped_column(default="unknown")  # micro | small | medium | large | unknown
+    city: Mapped[str | None] = mapped_column(default=None)
+    website: Mapped[str | None] = mapped_column(default=None)
+    description: Mapped[str | None] = mapped_column(Text, default=None)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class LeadSource(IdMixin, Base):
+    """Provenance prospek: dari mana, kapan, oleh siapa, dengan cara apa (Bagian 4.4 B)."""
+
+    __tablename__ = "lead_sources"
+
+    source_type: Mapped[str] = mapped_column()
+    url: Mapped[str | None] = mapped_column(Text, default=None)
+    title: Mapped[str | None] = mapped_column(default=None)
+    collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    collected_by: Mapped[str] = mapped_column()
+    method: Mapped[str] = mapped_column(default="manual")  # manual | agent_extraction
+    note: Mapped[str | None] = mapped_column(Text, default=None)
+
+
+class Lead(IdMixin, Base):
+    __tablename__ = "leads"
+    __table_args__ = (Index("ix_leads_status", "status"), Index("ix_leads_email_hash", "email_hash"), Index("ix_leads_company", "company_id"))
+
+    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id", ondelete="RESTRICT"))
+    source_id: Mapped[str] = mapped_column(ForeignKey("lead_sources.id", ondelete="RESTRICT"))
+    product_id: Mapped[str | None] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"), default=None)
+    status: Mapped[str] = mapped_column(default="new")
+    score: Mapped[int | None] = mapped_column(default=None)
+    score_breakdown: Mapped[dict | None] = mapped_column(JSON, default=None)
+    basis: Mapped[str] = mapped_column()  # dasar pemrosesan: legitimate_interest_b2b | inbound_inquiry | consent
+    owner: Mapped[str] = mapped_column(default="lead_generation")
+    contact_name: Mapped[str | None] = mapped_column(default=None)
+    contact_title: Mapped[str | None] = mapped_column(default=None)
+    contact_email: Mapped[str | None] = mapped_column(default=None)
+    contact_phone: Mapped[str | None] = mapped_column(default=None)
+    email_hash: Mapped[str | None] = mapped_column(default=None)
+    do_not_contact: Mapped[bool] = mapped_column(default=False)
+    forwarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_interaction_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    anonymized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    created_by: Mapped[str] = mapped_column(default="ceo")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class LeadInteraction(IdMixin, Base):
+    """Interaksi NYATA dengan prospek. Hanya manusia yang dapat mencatat. Isinya hanya diubah oleh anonimisasi (retensi/penghapusan)."""
+
+    __tablename__ = "lead_interactions"
+    __table_args__ = (Index("ix_lead_interactions_lead", "lead_id"),)
+
+    lead_id: Mapped[str] = mapped_column(ForeignKey("leads.id", ondelete="RESTRICT"))
+    kind: Mapped[str] = mapped_column()  # note | email_out | email_in | call | meeting
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    summary: Mapped[str] = mapped_column(Text, default="")
+    recorded_by: Mapped[str] = mapped_column()
+
+
+class SuppressionEntry(IdMixin, Base):
+    """Daftar jangan-hubungi. Hanya menyimpan hash, bukan data aslinya. Disimpan permanen (Bagian 15)."""
+
+    __tablename__ = "suppression_entries"
+    __table_args__ = (UniqueConstraint("kind", "value_hash", name="uq_suppression"),)
+
+    kind: Mapped[str] = mapped_column()  # email | domain
+    value_hash: Mapped[str] = mapped_column()
+    reason: Mapped[str] = mapped_column(default="opt_out")  # opt_out | erasure | bounce | complaint
+
+
+class SalesOpportunity(IdMixin, Base):
+    __tablename__ = "sales_opportunities"
+    __table_args__ = (Index("ix_opportunities_lead", "lead_id"),)
+
+    lead_id: Mapped[str] = mapped_column(ForeignKey("leads.id", ondelete="RESTRICT"))
+    title: Mapped[str] = mapped_column()
+    stage: Mapped[str] = mapped_column(default="qualification")  # qualification|proposal|negotiation|won|lost
+    value_estimate_idr: Mapped[int | None] = mapped_column(default=None)
+    won_value_idr: Mapped[int | None] = mapped_column(default=None)
+    summary: Mapped[str | None] = mapped_column(Text, default=None)
+    outcome_reason: Mapped[str | None] = mapped_column(Text, default=None)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    created_by: Mapped[str] = mapped_column(default="ceo")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class ClientRequirement(IdMixin, Base):
+    __tablename__ = "client_requirements"
+    __table_args__ = (Index("ix_requirements_opportunity", "opportunity_id"),)
+
+    opportunity_id: Mapped[str] = mapped_column(ForeignKey("sales_opportunities.id", ondelete="RESTRICT"))
+    text: Mapped[str] = mapped_column(Text)
+    priority: Mapped[str] = mapped_column(default="normal")  # low | normal | high
+    status: Mapped[str] = mapped_column(default="new")  # new | clarified | forwarded
+    recorded_by: Mapped[str] = mapped_column(default="ceo")
+
+
+class MarketResearch(IdMixin, Base):
+    """Hasil riset pasar. Setiap temuan menyatakan dasarnya; yang tidak berdasar materi nyata ditandai belum terverifikasi."""
+
+    __tablename__ = "market_research"
+    __table_args__ = (Index("ix_market_research_task", "task_id"),)
+
+    task_id: Mapped[str | None] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"), default=None)
+    product_id: Mapped[str | None] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"), default=None)
+    topic: Mapped[str] = mapped_column()
+    summary: Mapped[str] = mapped_column(Text, default="")
+    items: Mapped[list] = mapped_column(JSON, default=list)
+    sources: Mapped[list] = mapped_column(JSON, default=list)
+    verified_count: Mapped[int] = mapped_column(default=0)
+    unverified_count: Mapped[int] = mapped_column(default=0)
+
+
+class OutreachRecord(IdMixin, Base):
+    """Draf outreach. Belum ada konektor kirim: status `sent_manual` hanya dicatat oleh CEO setelah mengirim sendiri."""
+
+    __tablename__ = "outreach_records"
+    __table_args__ = (Index("ix_outreach_lead", "lead_id"),)
+
+    lead_id: Mapped[str] = mapped_column(ForeignKey("leads.id", ondelete="RESTRICT"))
+    product_id: Mapped[str | None] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"), default=None)
+    version_id: Mapped[str | None] = mapped_column(default=None)
+    task_id: Mapped[str | None] = mapped_column(default=None)
+    channel: Mapped[str] = mapped_column(default="email")
+    subject: Mapped[str] = mapped_column(default="")
+    body: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(default="draft")  # draft|blocked_by_claim_check|ready_for_review|sent_manual|cancelled
+    claim_check: Mapped[dict | None] = mapped_column(JSON, default=None)
+    created_by: Mapped[str] = mapped_column(default="sales_client_relations")
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    sent_note: Mapped[str | None] = mapped_column(Text, default=None)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
 class AppendOnlyError(RuntimeError):
     pass
 
@@ -353,5 +499,5 @@ class AppendOnlyError(RuntimeError):
 @event.listens_for(Session, "before_flush")
 def _enforce_append_only(session, _ctx, _instances):
     for obj in list(session.dirty) + list(session.deleted):
-        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult, CodeReview, ProductReleaseCheck)) and (obj in session.deleted or session.is_modified(obj)):
+        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult, CodeReview, ProductReleaseCheck, MarketResearch)) and (obj in session.deleted or session.is_modified(obj)):
             raise AppendOnlyError(f"{obj.__tablename__} bersifat append-only")

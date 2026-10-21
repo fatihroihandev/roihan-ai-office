@@ -1652,6 +1652,36 @@ Batasan yang diketahui:
 
 **Exit criteria:** prospek dapat dicatat, dinilai, ditelusuri sumbernya, dan diteruskan ke Sales.
 
+**Status (2026-10-21): selesai.**
+
+Yang dibangun:
+- **Data (migrasi 0008)**: `companies` (dedupe lewat nama ternormalisasi dan domain), `lead_sources` (provenance: jenis, URL, kapan, siapa, cara), `leads`, `lead_interactions`, `suppression_entries` (hanya hash), `sales_opportunities`, `client_requirements`, `market_research`, `outreach_records`, serta `tasks.params` (parameter terstruktur task; ikut sidik jari approval).
+- **Kebijakan yang diterapkan sebagai usulan bawaan** (Bagian 27 no. 7, 8, 9; dapat diubah di konfigurasi, bukan keputusan final CEO): sumber diizinkan hanya `public_website`, `public_registry` (keduanya wajib URL), `referral`, `inbound`, `event`, `manual`. Sumber terlarang ditolak dengan alasan: daftar beli, scraping media sosial, data bocor, grup privat. Dasar pemrosesan dicatat per prospek (`legitimate_interest_b2b` atau `inbound_inquiry`). Retensi: data pribadi dianonimkan setelah 180 hari tanpa interaksi atau 730 hari setelah interaksi terakhir; prospek dengan peluang terbuka dilindungi; penerapan **tidak otomatis** (`LEAD_RETENTION_AUTO_APPLY=false`): sistem menandai, CEO menjalankannya. Semua outreach melewati peninjauan CEO.
+- **Minimisasi data**: hanya data perusahaan dan kontak bisnis. Di setiap kolom teks bebas ditolak NIK/KTP, NPWP, nomor kartu (Luhn), tanggal lahir, alamat rumah, agama, kesehatan, afiliasi politik, dan sejenisnya. Email pribadi (gmail dan sejenisnya) ditolak kecuali sumbernya `inbound`. Pesan penolakan menyebut kolom dan jenis temuan, tidak mengutip isinya. Audit log tidak pernah memuat data pribadi.
+- **Akses per peran** (`access.py`, default tolak): Market Research tidak pernah melihat data pribadi prospek; hanya Sales dan CEO yang dapat membaca kontak lengkap (setiap pembacaan tercatat `lead.pii_viewed`); API dan UI menyamarkan kontak secara bawaan.
+- **Daftar jangan-hubungi**: opt-out dan penghapusan menyimpan hash email (dan domain bila ditambahkan); prospek yang menolak tidak dapat didaftarkan ulang, tidak dapat diteruskan, dan tidak dapat dibuatkan draf. Pemeriksaan juga memindai email yang tertulis pada baris sumber yang menyebut perusahaan, sehingga kandidat tidak lolos hanya karena model mengosongkan field kontaknya.
+- **Skor kecocokan 0-100, deterministik dan transparan** (bukan angka dari model): kecocokan produk 30, ukuran 15, kualitas sumber 15, kualitas kontak 20, kelengkapan 10, kesegaran 10; setiap poin punya catatan alasan. Skor di bawah batas (40) hanya dapat dilewati CEO dengan alasan tertulis.
+- **Tahap prospek berdasarkan bukti nyata**: `new -> qualified -> contacted -> meeting`, `disqualified` (alasan wajib); `contacted` memerlukan interaksi keluar yang dicatat, `meeting` memerlukan interaksi pertemuan; `opportunity`, `won`, `lost`, `do_not_contact` hanya lewat konversi, tahap peluang, atau opt-out. Hanya manusia yang dapat mengubah tahap dan mencatat interaksi; agent tidak dapat memalsukan bukti.
+- **Teruskan ke Sales** (exit criteria): prospek berstatus qualified atau lebih, provenance lengkap dan sumbernya masih diizinkan, skor memenuhi batas (atau pengecualian), tidak menolak dan tidak ada di daftar jangan-hubungi; pemilik berpindah ke `sales_client_relations`.
+- **Pipeline penjualan**: peluang (`qualification -> proposal -> negotiation -> won/lost`), alasan wajib untuk menang atau kalah, nilai kontrak aktual wajib saat menang, kebutuhan klien, status prospek ikut menutup. **Metrik** (`/api/marketing/analytics`) memberi `null` untuk yang belum diketahui (win rate tanpa peluang tertutup, pendapatan, CAC, ROI) alih-alih nol.
+- **Tiga agent** (model hanya mengusulkan; semua fakta diperiksa terhadap materi): **Lead Generation** mengekstrak prospek dari teks yang diberikan; nama perusahaan dan kutipan bukti wajib ada persis di teks (jika tidak, kandidat ditolak), sedangkan email, telepon, nama, jabatan, dan website yang tidak ada di teks dibuang dan dicatat. **Market Research** hanya memakai materi yang diberikan (tanpa data pribadi); temuan hanya `verified` jika kutipan ada di sumber dan berkaitan dengan pernyataannya, selain itu ditandai asumsi/belum terverifikasi. **Sales** menyusun draf outreach hanya dari `marketing_brief`, menolak produk yang belum diizinkan, prospek yang belum diteruskan, menolak dan yang masuk daftar jangan-hubungi; draf melewati `check_claims` dengan dua kali koreksi, kalimat berhenti-berlangganan ditambahkan secara deterministik, dan draf yang tetap melanggar disimpan `blocked_by_claim_check` (task ditandai gagal verifikasi).
+- **Tidak ada pengiriman apa pun.** Draf hanya dapat dicatat "sudah saya kirim" oleh CEO (tercatat sebagai interaksi `email_out`). Pengiriman otomatis baru dibangun di Phase 9 dan wajib approval.
+- API `/api/marketing/*` (policy, leads, interactions, convert, opportunities, outreach, research, suppression, retention, analytics, dan pembuat task) dan UI `/marketing` serta `/marketing/leads/[id]` (provenance, rincian skor, kontak tersamar dengan tombol tampilkan yang diaudit, interaksi, tindakan, peluang, draf).
+
+Verifikasi: 726 tes backend dan 7 tes frontend lolos; lint, typecheck, dan build bersih. Uji mutasi: 32 mutasi aturan kunci (akses, bukti tahap, daftar jangan-hubungi, retensi, penghapusan, dedupe, pembumian, linter, penyamaran) seluruhnya tertangkap.
+
+Pengujian menemukan lima cacat yang sudah diperbaiki: (1) penolakan URL berupa alamat IP tidak pernah aktif karena `PolicyError` turunan `ValueError` dilempar di dalam `try ... except ValueError`; (2) regex email memotong domain bertingkat (`.co.id` terbaca `.co`) sehingga pemeriksaan jangan-hubungi tidak cocok; (3) uji langsung dengan model asli: kandidat yang kontaknya dikosongkan model lolos walaupun ada di daftar jangan-hubungi (kini diperiksa dari baris sumber); (4) model memaksa mengisi telepon dan website karangan saat field dijadikan wajib, sehingga field yang tidak ada di teks kini dibuang per field dan tidak lagi menolak seluruh prospek; (5) temuan riset dengan kutipan nyata tetapi pernyataan yang berlebihan kini tidak dihitung terverifikasi.
+
+**Verifikasi langsung** (`qwen2.5-coder:7b` asli, data fiktif, DB sementara): dari daftar peserta pameran, intake membuat 1 prospek (kontak dan jabatan tepat dari teks, skor 50, provenance `event`/`agent_extraction`), menolak kandidat bergmail (`personal_email_not_allowed`) dan kandidat yang kontaknya ada di daftar jangan-hubungi. Riset: 1 dari 5 temuan terverifikasi dengan kutipan, sisanya ditandai asumsi. Outreach: produk tanpa versi ditolak jujur; dengan brief beta yang sah model menulis draf yang menyebut beta dan hanya memakai klaim terverifikasi, lolos linter, ditambah kalimat berhenti-berlangganan.
+
+Batasan yang diketahui:
+- Sumber hanya teks yang Anda tempel; belum ada penjelajah web otomatis. Itu disengaja sampai kebijakan sumber dan batas frekuensi diputuskan.
+- Pembumian bersifat heuristik: kutipan harus ada di sumber dan berbagi kata isi dengan pernyataan, tetapi pernyataan yang berlebihan dengan kata yang tumpang tindih dapat lolos. Model 7B sering menandai temuan sebagai asumsi (aman) dan jarang mengisi semua field kontak.
+- Skor mengukur kecocokan administratif, bukan kemungkinan menang; bobotnya adalah usulan.
+- Retensi menandai, CEO yang menjalankan; belum ada penjadwal otomatis. Dasar hukum (UU PDP No. 27/2022, kepentingan sah B2B) adalah rancangan teknis, bukan nasihat hukum: tinjau dengan penasihat hukum sebelum outreach nyata.
+- CAC dan ROI belum dapat dihitung (belum ada data biaya dan atribusi).
+- Antarmuka belum menampilkan tahap prospek lewat papan seret; pipeline berupa daftar per status.
+
 ## Phase 9 — Content, Promotion & Client Handoff
 
 - Tambahkan Content Workspace.
@@ -1847,9 +1877,9 @@ Hal berikut belum ditetapkan dan perlu keputusan CEO. Kolom rekomendasi hanyalah
 | 4 | Implementasi queue | Database-backed queue dengan SQLite WAL | Phase 4 |
 | 5 | Tooling: Alembic, pytest, Vitest, Playwright | Diterima sebagai usulan | Phase 1 |
 | 6 | Identitas merek final (logo, palet, signage) | Tetapkan sebelum desain 3D | Phase 10 |
-| 7 | Kebijakan retensi data prospek | Tentukan durasi dan dasar hukum | Phase 8 |
-| 8 | Sumber prospek yang diizinkan | Sumber publik dan sah saja | Phase 8 |
-| 9 | Kebijakan outreach (kanal, batas frekuensi, opt-out) | Semua outreach melalui approval | Phase 9 |
+| 7 | Kebijakan retensi data prospek | Tentukan durasi dan dasar hukum | Phase 8 (**diterapkan sebagai usulan**: 180 hari tanpa interaksi / 730 hari setelah interaksi terakhir, anonimisasi, penerapan oleh CEO; menunggu konfirmasi CEO dan tinjauan hukum) |
+| 8 | Sumber prospek yang diizinkan | Sumber publik dan sah saja | Phase 8 (**diterapkan sebagai usulan**: situs publik, registri publik, rujukan, inbound, acara, input manual; daftar beli, scraping, data bocor, grup privat dilarang; menunggu konfirmasi CEO) |
+| 9 | Kebijakan outreach (kanal, batas frekuensi, opt-out) | Semua outreach melalui approval | Phase 9 (sebagian di Phase 8: draf hanya email, wajib lolos linter klaim, kalimat opt-out otomatis, tanpa pengiriman otomatis; batas frekuensi dan kanal lain menunggu Phase 9) |
 | 10 | ~~Bahasa antarmuka~~ | **Diputuskan:** Indonesia default, bisa ganti ke Inggris (Bagian 25 no. 19) | Selesai |
 
 Setelah diputuskan, pindahkan ke Bagian 25 dan catat di `docs/DECISIONS.md`.

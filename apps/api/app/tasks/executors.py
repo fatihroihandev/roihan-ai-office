@@ -324,8 +324,11 @@ def default_executors() -> dict[str, Executor]:
     # impor tunda: modul-modul ini bergantung pada berkas ini
     from app.engineering.agents import DeveloperExecutor, QAExecutor
     from app.reporting.agent import ReporterExecutor
+    from app.marketing.agents import LeadIntakeExecutor, MarketResearchExecutor, SalesOutreachExecutor
     from app.review.reviewer import ReviewerExecutor
 
     text = LLMTextExecutor()
     return {"manager": ManagerPlanExecutor(), "analyst": text, "reporter": ReporterExecutor(text),
-            "developer": DeveloperExecutor(), "qa": QAExecutor(), "reviewer": ReviewerExecutor()}
+            "developer": DeveloperExecutor(), "qa": QAExecutor(), "reviewer": ReviewerExecutor(),
+            "market_research": MarketResearchExecutor(), "lead_generation": LeadIntakeExecutor(),
+            "sales_client_relations": SalesOutreachExecutor()}

@@ -93,7 +93,7 @@ def test_report_shows_approvals_and_decisions(migrated_db, tmp_path):
 def test_report_never_invents_missing_facts(migrated_db, tmp_path):
     env = build_env(migrated_db, tmp_path)
     pid = make_project(env)
-    tid = add_task(env, pid, role="market_research", action_type="analysis")      # tidak ada executor: tidak ada data apa pun
+    tid = add_task(env, pid, role="content_promotion", action_type="analysis")      # tidak ada executor: tidak ada data apa pun
     with env.sf() as s:
         md, _ = build_task_report(s, tid)
     for n in (4, 6, 7, 8, 11):
@@ -152,12 +152,12 @@ def test_invented_summary_is_always_discarded_regardless_of_random_ids(migrated_
 
 def test_project_report_summarises_all_tasks(migrated_db, tmp_path):
     env, pid, dev = finished_dev(migrated_db, tmp_path)
-    failed = add_task(env, pid, title="Tugas gagal", role="market_research", action_type="analysis")
+    failed = add_task(env, pid, title="Tugas gagal", role="content_promotion", action_type="analysis")
     drain(env)
     with env.sf() as s:
         md, facts = build_project_report(s, pid, project_name="Proyek Uji")
     assert md.startswith("# Laporan Proyek: Proyek Uji") and "| Buat kalkulator | developer | completed |" in md
-    assert "| Tugas gagal | market_research | blocked |" in md and md.count("### Task:") == 2
+    assert "| Tugas gagal | content_promotion | blocked |" in md and md.count("### Task:") == 2
     assert project_summary(facts).startswith("Total 2 task: 1 blocked, 1 completed.")
     assert "1 eksekusi tes" in project_summary(facts)
 
