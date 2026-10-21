@@ -1,8 +1,8 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { Loading, PageHero } from "@/components/ui/PageHero";
 import { api, type Project } from "@/lib/api";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -44,8 +44,8 @@ export default function ProjectsPage() {
   }
 
   return (
-    <main data-accent="blue">
-      <AppHeader />
+    <PageTransition>
+<main data-accent="blue">
       <PageHero
         code="01" route="SYS://PROJECTS" art="projects" title={t("projects.title")} hint={t("hero.projects.hint")}
         stats={[
@@ -85,5 +85,6 @@ export default function ProjectsPage() {
         ))}
       </ul>
     </main>
+</PageTransition>
   );
 }

@@ -148,7 +148,7 @@ h4 { margin: 1rem 0 0.4rem; color: #cfd6ff; }
 html, body { overflow-x: clip; }
 header.topbar {
   position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-  margin: 0 0 1.25rem; padding: 0.7rem 0;
+  max-width: 1200px; margin: 0 auto 1.25rem; padding: 0.7rem 1rem;
 }
 header.topbar::before { /* bilah selebar layar penuh di belakang isi yang dibatasi lebarnya */
   content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; left: 50%; width: 100vw; transform: translateX(-50%);
@@ -403,8 +403,6 @@ main[data-accent="teal"] { --pg: #2dd4bf; }
 main[data-accent="blue"] { --pg: #3b82f6; }
 
 /* transisi masuk halaman: memudar + garis pindai */
-.page-enter { animation: pageIn 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-.page-enter::before { content: ""; position: fixed; left: 0; right: 0; top: 0; height: 3px; z-index: 100; pointer-events: none; background: linear-gradient(90deg, transparent, var(--cyan), var(--magenta), transparent); box-shadow: 0 0 18px var(--cyan); animation: wipe 0.9s ease-out both; }
 @keyframes pageIn { from { opacity: 0; transform: translateY(14px); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes wipe { from { top: 0; opacity: 1; } to { top: 100%; opacity: 0; } }
 @keyframes rise { from { opacity: 0; transform: translateY(20px) scale(0.985); } to { opacity: 1; transform: none; } }
@@ -557,3 +555,27 @@ form.card.grid2 > button { justify-self: start; }
 main[data-accent] > h3 { margin: 1.8rem 0 0.8rem; }
 main[data-accent] .list.tiles > li:hover { box-shadow: 0 0 26px color-mix(in srgb, var(--pg) 30%, transparent); transform: translateY(-3px); transition: transform 0.2s, box-shadow 0.2s; }
 @media (max-width: 900px) { .duo, form.card.grid2 { grid-template-columns: 1fr; } }
+
+/* ================================================================== Perpindahan menu yang halus */
+header.topbar { view-transition-name: site-header; }
+::view-transition-group(site-header) { animation: none; }
+nav { position: relative; }
+header.topbar nav a[aria-current="page"] { background: none; box-shadow: none; color: #05060f; font-weight: 700; position: relative; z-index: 1; }
+header.topbar nav a { position: relative; z-index: 1; transition: color 0.25s, border-color 0.25s; }
+.nav-pill { position: absolute; left: 0; top: 0; bottom: 0; z-index: 0; border-radius: 999px; opacity: 0; pointer-events: none; background: linear-gradient(90deg, #3b82f6, #8b5cf6); box-shadow: 0 0 18px rgba(59, 130, 246, 0.55); transition: transform 0.42s cubic-bezier(0.3, 1.2, 0.4, 1), width 0.42s cubic-bezier(0.3, 1.2, 0.4, 1), opacity 0.2s; }
+header.topbar nav a[aria-current="page"] { color: #05060f; }
+.wipe { position: fixed; left: 0; right: 0; top: 0; height: 3px; z-index: 100; pointer-events: none; background: linear-gradient(90deg, transparent, var(--cyan), var(--magenta), transparent); box-shadow: 0 0 18px var(--cyan); animation: wipe 0.8s ease-out both; }
+
+@keyframes vt-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes vt-slide { from { translate: var(--slide-offset) 0; } to { translate: 0 0; } }
+::view-transition-old(.page-fade) { animation: 160ms ease-in both vt-fade reverse; }
+::view-transition-new(.page-fade) { animation: 260ms ease-out 80ms both vt-fade; }
+::view-transition-old(.nav-forward) { --slide-offset: -48px; animation: 150ms ease-in both vt-fade reverse, 320ms cubic-bezier(0.4, 0, 0.2, 1) both vt-slide reverse; }
+::view-transition-new(.nav-forward) { --slide-offset: 48px; animation: 240ms ease-out 110ms both vt-fade, 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-slide; }
+::view-transition-old(.nav-back) { --slide-offset: 48px; animation: 150ms ease-in both vt-fade reverse, 320ms cubic-bezier(0.4, 0, 0.2, 1) both vt-slide reverse; }
+::view-transition-new(.nav-back) { --slide-offset: -48px; animation: 240ms ease-out 110ms both vt-fade, 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-slide; }
+::view-transition-group(root) { animation-duration: 0s; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .nav-pill { transition: none; }
+}

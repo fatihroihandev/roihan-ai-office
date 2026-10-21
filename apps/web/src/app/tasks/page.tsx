@@ -1,8 +1,8 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { Loading, PageHero } from "@/components/ui/PageHero";
 import type { Project } from "@/lib/api";
 import { BOARD_COLUMNS, tasksApi, type Agent, type SandboxStatus, type Task, type WorkerStatus } from "@/lib/tasksApi";
@@ -99,8 +99,8 @@ export default function TasksPage() {
   const label = (key: string) => t(key as MessageKey);
 
   return (
-    <main className="wide" data-accent="cyan">
-      <AppHeader />
+    <PageTransition>
+<main className="wide" data-accent="cyan">
       <PageHero
         code="02" route="SYS://TASKS" art="tasks" title={t("tasks.title")} hint={t("hero.tasks.hint")}
         stats={[
@@ -244,5 +244,6 @@ export default function TasksPage() {
         })}
       </div>
     </main>
+</PageTransition>
   );
 }

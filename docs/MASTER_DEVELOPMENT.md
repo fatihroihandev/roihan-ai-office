@@ -1787,6 +1787,12 @@ Pengujian menemukan tiga hal yang diperbaiki: label ruangan di lantai tidak terb
 - **Tata letak**: proyek dan produk menjadi ubin berkisi, formulir dua kolom, dan panel yang berpasangan (Provider dan Kebijakan Biaya, Registri Model dan Uji Model, Kebijakan dan Metrik Marketing, Formulir Rencana dan Sandbox Task) berdampingan.
 - Semua animasi **otomatis berhenti** jika sistem meminta gerak berkurang, dan halaman tetap terbaca tanpa animasi.
 
+**Perpindahan menu yang halus (2026-10-21, atas permintaan CEO):**
+- **Header persisten**: bilah atas dipindah ke layout sehingga tidak lagi dimuat ulang pada setiap halaman (tidak ada kedip); pil menu aktif **meluncur** ke menu tujuan dengan gerak pegas (diukur dari tautan aktif, mengikuti ukuran jendela dan pemuatan font).
+- **View Transitions** lewat `<ViewTransition>` React 19.3 dan `transitionTypes` pada tautan menu: berpindah ke menu yang lebih kanan menggeser halaman ke kiri (`nav-forward`), ke menu yang lebih kiri ke kanan (`nav-back`), navigasi lain memudar halus; tombol Kembali peramban juga memudar. Header mendapat nama transisi sendiri sehingga tetap diam. Tanpa dukungan peramban atau dengan gerak berkurang, halaman berpindah biasa.
+- Garis pindai neon menyapu layar pada setiap navigasi (template).
+- Diverifikasi dengan Edge headless lewat DevTools Protocol: satu transisi tampilan dimulai pada navigasi, header tetap ada, dan bingkai tengah transisi memperlihatkan pil menu bergeser serta konten baru memudar masuk.
+
 Batasan yang diketahui:
 - Konsistensi setelah reconnect dibuktikan dengan sifat desain (keadaan hanya dari potret terbaru), tes fungsi murni, dan keterulangan potret backend; **belum ada uji otomatis di browser yang memutus dan menyambung ulang WebSocket** (belum ada Playwright). Uji manual: matikan backend, lihat penanda usang, nyalakan lagi.
 - Avatar belum beranimasi berjalan antar-ruangan (berpindah posisi seketika) dan belum ada model karakter detail; geometri sengaja sederhana. Performa 3D baru diukur secara kasar (perangkat lunak); profiling di perangkat nyata adalah bagian Phase 11.

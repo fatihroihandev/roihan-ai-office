@@ -1,9 +1,9 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { marketingApi, METRICS, NEXT_CAMPAIGN, type Campaign } from "@/lib/marketingApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
@@ -39,13 +39,15 @@ export default function CampaignPage() {
     }
   }
 
-  if (!camp) return <main><AppHeader />{error ? <p className="bad" role="alert">{error}</p> : <p>{t("common.loading")}</p>}</main>;
+  if (!camp) return <PageTransition>
+<main>{error ? <p className="bad" role="alert">{error}</p> : <p>{t("common.loading")}</p>}</main>
+</PageTransition>;
   const unknown = t("mkt.m.unknown");
   const sorted = [...(camp.content ?? [])].sort((a, b) => (a.scheduled_for ?? "9").localeCompare(b.scheduled_for ?? "9"));
 
   return (
-    <main>
-      <AppHeader />
+    <PageTransition>
+<main>
       <p><Link href="/marketing/content">← {t("ext.back")}</Link></p>
       <h2>{camp.name} <span className="badge">{label(`ext.campstatus.${camp.status}`)}</span></h2>
       <p className="muted">{camp.objective}</p>
@@ -102,5 +104,6 @@ export default function CampaignPage() {
         </ul>
       </section>
     </main>
+</PageTransition>
   );
 }

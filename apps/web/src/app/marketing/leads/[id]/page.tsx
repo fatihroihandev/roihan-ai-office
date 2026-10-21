@@ -1,9 +1,9 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { INTERACTION_KINDS, marketingApi, NEXT_LEAD, NEXT_STAGE, type Lead } from "@/lib/marketingApi";
 import { productsApi, type Product } from "@/lib/productsApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -60,15 +60,17 @@ export default function LeadDetailPage() {
     }
   }
 
-  if (!lead) return <main><AppHeader />{error ? <p className="bad" role="alert">{error}</p> : <p>{t("common.loading")}</p>}</main>;
+  if (!lead) return <PageTransition>
+<main>{error ? <p className="bad" role="alert">{error}</p> : <p>{t("common.loading")}</p>}</main>
+</PageTransition>;
 
   const closed = lead.anonymized || lead.do_not_contact;
   const nexts = NEXT_LEAD[lead.status] ?? [];
   const canForward = ["qualified", "contacted", "meeting"].includes(lead.status) && !closed;
 
   return (
-    <main>
-      <AppHeader />
+    <PageTransition>
+<main>
       <p><Link href="/marketing">← {t("mkt.lead.back")}</Link></p>
       <h2>{lead.company.name}</h2>
       <div className="chips">
@@ -274,5 +276,6 @@ export default function LeadDetailPage() {
         </section>
       )}
     </main>
+</PageTransition>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { Loading, PageHero } from "@/components/ui/PageHero";
 import {
   CONTENT_KINDS, marketingApi, type Campaign, type ContentAsset, type OutboundMessage, type Policy,
@@ -74,8 +74,8 @@ export default function ContentPage() {
   const ext = policy?.external;
 
   return (
-    <main data-accent="magenta">
-      <AppHeader />
+    <PageTransition>
+<main data-accent="magenta">
       <p><Link href="/marketing">← {t("ext.back")}</Link></p>
       <PageHero
         code="04.1" route="SYS://CONTENT" art="marketing" title={t("ext.title")} hint={t("ext.hint")}
@@ -256,5 +256,6 @@ export default function ContentPage() {
         </form>
       </section>
     </main>
+</PageTransition>
   );
 }

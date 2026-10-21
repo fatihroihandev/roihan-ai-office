@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { AppHeader } from "@/components/AppHeader";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { ensureRootEnv } from "@/lib/server-env";
 import { isLang, translate, type Lang } from "@/i18n/dictionaries";
@@ -24,7 +25,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang={lang}>
       <body>
-        <LanguageProvider initialLang={lang}>{children}</LanguageProvider>
+        <LanguageProvider initialLang={lang}>
+          <AppHeader />
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

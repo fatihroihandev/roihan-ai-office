@@ -1,8 +1,8 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { PageHero } from "@/components/ui/PageHero";
 import { tasksApi, type Approval } from "@/lib/tasksApi";
 import { useTaskEvents } from "@/lib/useTaskEvents";
@@ -55,8 +55,8 @@ export default function ApprovalsPage() {
   const history = items.filter((a) => a.status !== "pending");
 
   return (
-    <main className="wide" data-accent="amber">
-      <AppHeader />
+    <PageTransition>
+<main className="wide" data-accent="amber">
       <PageHero
         code="05" route="SYS://APPROVALS" art="approvals" title={t("approvals.title")} hint={t("approvals.hint")}
         stats={[
@@ -127,5 +127,6 @@ export default function ApprovalsPage() {
         </section>
       )}
     </main>
+</PageTransition>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { Loading, PageHero } from "@/components/ui/PageHero";
 import { aiApi, pct, type Budget, type GenerateResult, type ModelRow, type Provider, type UsageResponse } from "@/lib/aiApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -82,8 +82,8 @@ export default function AiControlCenterPage() {
   const tri = (v: boolean | null) => t(v === null ? "tri.unknown" : v ? "tri.yes" : "tri.no");
 
   return (
-    <main data-accent="teal">
-      <AppHeader />
+    <PageTransition>
+<main data-accent="teal">
       <PageHero
         code="06" route="SYS://AI-CORE" art="ai" title={t("ai.title")} hint={t("hero.ai.hint")}
         stats={[
@@ -252,5 +252,6 @@ export default function AiControlCenterPage() {
         )}
       </section>
     </main>
+</PageTransition>
   );
 }

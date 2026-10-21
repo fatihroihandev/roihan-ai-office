@@ -1,9 +1,9 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { DashboardPanel } from "@/components/office/DashboardPanel";
 import { ModeControls, OfficeScene, useOfficeMode, useOfficeQuality } from "@/components/office/OfficeView";
 import { useOfficeData } from "@/lib/office/useOfficeData";
@@ -52,8 +52,8 @@ export default function OfficePage() {
     : null;
 
   return (
-    <main data-office>
-      <AppHeader />
+    <PageTransition>
+<main data-office>
       <div className="office-title">
         <h2>{t("office.heading")}</h2>
         <p className="muted small">{t("office.hint")}</p>
@@ -125,5 +125,6 @@ export default function OfficePage() {
       )}
       <p className="small muted credits">{t("office.credits")}</p>
     </main>
+</PageTransition>
   );
 }

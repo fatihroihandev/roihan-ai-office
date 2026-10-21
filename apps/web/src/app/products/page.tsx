@@ -1,8 +1,8 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { Loading, PageHero } from "@/components/ui/PageHero";
 import type { Project } from "@/lib/api";
 import { productsApi, type Line, type Product } from "@/lib/productsApi";
@@ -53,8 +53,8 @@ export default function ProductsPage() {
   const label = (key: string) => t(key as MessageKey);
 
   return (
-    <main data-accent="violet">
-      <AppHeader />
+    <PageTransition>
+<main data-accent="violet">
       <PageHero
         code="03" route="SYS://PRODUCTS" art="products" title={t("products.title")} hint={t("hero.products.hint")}
         stats={[
@@ -107,5 +107,6 @@ export default function ProductsPage() {
         ))}
       </ul>
     </main>
+</PageTransition>
   );
 }

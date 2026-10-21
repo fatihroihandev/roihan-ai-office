@@ -1,9 +1,9 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { tasksApi, type TaskDetail } from "@/lib/tasksApi";
 import { useTaskEvents } from "@/lib/useTaskEvents";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -65,8 +65,8 @@ export default function TaskDetailPage() {
   const canCancel = task && !["completed", "cancelled"].includes(task.status);
 
   return (
-    <main className="wide">
-      <AppHeader />
+    <PageTransition>
+<main className="wide">
       <p><Link href="/tasks">← {t("task.back")}</Link></p>
       {error && <p className="bad" role="alert">{error}</p>}
       {!task && !error && <p>{t("common.loading")}</p>}
@@ -336,5 +336,6 @@ export default function TaskDetailPage() {
         </>
       )}
     </main>
+</PageTransition>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { api, FILE_KINDS, formatBytes, type FileKind, type Project, type ProjectFile } from "@/lib/api";
 import { tasksApi, type WorkspaceOverview } from "@/lib/tasksApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -97,8 +97,8 @@ export default function ProjectDetailPage() {
   };
 
   return (
-    <main>
-      <AppHeader />
+    <PageTransition>
+<main>
       <p><Link href="/projects">← {t("projects.back")}</Link></p>
       {error && <p className="bad" role="alert">{error}</p>}
       {!project && !error && <p>{t("common.loading")}</p>}
@@ -215,5 +215,6 @@ export default function ProjectDetailPage() {
         </>
       )}
     </main>
+</PageTransition>
   );
 }

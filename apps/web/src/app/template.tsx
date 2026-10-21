@@ -1,4 +1,9 @@
-// Template Next.js dibuat ulang pada setiap navigasi: memberi transisi masuk halaman bergaya "boot" (memudar + garis pindai).
+// Template dibuat ulang pada setiap navigasi: memicu garis pindai neon yang menyapu layar (animasi CSS murni).
 export default function Template({ children }: { children: React.ReactNode }) {
-  return <div className="page-enter">{children}</div>;
+  return (
+    <>
+      <div className="wipe" aria-hidden="true" />
+      {children}
+    </>
+  );
 }

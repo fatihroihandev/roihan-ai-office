@@ -1,8 +1,8 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { Loading, PageHero } from "@/components/ui/PageHero";
 import {
   marketingApi, PIPELINE, SOURCE_TYPES, type Analytics, type Lead, type Opportunity, type Outreach, type Policy, type Research, type Retention,
@@ -95,8 +95,8 @@ export default function MarketingPage() {
   const pct = (v: number | null) => (v === null ? unknown : `${Math.round(v * 100)}%`);
 
   return (
-    <main data-accent="magenta">
-      <AppHeader />
+    <PageTransition>
+<main data-accent="magenta">
       <PageHero
         code="04" route="SYS://MARKETING" art="marketing" title={t("mkt.title")} hint={t("mkt.hint")}
         stats={[
@@ -321,5 +321,6 @@ export default function MarketingPage() {
         </section>
       )}
     </main>
+</PageTransition>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
-import { AppHeader } from "@/components/AppHeader";
 import { HealthStatus } from "@/components/HealthStatus";
 import { HomeHero } from "@/components/home/HomeHero";
 import { LiveStrip } from "@/components/home/LiveStrip";
@@ -26,8 +26,8 @@ export default function Home() {
   const { data, stale, connected } = useOfficeData();
   const ins = useInsights(data?.generated_at ?? null);
   return (
-    <main data-home>
-      <AppHeader />
+    <PageTransition>
+<main data-home>
       <HomeHero data={data} connected={connected} />
       <LiveStrip data={data} stale={stale} ins={ins} />
       {data && <CommandDeck d={data} ins={ins} />}
@@ -43,5 +43,6 @@ export default function Home() {
       <HealthStatus />
       <footer>{t("footer.phase")}</footer>
     </main>
+</PageTransition>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
+import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import {
   NEXT_STATUS, productsApi, type Brief, type Candidate, type Gate, type LintResult, type Product, type Version,
 } from "@/lib/productsApi";
@@ -121,8 +121,8 @@ export default function ProductDetailPage() {
   const askReason = () => window.prompt(t("feature.reasonPrompt")) ?? "";
 
   return (
-    <main className="wide">
-      <AppHeader />
+    <PageTransition>
+<main className="wide">
       <p><Link href="/products">← {t("product.back")}</Link></p>
       {error && <p className="bad" role="alert">{error}</p>}
       {!product && !error && <p>{t("common.loading")}</p>}
@@ -312,5 +312,6 @@ export default function ProductDetailPage() {
         </>
       )}
     </main>
+</PageTransition>
   );
 }
