@@ -1,8 +1,9 @@
 # Lisensi model 3D
 
-| Berkas | Pencipta | Lisensi | Sumber |
-| --- | --- | --- | --- |
-| `RobotExpressive.glb` | Tomas Laulhe (modifikasi oleh Don McCurdy: morph target ekspresi, konversi FBX2GLTF) | CC0 1.0 | https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive |
-| `CesiumMan.glb` | Cesium | CC BY 4.0 (wajib atribusi) | https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CesiumMan |
+Karakter di folder `characters/` berasal dari **Blocky Characters 2.0** oleh **Kenney** (www.kenney.nl), lisensi **CC0 1.0** (domain publik; kredit tidak wajib tetapi diberikan).
+Sumber: https://kenney.nl/assets/blocky-characters
 
-Atribusi tampil di halaman Kantor ("Model 3D: RobotExpressive oleh Tomas Laulhe (CC0) dan Cesium Man oleh Cesium (CC BY 4.0)").
+Pemetaan role: manager = character-h, developer = character-c, qa = character-d, analyst = character-i, reviewer = character-j,
+reporter = character-b, market_research = character-m, lead_generation = character-r, content_promotion = character-e,
+sales_client_relations = character-n, CEO = character-q.
+Aksesori (headphone, kaca pembesar, papan klip, teropong, megafon, koper, tablet, mahkota) dibuat prosedural di aplikasi.

@@ -60,15 +60,15 @@ export function toneOf(status: string): Tone {
   }
 }
 
-/** Klip animasi model robot untuk sebuah pose. Berjalan selalu "Walking"; bekerja dan idle duduk (di meja atau sofa Lounge). */
+/** Klip animasi karakter untuk sebuah pose. Berjalan selalu "walk"; bekerja dan idle duduk (di meja atau sofa Lounge). */
 export function clipFor(pose: Pose, walking: boolean): string {
-  if (walking) return "Walking";
+  if (walking) return "walk";
   switch (pose) {
-    case "working": case "idle": return "Sitting";
-    case "waiting": return "Wave";
-    case "error": return "No";
-    case "done": return "ThumbsUp";
-    default: return "Idle"; // blocked
+    case "working": case "idle": return "sit";
+    case "waiting": return "interact-right"; // mengangkat tangan
+    case "error": return "emote-no";
+    case "done": return "emote-yes";
+    default: return "idle"; // blocked
   }
 }
 

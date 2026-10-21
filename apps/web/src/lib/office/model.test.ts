@@ -110,8 +110,8 @@ describe("mode tampilan dan fallback 2D", () => {
 
 describe("klip animasi", () => {
   it("berjalan menimpa pose; selain itu mengikuti pose", () => {
-    for (const p of ["working", "waiting", "blocked", "error", "done", "idle"] as const) expect(clipFor(p, true)).toBe("Walking");
+    for (const p of ["working", "waiting", "blocked", "error", "done", "idle"] as const) expect(clipFor(p, true)).toBe("walk");
     expect([clipFor("working", false), clipFor("idle", false), clipFor("waiting", false), clipFor("error", false), clipFor("done", false), clipFor("blocked", false)])
-      .toEqual(["Sitting", "Sitting", "Wave", "No", "ThumbsUp", "Idle"]);
+      .toEqual(["sit", "sit", "interact-right", "emote-no", "emote-yes", "idle"]);
   });
 });

@@ -8,7 +8,7 @@ import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useLogoTexture, useWordmarkTexture } from "@/components/brand/useBrandTextures";
-import { CeoRig, ModelBoundary, RobotWalker, type WalkRigProps } from "@/components/office/scene/models";
+import { CeoRig, CharacterWalker, ModelBoundary, type WalkRigProps } from "@/components/office/scene/models";
 import { DEPARTMENT_COLOR, loungeSeat, ROOM_ORDER, ROOMS, workSeat, WORKROOM, type Avatar, type Pose, type RoomId } from "@/lib/office/model";
 
 const TONE_COLOR = { ok: "#39ff88", warn: "#ffb020", bad: "#ff3860", idle: "#4b5563" } as const;
@@ -716,7 +716,7 @@ export default function Office3D({ avatars, selected, onSelect, hologram, roomLa
       >
         <Suspense fallback={null}>
           {avatars.map((a) => (
-            <RobotWalker key={a.role} a={a} selected={selected === a.role} onSelect={onSelect} name={roleLabels[a.role] ?? a.role} status={statusLabels[a.status] ?? a.status} />
+            <CharacterWalker key={a.role} a={a} selected={selected === a.role} onSelect={onSelect} name={roleLabels[a.role] ?? a.role} status={statusLabels[a.status] ?? a.status} />
           ))}
         </Suspense>
       </ModelBoundary>

@@ -1,18 +1,17 @@
 "use client";
 
-// Model 3D berskeleton: robot agent (RobotExpressive, CC0) dan avatar CEO (Cesium Man, CC-BY 4.0). Lihat public/models/LICENSES.md.
+// Karakter 3D per role (Kenney Blocky Characters, CC0) dengan aksesori prosedural, dan avatar CEO. Lihat public/models/LICENSES.md.
 import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Component, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js";
-import { clipFor, DEPARTMENT_COLOR, type Avatar } from "@/lib/office/model";
+import { attachProps, CEO_LOOK, ROLE_LOOK, type Look } from "@/components/office/scene/characters";
+import { clipFor, type Avatar } from "@/lib/office/model";
 import {
   CEO_RADIUS, CEO_START, INTERACT_RADIUS, moveWithCollision, nearestInteractable, RUN_SPEED, velocityFromInput, WALK_SPEED, type Nearby, type Point,
 } from "@/lib/office/walk";
 
-export const ROBOT_URL = "/models/RobotExpressive.glb";
-export const CEO_URL = "/models/CesiumMan.glb";
 const TONE_COLOR = { ok: "#39ff88", warn: "#ffb020", bad: "#ff3860", idle: "#4b5563" } as const;
 
 /** Jika berkas model tidak dapat dimuat, tampilkan cadangan (avatar prosedural) alih-alih merusak adegan. */
@@ -26,41 +25,35 @@ export class ModelBoundary extends Component<{ fallback: ReactNode; children: Re
   }
 }
 
-function prepare(source: THREE.Object3D, height: number, tint?: string) {
+function prepare(source: THREE.Object3D, height: number, props: Look["props"]) {
   const model = SkeletonUtils.clone(source);
+  attachProps(model, props);
   model.updateMatrixWorld(true);
-  model.traverse((o) => {
-    if ((o as THREE.SkinnedMesh).isSkinnedMesh) (o as THREE.SkinnedMesh).skeleton.update();
-  });
-  const box = new THREE.Box3().setFromObject(model, true); // presisi: memakai tulang, bukan kotak bind-pose
+  const box = new THREE.Box3().setFromObject(model, true);
   const size = box.getSize(new THREE.Vector3());
   const k = height / Math.max(0.0001, size.y);
   model.scale.multiplyScalar(k);
   model.updateMatrixWorld(true);
   const after = new THREE.Box3().setFromObject(model, true);
   model.position.y -= after.min.y; // telapak kaki tepat di lantai
-  const mats = new Map<string, THREE.Material>();
   model.traverse((o) => {
     const m = o as THREE.Mesh;
     if (!m.isMesh) return;
     m.castShadow = true;
     m.receiveShadow = true;
-    m.frustumCulled = false; // mesh berskeleton: kotak pembatas bind-pose tidak selalu mewakili pose animasi
-    const src = m.material as THREE.MeshStandardMaterial;
-    let own = mats.get(src.uuid);
-    if (!own) {
-      own = src.clone();
-      if (tint && src.name === "Main") {
-        const std = own as THREE.MeshStandardMaterial;
-        std.color = std.color.clone().lerp(new THREE.Color(tint), 0.6);
-        std.emissive = new THREE.Color(tint);
-        std.emissiveIntensity = 0.12;
-      }
-      mats.set(src.uuid, own);
-    }
-    m.material = own;
+    m.frustumCulled = false;
   });
   return model;
+}
+
+/** Muat karakter, pasang aksesori, dan siapkan mixer + aksi bernama (idle, walk, sit, ...). */
+function useCharacter(look: Look, height: number) {
+  const gltf = useLoader(GLTFLoader, look.file);
+  const model = useMemo(() => prepare(gltf.scene, height, look.props), [gltf.scene, height, look.props]);
+  const mixer = useMemo(() => new THREE.AnimationMixer(model), [model]);
+  const actions = useMemo(() => Object.fromEntries(gltf.animations.map((c) => [c.name, mixer.clipAction(c)])), [mixer, gltf.animations]);
+  useEffect(() => () => void mixer.stopAllAction(), [mixer]);
+  return { model, mixer, actions };
 }
 
 function lerpAngle(a: number, b: number, k: number) {
@@ -101,23 +94,18 @@ function Tag({ lines, y, scale }: { lines: { text: string; color: string }[]; y:
   );
 }
 
-// ------------------------------------------------------------------ robot agent
+// ------------------------------------------------------------------ karakter agent per role
 
-export function RobotWalker({ a, selected, onSelect, name, status }: {
+export function CharacterWalker({ a, selected, onSelect, name, status }: {
   a: Avatar; selected: boolean; onSelect: (role: string) => void; name: string; status: string;
 }) {
-  const gltf = useLoader(GLTFLoader, ROBOT_URL);
-  const tint = DEPARTMENT_COLOR[a.department] ?? "#3b82f6";
-  const model = useMemo(() => prepare(gltf.scene, 1.55, tint), [gltf.scene, tint]);
-  const mixer = useMemo(() => new THREE.AnimationMixer(model), [model]);
-  const actions = useMemo(() => Object.fromEntries(gltf.animations.map((c) => [c.name, mixer.clipAction(c)])), [mixer, gltf.animations]);
+  const look = ROLE_LOOK[a.role] ?? ROLE_LOOK.analyst;
+  const { model, mixer, actions } = useCharacter(look, 1.85);
   const current = useRef<string | null>(null);
   const root = useRef<THREE.Group>(null);
   const ring = useRef<THREE.MeshBasicMaterial>(null);
   const start = useMemo<[number, number, number]>(() => [a.position[0], 0, a.position[1]], []); // eslint-disable-line react-hooks/exhaustive-deps
   const tone = TONE_COLOR[a.tone];
-
-  useEffect(() => () => void mixer.stopAllAction(), [mixer]);
 
   useFrame((state, dt) => {
     const g = root.current;
@@ -140,7 +128,7 @@ export function RobotWalker({ a, selected, onSelect, name, status }: {
     const clip = clipFor(a.pose, walking);
     if (clip !== current.current && actions[clip]) {
       const next = actions[clip];
-      next.reset().setLoop(clip === "Sitting" ? THREE.LoopRepeat : THREE.LoopRepeat, Infinity).fadeIn(0.25).play();
+      next.reset().fadeIn(0.25).play();
       if (current.current && actions[current.current]) actions[current.current].fadeOut(0.25);
       current.current = clip;
     }
@@ -185,7 +173,7 @@ export type WalkRigProps = {
 };
 
 const KEYS: Record<string, string> = { KeyW: "f", ArrowUp: "f", KeyS: "b", ArrowDown: "b", KeyA: "l", KeyD: "r" };
-// CesiumMan menghadap sumbu +x pada pose awal: koreksi agar arah hadap model = arah gerak
+// karakter Kenney menghadap +z pada pose awal
 const CEO_FACING_OFFSET = 0;
 
 /**
@@ -193,12 +181,9 @@ const CEO_FACING_OFFSET = 0;
  * Saat tidak berjalan, CEO berdiri diam di tempat terakhirnya dan kamera dikendalikan OrbitControls di luar komponen ini.
  */
 export function CeoRig({ walking, start, view, avatars, label, onNearby, onInteract, onToggleView, onExit }: WalkRigProps) {
-  const gltf = useLoader(GLTFLoader, CEO_URL);
   const { camera, gl } = useThree();
-  const model = useMemo(() => prepare(gltf.scene, 1.78), [gltf.scene]);
-  const mixer = useMemo(() => new THREE.AnimationMixer(model), [model]);
-  const clip = gltf.animations[0];
-  const actionRef = useRef<THREE.AnimationAction | null>(null);
+  const { model, mixer, actions } = useCharacter(CEO_LOOK, 1.95);
+  const currentClip = useRef<string | null>(null);
   const root = useRef<THREE.Group>(null);
   const pos = useRef<Point>(start ? [...start] : [...CEO_START]);
   const yaw = useRef(0);
@@ -211,16 +196,6 @@ export function CeoRig({ walking, start, view, avatars, label, onNearby, onInter
   const reported = useRef<string>("");
   const camPos = useMemo(() => new THREE.Vector3(), []);
   const look = useMemo(() => new THREE.Vector3(), []);
-
-  useEffect(() => {
-    const act = clip ? mixer.clipAction(clip) : null;
-    act?.play();
-    actionRef.current = act;
-    return () => {
-      actionRef.current = null;
-      mixer.stopAllAction();
-    };
-  }, [clip, mixer]);
 
   // papan ketik dan mouse hanya aktif dalam mode jalan
   useEffect(() => {
@@ -305,10 +280,11 @@ export function CeoRig({ walking, start, view, avatars, label, onNearby, onInter
     g.position.set(pos.current[0], 0, pos.current[1]);
     g.rotation.y = lerpAngle(g.rotation.y, heading.current + CEO_FACING_OFFSET, 1 - Math.exp(-12 * dt));
     g.visible = !(walking && view === "first");
-    const act = actionRef.current;
-    if (act) {
-      act.timeScale = moving ? (shift.current ? 1.7 : 1.05) : 0; // diam: berhenti pada pose berdiri
-      if (!moving) act.time = 0;
+    const want = moving ? (shift.current ? "sprint" : "walk") : "idle";
+    if (want !== currentClip.current && actions[want]) {
+      actions[want].reset().fadeIn(0.2).play();
+      if (currentClip.current && actions[currentClip.current]) actions[currentClip.current].fadeOut(0.2);
+      currentClip.current = want;
     }
     mixer.update(dt);
 
