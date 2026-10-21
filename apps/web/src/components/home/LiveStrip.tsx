@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import type { Dashboard } from "@/lib/dashboardApi";
+import type { Insights } from "@/lib/insightsApi";
+import { situation } from "@/lib/charts/situation";
 import { poseOf, toneOf } from "@/lib/office/model";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
 
-export function LiveStrip({ data, stale }: { data: Dashboard | null; stale: boolean }) {
+export function LiveStrip({ data, stale, ins }: { data: Dashboard | null; stale: boolean; ins: Insights | null }) {
   const { t } = useLanguage();
   const label = (key: string) => t(key as MessageKey);
   if (!data) {
@@ -28,8 +30,17 @@ export function LiveStrip({ data, stale }: { data: Dashboard | null; stale: bool
     { key: "office.stat.outbox", value: data.marketing.outbox_waiting, alert: data.marketing.outbox_waiting > 0, href: "/marketing/content" },
   ];
   const waiting = data.needs_decision.slice(0, 4);
+  const fill = (key: string, params: Record<string, string | number>) => Object.entries(params).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), label(key));
+  const sit = situation(data, ins);
   return (
     <section className="live" aria-label={t("home.live.title")}>
+      <div className="sitrep" data-level={sit.level} role="status">
+        <i aria-hidden="true" />
+        <div>
+          <strong>{fill(sit.headline.key, sit.headline.params)}</strong>
+          {sit.details.length > 0 && <ul>{sit.details.map((x) => <li key={x.key}>{fill(x.key, x.params)}</li>)}</ul>}
+        </div>
+      </div>
       {stale && <p className="bad small" role="status">{t("office.stale")}</p>}
       <div className="kpis">
         {kpis.map((k) => (

@@ -104,3 +104,61 @@ def test_marketing_block_reflects_waiting_items(client, auth):
         s.commit()
     m = client.get("/api/dashboard", headers=auth).json()["marketing"]
     assert (m["content_ready"], m["outbox_waiting"], m["outreach_ready"]) == (1, 1, 0)
+
+
+# ================================================================== insights (grafik)
+
+def _task(c, auth, pid, **kw):
+    return c.post("/api/tasks", json={"project_id": pid, "title": kw.pop("title", "T"), "role": kw.pop("role", "analyst"), "action_type": "analysis", **kw}, headers=auth).json()["id"]
+
+
+def test_insights_requires_token_and_validates_range(client, auth):
+    assert client.get("/api/dashboard/insights").status_code == 401
+    assert client.get("/api/dashboard/insights?days=3", headers=auth).status_code == 422
+    assert client.get("/api/dashboard/insights?days=61", headers=auth).status_code == 422
+
+
+def test_insights_empty_system_uses_null_not_zero_for_unknowns(client, auth):
+    d = client.get("/api/dashboard/insights", headers=auth).json()
+    assert len(d["throughput"]) == 14 and all(x["created"] == x["completed"] == x["failed"] == 0 for x in d["throughput"])
+    assert d["quality"] == {"finished_7d": 0, "success_rate_7d": None, "avg_minutes": None}
+    assert d["projects"] == [] and d["activity"] == [] and len(d["ai_hourly"]) == 24
+    assert [s["stage"] for s in d["funnel"]["stages"]] == ["new", "qualified", "contacted", "meeting", "opportunity", "won"]
+    assert d["workload"][0]["role"] == "manager" and len(d["workload"]) == 10
+
+
+def test_insights_progress_throughput_and_quality_from_real_tasks(client, auth, pid):
+    for i in range(3):
+        task(client, auth, pid, title=f"T{i}")
+    drain(client)                                               # 3 task analyst selesai
+    t = client.post("/api/tasks", json={"project_id": pid, "title": "Tanpa executor", "role": "developer", "action_type": "code_change"}, headers=auth).json()
+    client.post(f"/api/tasks/{t['id']}/queue", headers=auth)
+    drain(client)                                               # terblokir
+    d = client.get("/api/dashboard/insights", headers=auth).json()
+    proj = d["projects"][0]
+    assert (proj["total"], proj["counts"]["completed"], proj["counts"]["blocked"], proj["percent"]) == (4, 3, 1, 75)
+    today = d["throughput"][-1]
+    assert (today["created"], today["completed"], today["failed"]) == (4, 3, 0)
+    assert d["quality"]["finished_7d"] == 3 and d["quality"]["success_rate_7d"] == 1.0 and d["quality"]["avg_minutes"] is not None
+    wl = {w["role"]: w for w in d["workload"]}
+    assert wl["analyst"]["completed_7d"] == 3 and wl["developer"]["blocked"] == 1
+    assert d["activity"][0]["seq"] > d["activity"][-1]["seq"] and d["activity"][0]["project"] == "P"
+
+
+def test_insights_ai_hourly_buckets_and_marketing_funnel(client, auth):
+    from app.db.models import Company, Lead, LeadSource
+    with client.app.state.session_factory() as s:
+        s.add(ModelUsage(provider="ollama", model="m", status="ok", prompt_tokens=10, completion_tokens=5))
+        s.add(ModelUsage(provider="ollama", model="m", status="error"))
+        co = Company(name="A", normalized_name="a")
+        src = LeadSource(source_type="manual", collected_at=utcnow(), collected_by="ceo")
+        s.add_all([co, src])
+        s.flush()
+        for st in ("new", "qualified", "meeting", "won", "lost"):
+            s.add(Lead(company_id=co.id, source_id=src.id, status=st, basis="legitimate_interest_b2b", collected_at=utcnow()))
+        s.commit()
+    d = client.get("/api/dashboard/insights", headers=auth).json()
+    assert sum(b["calls"] for b in d["ai_hourly"]) == 2 and d["ai_hourly"][-1]["tokens"] == 15 and d["ai_hourly"][-1]["errors"] == 1
+    st = {x["stage"]: x for x in d["funnel"]["stages"]}
+    assert (st["new"]["reached"], st["qualified"]["reached"], st["meeting"]["reached"], st["won"]["reached"]) == (4, 3, 2, 1)
+    assert st["contacted"]["now"] == 0 and d["funnel"]["out"]["lost"] == 1
