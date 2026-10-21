@@ -1,7 +1,7 @@
 export const dictionaries = {
   id: {
-    "app.name": "Roihan Software House",
-    "app.tagline": "Build Today, Create Tomorrow",
+    "app.name": "Roihan Technologies",
+    "app.tagline": "Building Smarter Tomorrow",
     "status.title": "Status Sistem",
     "status.overall": "Keseluruhan",
     "status.database": "Database",
@@ -352,7 +352,7 @@ export const dictionaries = {
     "nav.office": "Kantor",
     "office.heading": "Kantor Virtual",
     "office.hint": "Cermin status backend: agent tanpa task rebah di Lounge dan tak pernah pura-pura sibuk. Seret untuk memutar, gulir untuk zoom.",
-    "office.title": "Roihan Software House",
+    "office.title": "Roihan Technologies",
     "office.mode": "Mode tampilan",
     "office.mode.auto": "Otomatis",
     "office.mode.3d": "3D",
@@ -689,8 +689,8 @@ export const dictionaries = {
     "footer.phase": "STATUS // Konektor kirim/publikasi eksternal: OFFLINE. Semua keluaran berhenti di kotak keluar sampai CEO menekan tombolnya.",
   },
   en: {
-    "app.name": "Roihan Software House",
-    "app.tagline": "Build Today, Create Tomorrow",
+    "app.name": "Roihan Technologies",
+    "app.tagline": "Building Smarter Tomorrow",
     "status.title": "System Status",
     "status.overall": "Overall",
     "status.database": "Database",
@@ -1041,7 +1041,7 @@ export const dictionaries = {
     "nav.office": "Office",
     "office.heading": "Virtual Office",
     "office.hint": "A mirror of backend state: agents without a task lounge around and never fake being busy. Drag to rotate, scroll to zoom.",
-    "office.title": "Roihan Software House",
+    "office.title": "Roihan Technologies",
     "office.mode": "View mode",
     "office.mode.auto": "Auto",
     "office.mode.3d": "3D",

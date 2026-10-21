@@ -6,7 +6,7 @@ import type { Dashboard } from "@/lib/dashboardApi";
 export type HeroTone = "idle" | "busy" | "wait" | "alert";
 export type HeroActivity = { level: 0 | 1 | 2 | 3; tone: HeroTone; color: string; running: number };
 
-export const TONE_COLOR: Record<HeroTone, string> = { idle: "#00b8ff", busy: "#39ff88", wait: "#ffb020", alert: "#ff3860" };
+export const TONE_COLOR: Record<HeroTone, string> = { idle: "#3b82f6", busy: "#39ff88", wait: "#ffb020", alert: "#ff3860" };
 
 export function heroActivity(d: Dashboard | null): HeroActivity {
   if (!d) return { level: 0, tone: "idle", color: TONE_COLOR.idle, running: 0 };

@@ -20,9 +20,9 @@ export type Room = { id: RoomId; center: [number, number]; size: [number, number
 
 // Denah (satuan meter, sumbu x ke kanan, z ke arah penonton). Warna: biru elektrik, ungu, magenta.
 export const ROOMS: Record<RoomId, Room> = {
-  ceo: { id: "ceo", center: [0, -7], size: [8, 5], color: "#a855f7" },
-  engineering: { id: "engineering", center: [-10, -1], size: [9, 7], color: "#00b8ff" },
-  marketing: { id: "marketing", center: [10, -1], size: [9, 7], color: "#ff2bd6" },
+  ceo: { id: "ceo", center: [0, -7], size: [8, 5], color: "#8b5cf6" },
+  engineering: { id: "engineering", center: [-10, -1], size: [9, 7], color: "#3b82f6" },
+  marketing: { id: "marketing", center: [10, -1], size: [9, 7], color: "#d946ef" },
   meeting: { id: "meeting", center: [-8, 10.5], size: [7, 5], color: "#7c5cff" },
   lounge: { id: "lounge", center: [8, 10.5], size: [9, 5], color: "#2dd4bf" },
 };
@@ -36,7 +36,7 @@ export const WORKROOM: Record<string, RoomId> = {
   market_research: "marketing", lead_generation: "marketing", content_promotion: "marketing", sales_client_relations: "marketing",
 };
 
-export const DEPARTMENT_COLOR: Record<string, string> = { coordination: "#a855f7", engineering: "#00b8ff", marketing: "#ff2bd6" };
+export const DEPARTMENT_COLOR: Record<string, string> = { coordination: "#8b5cf6", engineering: "#3b82f6", marketing: "#d946ef" };
 
 const WORKING = new Set(["planning", "working", "testing", "reviewing", "researching", "prospecting", "creating_content", "client_followup"]);
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BRAND } from "@/lib/brand";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
 
@@ -24,19 +25,11 @@ export function AppHeader() {
   return (
     <header className="topbar">
       <Link href="/" className="brand" aria-label={t("app.name")}>
-        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
-          <defs>
-            <linearGradient id="rg" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#00e5ff" />
-              <stop offset="1" stopColor="#ff2bd6" />
-            </linearGradient>
-          </defs>
-          <polygon points="17,2 30,9.5 30,24.5 17,32 4,24.5 4,9.5" fill="rgba(0,184,255,0.08)" stroke="url(#rg)" strokeWidth="1.8" />
-          <path d="M12 23V11h6.2a3.6 3.6 0 0 1 0 7.2H12m6 0 4.2 4.8" fill="none" stroke="url(#rg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <span>
-          <span className="brand-name">{t("app.name")}</span>
-          <span className="tagline">{t("app.tagline")}</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={BRAND.logoMark} alt="" width={38} height={38} />
+        <span className="brand-text">
+          <span className="brand-name">{BRAND.name}</span>
+          <span className="brand-sub">{BRAND.sub}</span>
         </span>
       </Link>
       <nav aria-label="Menu">

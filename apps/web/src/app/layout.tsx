@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { ensureRootEnv } from "@/lib/server-env";
 import { isLang, translate, type Lang } from "@/i18n/dictionaries";
+import "@fontsource-variable/montserrat";
 import "./globals.css";
 
 async function resolveLang(): Promise<Lang> {

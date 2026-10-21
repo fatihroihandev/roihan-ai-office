@@ -5,10 +5,11 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { useLogoTexture } from "@/components/brand/useBrandTextures";
 import type { HeroActivity } from "@/lib/home/activity";
 
 const SEG = 90; // panjang satu segmen kota (m); dua salinan bergulir agar tak berujung
-const NEON = ["#00e5ff", "#ff2bd6", "#a855f7", "#00b8ff", "#ff7a2b"];
+const NEON = ["#00e5ff", "#d946ef", "#8b5cf6", "#3b82f6", "#ff7a2b"];
 
 function rngFrom(seed: number) {
   let s = seed;
@@ -156,19 +157,19 @@ function Road({ speed }: { speed: number }) {
         {lines.map((i) => (
           <mesh key={i} position={[0, 0.01, -i * 5 + 8]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[60, 0.05]} />
-            <meshBasicMaterial color="#00b8ff" transparent opacity={0.55} toneMapped={false} />
+            <meshBasicMaterial color="#3b82f6" transparent opacity={0.55} toneMapped={false} />
           </mesh>
         ))}
       </group>
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * 6, 0.02, -60]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.12, 200]} />
-          <meshBasicMaterial color={s < 0 ? "#ff2bd6" : "#00e5ff"} toneMapped={false} />
+          <meshBasicMaterial color={s < 0 ? "#d946ef" : "#00e5ff"} toneMapped={false} />
         </mesh>
       ))}
       <mesh position={[0, 0.02, -60]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[0.1, 200]} />
-        <meshBasicMaterial color="#a855f7" transparent opacity={0.6} toneMapped={false} />
+        <meshBasicMaterial color="#8b5cf6" transparent opacity={0.6} toneMapped={false} />
       </mesh>
     </group>
   );
@@ -325,6 +326,21 @@ function Core({ activity }: { activity: HeroActivity }) {
   );
 }
 
+/** Tanda logo Roihan melayang di atas inti AI (sprite menghadap kamera, bercahaya). */
+function LogoHolo() {
+  const logo = useLogoTexture();
+  const ref = useRef<THREE.Sprite>(null);
+  useFrame(({ clock }) => {
+    if (ref.current) ref.current.position.y = 22.5 + Math.sin(clock.elapsedTime * 0.9) * 0.4;
+  });
+  if (!logo) return null;
+  return (
+    <sprite ref={ref} position={[11, 22.5, -30]} scale={[7.5, 7.5, 1]}>
+      <spriteMaterial map={logo} transparent depthWrite={false} toneMapped={false} />
+    </sprite>
+  );
+}
+
 function Billboard({ position, rotY, lines }: { position: [number, number, number]; rotY: number; lines: { text: string; color: string }[] }) {
   const tex = useMemo(() => textTexture(lines), [lines]);
   const mat = useRef<THREE.MeshBasicMaterial>(null);
@@ -346,7 +362,7 @@ function Sky() {
   return (
     <group position={[0, 0, -118]}>
       <sprite position={[0, 8, 0]} scale={[260, 80, 1]}>
-        <spriteMaterial map={glow} color="#ff2bd6" transparent opacity={0.55} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <spriteMaterial map={glow} color="#d946ef" transparent opacity={0.55} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </sprite>
       <sprite position={[-40, 24, 0]} scale={[160, 110, 1]}>
         <spriteMaterial map={glow} color="#5b2bff" transparent opacity={0.4} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
@@ -357,7 +373,7 @@ function Sky() {
       </mesh>
       <mesh position={[42, 34, 8]} rotation={[1.2, 0.2, 0.3]}>
         <torusGeometry args={[15, 0.35, 8, 120]} />
-        <meshBasicMaterial color="#ff2bd6" toneMapped={false} />
+        <meshBasicMaterial color="#d946ef" toneMapped={false} />
       </mesh>
     </group>
   );
@@ -378,7 +394,7 @@ function Rig() {
 }
 
 const SIGN_A = [{ text: "BUILD TODAY", color: "#00e5ff" }];
-const SIGN_B = [{ text: "CREATE TOMORROW", color: "#ff2bd6" }];
+const SIGN_B = [{ text: "CREATE TOMORROW", color: "#d946ef" }];
 
 export default function HeroScene({ activity, running, onFail }: { activity: HeroActivity; running: boolean; onFail: () => void }) {
   const speed = 6 + activity.level * 5; // kota bergulir lebih cepat saat sistem sibuk
@@ -400,7 +416,7 @@ export default function HeroScene({ activity, running, onFail }: { activity: Her
       <fog attach="fog" args={["#1a0b3a", 50, 170]} />
       <ambientLight intensity={0.6} />
       <hemisphereLight args={["#6b4bff", "#0a0420", 0.7]} />
-      <pointLight position={[-9, 9, -6]} color="#ff2bd6" intensity={260} distance={50} decay={2} />
+      <pointLight position={[-9, 9, -6]} color="#d946ef" intensity={260} distance={50} decay={2} />
       <pointLight position={[9, 9, -22]} color="#00e5ff" intensity={260} distance={50} decay={2} />
       <Rig />
       <Sky />
@@ -409,6 +425,7 @@ export default function HeroScene({ activity, running, onFail }: { activity: Her
       <Traffic />
       <Rain />
       <Core activity={activity} />
+      <LogoHolo />
       <Billboard position={[-17, 12, -34]} rotY={0.5} lines={SIGN_A} />
       <Billboard position={[17, 15, -44]} rotY={-0.5} lines={SIGN_B} />
     </Canvas>

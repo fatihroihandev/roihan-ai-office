@@ -6,6 +6,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { useLogoTexture, useWordmarkTexture } from "@/components/brand/useBrandTextures";
 import { DEPARTMENT_COLOR, loungeSeat, ROOM_ORDER, ROOMS, workSeat, WORKROOM, type Avatar, type Pose, type RoomId } from "@/lib/office/model";
 
 const TONE_COLOR = { ok: "#39ff88", warn: "#ffb020", bad: "#ff3860", idle: "#4b5563" } as const;
@@ -83,6 +84,31 @@ function TextPlane({ lines, position, size }: { lines: HologramLine[]; position:
   );
 }
 
+// ------------------------------------------------------------------ papan merek Roihan Technologies
+
+/** Logo "R" bercahaya + tulisan ROIHAN / TECHNOLOGIES / tagline sesuai berkas identitas. */
+function BrandSign({ position, scale = 1, tagline = true }: { position: [number, number, number]; scale?: number; tagline?: boolean }) {
+  const logo = useLogoTexture();
+  const word = useWordmarkTexture(tagline);
+  const wordH = tagline ? 3.5 : 2.5;
+  return (
+    <group position={position} scale={scale}>
+      {logo && (
+        <mesh position={[-4.6, 0, 0]}>
+          <planeGeometry args={[3.6, 3.6]} />
+          <meshBasicMaterial map={logo} transparent depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
+      {word && (
+        <mesh position={[2.5, 0, 0]}>
+          <planeGeometry args={[10, wordH]} />
+          <meshBasicMaterial map={word} transparent depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
 // ------------------------------------------------------------------ kamera
 
 function Controls({ focus }: { focus: [number, number] | null }) {
@@ -118,7 +144,7 @@ function makeSkyline() {
     seed = (seed * 16807) % 2147483647; // deterministik: tampilan sama setiap dimuat
     return seed / 2147483647;
   };
-  const buildings = Array.from({ length: 52 }, (_, i) => ({ x: -38 + i * 1.5, h: 3 + rnd() * 17, w: 0.9 + rnd() * 0.8, hue: ["#00b8ff", "#a855f7", "#ff2bd6"][Math.floor(rnd() * 3)] }));
+  const buildings = Array.from({ length: 52 }, (_, i) => ({ x: -38 + i * 1.5, h: 3 + rnd() * 17, w: 0.9 + rnd() * 0.8, hue: ["#3b82f6", "#8b5cf6", "#d946ef"][Math.floor(rnd() * 3)] }));
   const windows = Array.from({ length: 520 }, () => {
     const b = buildings[Math.floor(rnd() * buildings.length)];
     return { x: b.x + (rnd() - 0.5) * (b.w - 0.25), y: 0.6 + rnd() * (b.h - 1), warm: rnd() > 0.6 };
@@ -175,7 +201,7 @@ function GlassWall() {
       ))}
       <mesh position={[0, 8.4, 0]}>
         <boxGeometry args={[46, 0.12, 0.12]} />
-        <meshBasicMaterial color="#00b8ff" toneMapped={false} />
+        <meshBasicMaterial color="#3b82f6" toneMapped={false} />
       </mesh>
     </group>
   );
@@ -344,7 +370,7 @@ function Rack({ position }: { position: [number, number, number] }) {
       {Array.from({ length: 12 }, (_, i) => (
         <mesh key={i} position={[i % 2 ? 0.22 : -0.22, 0.3 + Math.floor(i / 2) * 0.35, 0.36]} ref={(m) => void (leds.current[i] = m)}>
           <boxGeometry args={[0.1, 0.05, 0.02]} />
-          <meshBasicMaterial color={i % 3 === 0 ? "#39ff88" : "#00b8ff"} toneMapped={false} />
+          <meshBasicMaterial color={i % 3 === 0 ? "#39ff88" : "#3b82f6"} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -366,12 +392,12 @@ function WallChart({ position }: { position: [number, number, number] }) {
     <group position={position}>
       <mesh>
         <boxGeometry args={[4.4, 1.8, 0.08]} />
-        <meshStandardMaterial color="#12061f" emissive="#ff2bd6" emissiveIntensity={0.18} />
+        <meshStandardMaterial color="#12061f" emissive="#d946ef" emissiveIntensity={0.18} />
       </mesh>
       {Array.from({ length: 7 }, (_, i) => (
         <mesh key={i} position={[-1.8 + i * 0.6, 0, 0.06]} ref={(m) => void (bars.current[i] = m)}>
           <boxGeometry args={[0.36, 1, 0.04]} />
-          <meshBasicMaterial color={i % 2 ? "#ff2bd6" : "#00e5ff"} toneMapped={false} />
+          <meshBasicMaterial color={i % 2 ? "#d946ef" : "#00e5ff"} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -434,7 +460,7 @@ function CeoDesk() {
     <group position={[cx, 0.35, cz + 0.8]}>
       <mesh position={[0, 0.4, 0]}>
         <boxGeometry args={[3.2, 0.1, 1]} />
-        <meshStandardMaterial color="#160b2e" metalness={0.8} roughness={0.25} emissive="#a855f7" emissiveIntensity={0.18} />
+        <meshStandardMaterial color="#160b2e" metalness={0.8} roughness={0.25} emissive="#8b5cf6" emissiveIntensity={0.18} />
       </mesh>
       <mesh position={[0, 0.2, 0]}>
         <boxGeometry args={[3.0, 0.4, 0.8]} />
@@ -442,7 +468,7 @@ function CeoDesk() {
       </mesh>
       <mesh position={[0, 0.46, 0.46]}>
         <boxGeometry args={[3.2, 0.03, 0.03]} />
-        <meshBasicMaterial color="#a855f7" toneMapped={false} />
+        <meshBasicMaterial color="#8b5cf6" toneMapped={false} />
       </mesh>
     </group>
   );
@@ -476,7 +502,7 @@ function Walker({ a, selected, onSelect, name, status }: { a: Avatar; selected: 
   const armR = useRef<THREE.Group>(null);
   const ring = useRef<THREE.MeshBasicMaterial>(null);
   const start = useMemo<[number, number, number]>(() => [a.position[0], 0, a.position[1]], []); // eslint-disable-line react-hooks/exhaustive-deps
-  const color = DEPARTMENT_COLOR[a.department] ?? "#00b8ff";
+  const color = DEPARTMENT_COLOR[a.department] ?? "#3b82f6";
   const tone = TONE_COLOR[a.tone];
 
   useFrame((state, dt) => {
@@ -610,7 +636,7 @@ export default function Office3D({ avatars, selected, onSelect, hologram, roomLa
         <meshStandardMaterial color="#060a18" metalness={0.9} roughness={0.2} />
       </mesh>
       <gridHelper args={[70, 70, "#1c2a55", "#0e1630"]} position={[0, -0.02, 0]} />
-      <SpriteLabel lines={[{ text: "ROIHAN SOFTWARE HOUSE", color: "#00e5ff" }, { text: "Build Today, Create Tomorrow", color: "#ff2bd6" }]} position={[0, 4.6, -14.2]} scale={[12, 3.1]} />
+      <BrandSign position={[-0.6, 3.9, -14.2]} scale={0.72} />
 
       {ROOM_ORDER.map((id) => <RoomShell key={id} id={id} name={roomLabels[id]} glow={glow} />)}
 
@@ -626,6 +652,7 @@ export default function Office3D({ avatars, selected, onSelect, hologram, roomLa
 
       <HoloTable />
       <CeoDesk />
+      <BrandSign position={[ROOMS.ceo.center[0], 0.85, ROOMS.ceo.center[1] - ROOMS.ceo.size[1] / 2 + 0.25]} scale={0.2} tagline={false} />
       <Plant position={[cx - 3.4, 0.4, cz - 1.6]} s={1.1} />
       <Plant position={[cx + 3.4, 0.4, cz - 1.6]} s={1.1} />
       <TextPlane lines={hologram} position={[cx, 2.9, cz - 1.9]} size={[6.2, 2.9]} />

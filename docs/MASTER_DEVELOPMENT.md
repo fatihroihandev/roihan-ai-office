@@ -1765,6 +1765,14 @@ Pengujian menemukan tiga hal yang diperbaiki: label ruangan di lantai tidak terb
 - Data grafik diperbarui bersama potret dashboard (WebSocket dan polling) dengan pembatasan frekuensi.
 - Pengujian menemukan dua cacat yang diperbaiki: waktu relatif tampil "NaN" karena `generated_at` dashboard memakai offset `+00:00` (kini `parseUtc` menerima Z, offset, atau tanpa zona), dan sumbu menampilkan desimal untuk hitungan (kini tick bilangan bulat).
 
+**Identitas merek diterapkan (2026-10-21, dari `image/identitas roihan technologies.png`):**
+- **Logo**: tanda "R" bertransparan diekstrak dari berkas identitas (`apps/web/public/brand/logo-mark.png`; resolusi terbatas oleh sumbernya, 543 px) dan dipakai di bilah atas bersama tulisan **ROIHAN / TECHNOLOGIES** berhuruf lebar, favicon dan ikon Apple (dari ikon aplikasi pada berkas), serta hologram logo di atas inti AI pada hero beranda.
+- **Palet** seluruh aplikasi dan adegan 3D diganti ke #00E5FF (cyan), #3B82F6 (biru), #8B5CF6 (ungu), dan #D946EF (magenta); gradasi merek dipakai pada judul, KPI, tab aktif, dan tombol utama. Warna status grafik tetap terpisah (tervalidasi).
+- **Tipografi Montserrat** dipasang lokal lewat `@fontsource-variable/montserrat` (tanpa permintaan jaringan eksternal).
+- **Kantor 3D**: papan merek di dinding kaca (logo bercahaya + ROIHAN / TECHNOLOGIES + "BUILDING SMARTER TOMORROW", digambar dengan font merek) dan plakat logo di CEO Office.
+- Nama aplikasi dan tagline header kini mengikuti identitas ("Roihan Technologies", "Building Smarter Tomorrow"); slogan hero "Build Today, Create Tomorrow" tetap sesuai permintaan CEO. Untuk kembali ke "Roihan Software House", ubah `app.name` di `dictionaries.ts` dan `BRAND` di `lib/brand.ts`.
+- Perbaikan tata letak: garis horizontal batas hero yang menembus panel situasi dihapus, dan isi panel situasi kini rata tengah secara vertikal.
+
 Batasan yang diketahui:
 - Konsistensi setelah reconnect dibuktikan dengan sifat desain (keadaan hanya dari potret terbaru), tes fungsi murni, dan keterulangan potret backend; **belum ada uji otomatis di browser yang memutus dan menyambung ulang WebSocket** (belum ada Playwright). Uji manual: matikan backend, lihat penanda usang, nyalakan lagi.
 - Avatar belum beranimasi berjalan antar-ruangan (berpindah posisi seketika) dan belum ada model karakter detail; geometri sengaja sederhana. Performa 3D baru diukur secara kasar (perangkat lunak); profiling di perangkat nyata adalah bagian Phase 11.
@@ -1945,7 +1953,7 @@ Hal berikut belum ditetapkan dan perlu keputusan CEO. Kolom rekomendasi hanyalah
 | 3 | Autentikasi lokal | Single-user, bind `127.0.0.1`, token lokal | Phase 1 |
 | 4 | Implementasi queue | Database-backed queue dengan SQLite WAL | Phase 4 |
 | 5 | Tooling: Alembic, pytest, Vitest, Playwright | Diterima sebagai usulan | Phase 1 |
-| 6 | Identitas merek final (logo, palet, signage) | Tetapkan sebelum desain 3D | Phase 10 |
+| 6 | ~~Identitas merek final (logo, palet, signage)~~ | **Diputuskan (2026-10-21):** berkas `image/identitas roihan technologies.png`: nama ROIHAN TECHNOLOGIES, tagline "Building Smarter Tomorrow", logo "R" gradasi, palet #00E5FF / #3B82F6 / #8B5CF6 / #D946EF, tipografi Montserrat; diterapkan pada aplikasi dan kantor 3D | Selesai |
 | 7 | Kebijakan retensi data prospek | Tentukan durasi dan dasar hukum | Phase 8 (**diterapkan sebagai usulan**: 180 hari tanpa interaksi / 730 hari setelah interaksi terakhir, anonimisasi, penerapan oleh CEO; menunggu konfirmasi CEO dan tinjauan hukum) |
 | 8 | Sumber prospek yang diizinkan | Sumber publik dan sah saja | Phase 8 (**diterapkan sebagai usulan**: situs publik, registri publik, rujukan, inbound, acara, input manual; daftar beli, scraping, data bocor, grup privat dilarang; menunggu konfirmasi CEO) |
 | 9 | Kebijakan outreach (kanal, batas frekuensi, opt-out) | Semua outreach melalui approval | Phase 9 (**diterapkan sebagai usulan**: outreach email, konten blog/website/LinkedIn/Instagram/newsletter, maks. 10 outreach dan 5 publikasi per hari, jarak 14 hari ke prospek yang sama, semua lewat approval CEO dan kotak keluar manual; menunggu konfirmasi CEO) |
