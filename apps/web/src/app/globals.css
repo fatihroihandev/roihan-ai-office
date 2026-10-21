@@ -266,3 +266,55 @@ main[data-office] { max-width: 1600px; }
 .tile strong { font-size: 1.05rem; color: var(--tile); letter-spacing: 0.03em; }
 .tile span { color: var(--muted); font-size: 0.88rem; }
 .tile:hover { border-color: var(--tile); box-shadow: 0 0 20px color-mix(in srgb, var(--tile) 35%, transparent); transform: translateY(-2px); color: var(--text); }
+
+/* ================================================================== Beranda 3D */
+main[data-home] { max-width: 1200px; }
+.hero3d { position: relative; width: 100vw; left: 50%; transform: translateX(-50%); height: min(80vh, 720px); min-height: 480px; overflow: hidden; margin-top: -1.25rem; border-bottom: 1px solid rgba(0, 184, 255, 0.35); }
+.hero3d-bg, .hero3d-shade { position: absolute; inset: 0; }
+.hero3d-shade { background: linear-gradient(90deg, rgba(5, 6, 15, 0.88) 0%, rgba(5, 6, 15, 0.4) 52%, rgba(5, 6, 15, 0) 100%), linear-gradient(to top, #05060f 0%, rgba(5, 6, 15, 0) 34%); pointer-events: none; }
+.hero3d-copy { position: relative; z-index: 2; height: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1rem 4.5rem; display: flex; flex-direction: column; justify-content: flex-end; gap: 0.9rem; pointer-events: none; }
+.hero3d-copy .actions, .hero3d-copy a, .hero3d-copy .badge { pointer-events: auto; }
+.hero3d-copy h2 { margin: 0; font-size: clamp(2.2rem, 6.2vw, 4.6rem); line-height: 1.02; font-weight: 900; letter-spacing: 0.04em; text-shadow: none; }
+.eyebrow { margin: 0; display: flex; gap: 0.4rem; }
+.eyebrow .badge { margin-left: 0; background: rgba(5, 6, 15, 0.6); }
+.neon-grad { background: linear-gradient(90deg, #00e5ff, #a855f7 55%, #ff2bd6); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.55)); }
+.glitch { position: relative; display: inline-block; color: #e8ecff; text-shadow: 0 0 22px rgba(0, 229, 255, 0.55); }
+.glitch::before, .glitch::after { content: attr(data-text); position: absolute; inset: 0; overflow: hidden; }
+.glitch::before { color: #00e5ff; transform: translate(-2px, 0); clip-path: inset(0 0 62% 0); animation: glitchA 4.2s infinite steps(1); }
+.glitch::after { color: #ff2bd6; transform: translate(2px, 0); clip-path: inset(58% 0 0 0); animation: glitchB 3.6s infinite steps(1); }
+@keyframes glitchA { 0%, 90%, 100% { opacity: 0; } 91% { opacity: 0.9; transform: translate(-4px, 1px); } 94% { opacity: 0.9; transform: translate(3px, -1px); } 96% { opacity: 0; } }
+@keyframes glitchB { 0%, 82%, 100% { opacity: 0; } 83% { opacity: 0.9; transform: translate(4px, -1px); } 86% { opacity: 0.9; transform: translate(-3px, 1px); } 88% { opacity: 0; } }
+.hero3d .lead { margin: 0; max-width: 56ch; font-size: 1.08rem; color: #c3cbee; }
+a.button.primary { background: linear-gradient(90deg, #00b8ff, #a855f7 60%, #ff2bd6); color: #05060f; font-weight: 800; border: 0; padding: 0.55rem 1.2rem; box-shadow: 0 0 24px rgba(168, 85, 247, 0.45); }
+a.button.primary:hover { filter: brightness(1.15); box-shadow: 0 0 34px rgba(255, 43, 214, 0.55); }
+
+.hero-fallback { position: absolute; inset: 0; background: radial-gradient(900px 420px at 70% 30%, rgba(255, 43, 214, 0.28), transparent 60%), radial-gradient(700px 400px at 20% 20%, rgba(0, 184, 255, 0.22), transparent 60%), linear-gradient(#0b0522, #05060f); overflow: hidden; }
+.hero-fallback::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 58%; background-image: linear-gradient(rgba(0, 229, 255, 0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 43, 214, 0.45) 1px, transparent 1px); background-size: 64px 64px; -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 95%); mask-image: linear-gradient(to top, #000 10%, transparent 95%); animation: gridmove 3s linear infinite; }
+.hero-fallback::after { content: ""; position: absolute; right: 14%; bottom: 40%; width: 260px; height: 260px; border-radius: 50%; background: linear-gradient(#ffb020, #ff2bd6 60%, #a855f7); opacity: 0.55; filter: blur(2px); -webkit-mask-image: repeating-linear-gradient(#000 0 14px, transparent 14px 20px); mask-image: repeating-linear-gradient(#000 0 14px, transparent 14px 20px); }
+@keyframes gridmove { to { background-position: 0 64px; } }
+
+.live { position: relative; z-index: 3; margin-top: -3rem; }
+.kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.6rem; }
+.kpi { text-decoration: none; color: var(--text); text-align: center; padding: 0.75rem 0.5rem; border-radius: 12px; border: 1px solid var(--line); background: rgba(8, 11, 30, 0.82); backdrop-filter: blur(10px); transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; }
+.kpi strong { display: block; font-size: 1.9rem; font-weight: 800; background: linear-gradient(90deg, #00e5ff, #a855f7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.kpi span { font-size: 0.76rem; color: var(--muted); }
+.kpi:hover { border-color: var(--accent); box-shadow: var(--glow); transform: translateY(-2px); color: var(--text); }
+.kpi[data-alert="true"] { border-color: var(--warn); box-shadow: 0 0 18px rgba(255, 176, 32, 0.25); }
+.kpi[data-alert="true"] strong { background: none; color: var(--warn); }
+.livegrid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 0.9rem; margin-top: 0.9rem; }
+.livegrid .card { margin-top: 0; }
+.agentrow { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.45rem; }
+.agentdot { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 0.5rem; align-items: center; text-decoration: none; color: var(--text); padding: 0.4rem 0.55rem; border: 1px solid var(--line); border-radius: 10px; background: rgba(5, 7, 20, 0.6); font-size: 0.85rem; }
+.agentdot i { grid-row: 1 / span 2; width: 10px; height: 10px; border-radius: 50%; background: #4b5563; }
+.agentdot em { font-style: normal; font-size: 0.72rem; color: var(--muted); }
+.agentdot[data-tone="ok"] i { background: var(--ok); box-shadow: 0 0 10px var(--ok); animation: pulse 1.4s infinite; }
+.agentdot[data-tone="warn"] i { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+.agentdot[data-tone="bad"] i { background: var(--bad); box-shadow: 0 0 10px var(--bad); animation: pulse 0.8s infinite; }
+.agentdot:hover { border-color: var(--accent); color: var(--text); }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.section-title { margin: 1.6rem 0 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); font-size: 0.8rem; }
+@media (max-width: 900px) {
+  .kpis { grid-template-columns: repeat(3, 1fr); }
+  .livegrid { grid-template-columns: 1fr; }
+  .hero3d { height: 70vh; }
+}

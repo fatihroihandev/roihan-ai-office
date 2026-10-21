@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 import { HealthStatus } from "@/components/HealthStatus";
+import { HomeHero } from "@/components/home/HomeHero";
+import { LiveStrip } from "@/components/home/LiveStrip";
+import { useOfficeData } from "@/lib/office/useOfficeData";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
 
@@ -18,13 +21,13 @@ const CARDS: { href: string; title: MessageKey; desc: MessageKey; accent: string
 
 export default function Home() {
   const { t } = useLanguage();
+  const { data, stale, connected } = useOfficeData();
   return (
-    <main>
+    <main data-home>
       <AppHeader />
-      <section className="hero">
-        <h2>{t("home.hero")}</h2>
-        <p className="muted">{t("home.hero.sub")}</p>
-      </section>
+      <HomeHero data={data} connected={connected} />
+      <LiveStrip data={data} stale={stale} />
+      <h3 className="section-title">{t("home.modules")}</h3>
       <div className="homegrid">
         {CARDS.map((c) => (
           <Link key={c.href} href={c.href} className="tile" style={{ ["--tile" as string]: c.accent }}>
