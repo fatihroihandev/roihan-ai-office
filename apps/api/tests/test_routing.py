@@ -35,7 +35,7 @@ def test_risk_is_deterministic_by_action_type():
     assert {risk_for(a) for a in ("delete_data", "install_dependency", "security_config", "network_access")} == {"high"}
     assert {risk_for(a) for a in ("external_outreach", "publish", "paid_api", "spend", "change_pricing", "use_credentials")} == {"critical"}
     assert needs_approval("high") and needs_approval("critical") and not needs_approval("medium")
-    assert len(ROLES) == 10 and len(ACTION_RISK) == 20  # 1 manager + 5 engineering + 4 marketing
+    assert len(ROLES) == 10 and len(ACTION_RISK) == 21  # 1 manager + 5 engineering + 4 marketing
 
 
 def snap(**kw):

@@ -157,8 +157,8 @@ def test_project_report_summarises_all_tasks(migrated_db, tmp_path):
     with env.sf() as s:
         md, facts = build_project_report(s, pid, project_name="Proyek Uji")
     assert md.startswith("# Laporan Proyek: Proyek Uji") and "| Buat kalkulator | developer | completed |" in md
-    assert "| Tugas gagal | content_promotion | blocked |" in md and md.count("### Task:") == 2
-    assert project_summary(facts).startswith("Total 2 task: 1 blocked, 1 completed.")
+    assert "| Tugas gagal | content_promotion | failed |" in md and md.count("### Task:") == 2
+    assert project_summary(facts).startswith("Total 2 task: 1 completed, 1 failed.")
     assert "1 eksekusi tes" in project_summary(facts)
 
 

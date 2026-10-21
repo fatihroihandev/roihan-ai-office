@@ -121,6 +121,18 @@ kosong (tanpa secret), batas memori/proses/CPU/waktu, tanpa mount drive Windows,
 - Kebijakan sumber dan retensi (`LEAD_*` di `.env`) adalah **usulan bawaan** yang perlu dikonfirmasi CEO; lihat Bagian 27 di dokumen master.
 - Setelah memperbarui kode, jalankan `alembic upgrade head` (ada tabel baru dan kolom `tasks.params`), lalu mulai ulang backend.
 
+## Konten, kampanye, dan tindakan eksternal (Phase 9)
+
+- **Halaman `/marketing/content`**: kotak keluar, kampanye, dan Content Workspace. Content Agent menyusun draf hanya dari ringkasan resmi produk dan wajib lolos
+  pemeriksaan klaim; produk yang belum diizinkan dipromosikan ditolak.
+- **Publikasi dan pengiriman outreach selalu memerlukan approval Anda** atas isi yang persis sama (kartu Approval menampilkan isinya). Jika isi berubah, izin produk
+  dicabut, prospek menolak, atau batas harian/jarak antar pesan terlampaui, tindakan gagal tanpa efek. **Tidak ada pengiriman otomatis**: hasil yang disetujui masuk
+  **kotak keluar**; Anda yang mengirim lalu menekan "Sudah saya kirim/publikasikan".
+- **Kampanye**: tanpa iklan berbayar (anggaran 0). Angka kinerja dicatat manual; ROI baru muncul jika biaya dan pendapatan tercatat.
+- **Serah-terima klien**: pada peluang yang menang, tombol "Serahkan ke Engineering" membuat proyek dengan dokumen kebutuhan dan task draft (analisis, perencanaan)
+  yang baru berjalan setelah Anda mengantrekannya.
+- Batas (`OUTREACH_*`, `CONTENT_*` di `.env`) adalah usulan bawaan yang perlu dikonfirmasi CEO. Setelah memperbarui kode, jalankan `alembic upgrade head`.
+
 ## Tes
 
 ```

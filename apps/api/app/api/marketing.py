@@ -25,7 +25,8 @@ from app.tasks import service as tasks
 router = APIRouter(prefix="/api/marketing", tags=["marketing"], dependencies=[Depends(require_token)])
 ACTOR = "ceo"
 _UNPROCESSABLE = {"invalid_kind", "invalid_summary", "invalid_stage", "invalid_value", "invalid_priority", "invalid_text", "title_required",
-                  "reason_required", "won_value_required", "status_not_settable", "invalid_reason"}
+                  "reason_required", "won_value_required", "status_not_settable", "invalid_reason", "channel_not_allowed", "invalid_content",
+                  "invalid_metric", "paid_ads_unsupported", "name_required", "invalid_dates", "channel_not_in_campaign"}
 
 
 def get_session(request: Request):
@@ -381,3 +382,191 @@ async def retention_run(request: Request, session: SessionDep, dry_run: bool = T
         return out
     session.commit()
     return {"dry_run": False, "anonymized": out}
+
+
+# ================================================================== Phase 9: konten, kampanye, tindakan eksternal, serah-terima
+
+from app.db.models import Campaign, ClientHandoff, ContentAsset, OutboundMessage  # noqa: E402
+from app.marketing import external  # noqa: E402
+from app.schemas.marketing import CampaignCreate, CampaignStatusBody, ContentCreate, ContentTaskBody, ContentUpdate, MetricBody  # noqa: E402
+
+
+def _content_out(a: ContentAsset) -> dict:
+    return {"id": a.id, "campaign_id": a.campaign_id, "product_id": a.product_id, "version_id": a.version_id, "kind": a.kind, "channel": a.channel,
+            "title": a.title, "body": a.body, "status": a.status, "claim_check": a.claim_check, "scheduled_for": _iso(a.scheduled_for),
+            "created_by": a.created_by, "task_id": a.task_id, "created_at": _iso(a.created_at)}
+
+
+def _campaign_out(c: Campaign) -> dict:
+    return {"id": c.id, "name": c.name, "product_id": c.product_id, "version_id": c.version_id, "objective": c.objective, "channels": c.channels,
+            "status": c.status, "starts_on": _iso(c.starts_on), "ends_on": _iso(c.ends_on), "budget_idr": c.budget_idr}
+
+
+def _outbound_out(m: OutboundMessage) -> dict:
+    return {"id": m.id, "kind": m.kind, "ref_id": m.ref_id, "lead_id": m.lead_id, "channel": m.channel, "subject": m.subject, "body": m.body,
+            "status": m.status, "task_id": m.task_id, "approval_id": m.approval_id, "dispatched_at": _iso(m.dispatched_at), "created_at": _iso(m.created_at)}
+
+
+async def _commit(session: Session, fn, render):
+    out = await _guard(fn)
+    if isinstance(out, JSONResponse):
+        session.rollback()
+        return out
+    session.commit()
+    return render(out)
+
+
+@router.get("/campaigns")
+def list_campaigns(session: SessionDep):
+    return [_campaign_out(c) for c in session.scalars(select(Campaign).order_by(Campaign.created_at.desc()))]
+
+
+@router.post("/campaigns", status_code=201)
+async def create_campaign(body: CampaignCreate, request: Request, session: SessionDep):
+    out = await _commit(session, lambda: external.create_campaign(session, _policy(request), actor=ACTOR, **body.model_dump()), _campaign_out)
+    return JSONResponse(out, status_code=201) if isinstance(out, dict) else out
+
+
+def _campaign(session: Session, cid: str) -> Campaign:
+    c = session.get(Campaign, cid)
+    if c is None:
+        raise HTTPException(404, "Kampanye tidak ditemukan")
+    return c
+
+
+@router.get("/campaigns/{cid}")
+def get_campaign(cid: str, session: SessionDep):
+    c = _campaign(session, cid)
+    assets = session.scalars(select(ContentAsset).where(ContentAsset.campaign_id == c.id).order_by(ContentAsset.scheduled_for, ContentAsset.created_at))
+    return _campaign_out(c) | {"report": external.campaign_report(session, c), "content": [_content_out(a) for a in assets]}
+
+
+@router.post("/campaigns/{cid}/status")
+async def campaign_status(cid: str, body: CampaignStatusBody, session: SessionDep):
+    c = _campaign(session, cid)
+    return await _commit(session, lambda: external.set_campaign_status(session, c, body.status, actor=ACTOR), _campaign_out)
+
+
+@router.post("/campaigns/{cid}/metrics", status_code=201)
+async def campaign_metric(cid: str, body: MetricBody, session: SessionDep):
+    c = _campaign(session, cid)
+    out = await _commit(session, lambda: external.record_metric(session, c, actor=ACTOR, **body.model_dump()), lambda _m: external.campaign_report(session, c))
+    return JSONResponse(out, status_code=201) if isinstance(out, dict) else out
+
+
+@router.get("/content")
+def list_content(session: SessionDep, status: str | None = None, campaign_id: str | None = None):
+    q = select(ContentAsset).order_by(ContentAsset.created_at.desc())
+    if status:
+        q = q.where(ContentAsset.status == status)
+    if campaign_id:
+        q = q.where(ContentAsset.campaign_id == campaign_id)
+    return [_content_out(a) for a in session.scalars(q.limit(200))]
+
+
+@router.post("/content", status_code=201)
+async def create_content(body: ContentCreate, request: Request, session: SessionDep):
+    out = await _commit(session, lambda: external.create_content(session, _policy(request), actor=ACTOR, **body.model_dump()), _content_out)
+    return JSONResponse(out, status_code=201) if isinstance(out, dict) else out
+
+
+def _content(session: Session, cid: str) -> ContentAsset:
+    a = session.get(ContentAsset, cid)
+    if a is None:
+        raise HTTPException(404, "Konten tidak ditemukan")
+    return a
+
+
+@router.get("/content/{cid}")
+def get_content(cid: str, session: SessionDep):
+    return _content_out(_content(session, cid))
+
+
+@router.patch("/content/{cid}")
+async def update_content(cid: str, body: ContentUpdate, request: Request, session: SessionDep):
+    a = _content(session, cid)
+    return await _commit(session, lambda: external.update_content(session, _policy(request), a, actor=ACTOR, **body.model_dump(exclude_unset=True)), _content_out)
+
+
+@router.post("/content/{cid}/request-publish", status_code=201)
+async def request_publish(cid: str, request: Request, session: SessionDep):
+    """Minta approval CEO untuk mempublikasikan isi PERSIS ini. Hanya membuat task berisiko kritis yang menunggu approval."""
+    a = _content(session, cid)
+    err = await _guard(lambda: external.check_publish_allowed(session, _policy(request), a))
+    if isinstance(err, JSONResponse):
+        return err
+    out = _queue(session, request, title=f"Publikasi: {a.title[:60]}", role="content_promotion", action="publish",
+                 params={"content_id": a.id, "body_hash": a.body_hash, "channel": a.channel, "title": a.title, "preview": a.body[:400]})
+    return JSONResponse(out, status_code=201)
+
+
+@router.post("/tasks/content", status_code=201)
+def content_task(body: ContentTaskBody, request: Request, session: SessionDep):
+    policy = _policy(request)
+    if body.kind not in external.CONTENT_KINDS or body.channel not in policy.content_channels:
+        return JSONResponse({"detail": "Jenis konten atau kanal tidak diizinkan", "code": "channel_not_allowed"}, status_code=422)
+    if session.get(Product, body.product_id) is None:
+        raise HTTPException(404, "Produk tidak ditemukan")
+    return _queue(session, request, title=f"Konten {body.kind} untuk {body.channel}", role="content_promotion", action="draft_content", params=body.model_dump())
+
+
+@router.post("/outreach/{oid}/request-send", status_code=201)
+async def request_send(oid: str, request: Request, session: SessionDep):
+    """Minta approval CEO untuk mengirim isi PERSIS draf ini. Batas frekuensi, jangan-hubungi, dan klaim diperiksa sekarang dan lagi saat dieksekusi."""
+    o = _outreach(session, oid)
+    err = await _guard(lambda: external.check_send_allowed(session, _policy(request), o))
+    if isinstance(err, JSONResponse):
+        return err
+    lead = session.get(Lead, o.lead_id)
+    domain = (lead.contact_email or "").rsplit("@", 1)[-1]
+    out = _queue(session, request, title=f"Kirim outreach ke {domain}", role="sales_client_relations", action="external_outreach",
+                 params={"outreach_id": o.id, "body_hash": external.outreach_hash(o), "channel": o.channel, "recipient_domain": domain,
+                         "subject": o.subject, "preview": o.body[:400]})
+    return JSONResponse(out, status_code=201)
+
+
+@router.get("/outbox")
+def list_outbox(session: SessionDep, status: str | None = None):
+    q = select(OutboundMessage).order_by(OutboundMessage.created_at.desc())
+    if status:
+        q = q.where(OutboundMessage.status == status)
+    return [_outbound_out(m) for m in session.scalars(q.limit(200))]
+
+
+def _msg(session: Session, mid: str) -> OutboundMessage:
+    m = session.get(OutboundMessage, mid)
+    if m is None:
+        raise HTTPException(404, "Pesan tidak ditemukan")
+    return m
+
+
+@router.post("/outbox/{mid}/dispatch")
+async def dispatch(mid: str, session: SessionDep):
+    m = _msg(session, mid)
+    out = await _guard(lambda: external.dispatch_manual(session, m, actor=ACTOR))
+    if isinstance(out, JSONResponse):
+        session.commit()      # penolakan karena prospek tidak lagi dapat dihubungi membatalkan pesan di kotak keluar; simpan pembatalan itu
+        return out
+    session.commit()
+    return _outbound_out(out)
+
+
+@router.post("/outbox/{mid}/cancel")
+async def cancel_outbox(mid: str, body: ReasonBody, session: SessionDep):
+    m = _msg(session, mid)
+    return await _commit(session, lambda: external.cancel_outbound(session, m, actor=ACTOR, reason=body.reason), _outbound_out)
+
+
+@router.post("/opportunities/{opp_id}/handoff", status_code=201)
+async def handoff(opp_id: str, request: Request, session: SessionDep):
+    opp = _opp(session, opp_id)
+    storage = ProjectStorage(request.app.state.settings.projects_dir)
+    out = await _commit(session, lambda: external.create_handoff(session, storage, opp, actor=ACTOR),
+                        lambda h: {"id": h.id, "opportunity_id": h.opportunity_id, "project_id": h.project_id, "task_ids": h.task_ids, "requirements": h.requirements})
+    return JSONResponse(out, status_code=201) if isinstance(out, dict) else out
+
+
+@router.get("/handoffs")
+def list_handoffs(session: SessionDep):
+    return [{"id": h.id, "opportunity_id": h.opportunity_id, "project_id": h.project_id, "task_ids": h.task_ids, "requirements": h.requirements,
+             "created_at": _iso(h.created_at)} for h in session.scalars(select(ClientHandoff).order_by(ClientHandoff.created_at.desc()))]

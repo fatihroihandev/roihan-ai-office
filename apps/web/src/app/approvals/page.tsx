@@ -71,6 +71,18 @@ export default function ApprovalsPage() {
           </div>
           <h4>{t("approvals.whatYouApprove")}: {a.payload.title}</h4>
           {a.payload.description && <p>{a.payload.description}</p>}
+          {a.payload.params && (
+            <div>
+              <p className="small muted">{t("approvals.params")}</p>
+              <dl>
+                {Object.entries(a.payload.params).map(([k, v]) => (
+                  <div key={k} style={{ display: "contents" }}>
+                    <dt>{k}</dt><dd className="small" style={{ fontWeight: 400, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{typeof v === "string" ? v : JSON.stringify(v)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
           {a.payload.acceptance_criteria.length > 0 && <ul>{a.payload.acceptance_criteria.map((c, i) => <li key={i}>{c}</li>)}</ul>}
           <p className="muted small">
             {t("approvals.requestedBy")} {a.requested_by} · {t("approvals.expires")} {new Date(a.expires_at + "Z").toLocaleString()} ·{" "}

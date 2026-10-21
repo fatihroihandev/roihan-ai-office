@@ -492,6 +492,92 @@ class OutreachRecord(IdMixin, Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
 
+class Campaign(IdMixin, Base):
+    """Kampanye internal. Belum mendukung iklan berbayar: anggaran harus 0 (iklan berbayar memerlukan approval eksplisit dan batas biaya)."""
+
+    __tablename__ = "campaigns"
+
+    name: Mapped[str] = mapped_column()
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"))
+    version_id: Mapped[str | None] = mapped_column(default=None)
+    objective: Mapped[str] = mapped_column(Text, default="")
+    channels: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(default="draft")  # draft | active | completed | cancelled
+    starts_on: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    ends_on: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    budget_idr: Mapped[int] = mapped_column(default=0)
+    created_by: Mapped[str] = mapped_column(default="ceo")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class ContentAsset(IdMixin, Base):
+    """Materi konten. Informasi produk hanya dari marketing_brief; keluar dari draft hanya jika lolos linter klaim."""
+
+    __tablename__ = "content_assets"
+    __table_args__ = (Index("ix_content_campaign", "campaign_id"),)
+
+    campaign_id: Mapped[str | None] = mapped_column(ForeignKey("campaigns.id", ondelete="RESTRICT"), default=None)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"))
+    version_id: Mapped[str | None] = mapped_column(default=None)
+    task_id: Mapped[str | None] = mapped_column(default=None)
+    kind: Mapped[str] = mapped_column()  # social_post | article | landing_page | demo_script | newsletter
+    channel: Mapped[str] = mapped_column()
+    title: Mapped[str] = mapped_column(default="")
+    body: Mapped[str] = mapped_column(Text, default="")
+    body_hash: Mapped[str] = mapped_column(default="")
+    # draft | blocked_by_claim_check | ready_for_review | queued_for_dispatch | published_manual | cancelled
+    status: Mapped[str] = mapped_column(default="draft")
+    claim_check: Mapped[dict | None] = mapped_column(JSON, default=None)
+    scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    created_by: Mapped[str] = mapped_column(default="content_promotion")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class CampaignMetric(IdMixin, Base):
+    """Angka kinerja yang dicatat manusia. Tidak ada angka yang dikarang atau diperkirakan sistem."""
+
+    __tablename__ = "campaign_metrics"
+    __table_args__ = (Index("ix_campaign_metrics_campaign", "campaign_id"),)
+
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id", ondelete="RESTRICT"))
+    metric: Mapped[str] = mapped_column()  # impressions | clicks | replies | leads | cost_idr | revenue_idr
+    value: Mapped[int] = mapped_column()
+    note: Mapped[str | None] = mapped_column(Text, default=None)
+    recorded_by: Mapped[str] = mapped_column()
+
+
+class OutboundMessage(IdMixin, Base):
+    """Kotak keluar (outbox). Tindakan eksternal yang sudah disetujui berhenti di sini: tidak ada konektor yang mengirim sendiri."""
+
+    __tablename__ = "outbound_messages"
+    __table_args__ = (Index("ix_outbound_ref", "kind", "ref_id"), Index("ix_outbound_lead", "lead_id"))
+
+    kind: Mapped[str] = mapped_column()  # content | outreach
+    ref_id: Mapped[str] = mapped_column()
+    lead_id: Mapped[str | None] = mapped_column(default=None)
+    channel: Mapped[str] = mapped_column()
+    subject: Mapped[str] = mapped_column(default="")
+    body: Mapped[str] = mapped_column(Text, default="")
+    body_hash: Mapped[str] = mapped_column()
+    task_id: Mapped[str] = mapped_column()
+    approval_id: Mapped[str] = mapped_column()
+    status: Mapped[str] = mapped_column(default="queued_manual")  # queued_manual | dispatched_manual | cancelled
+    dispatched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    dispatched_by: Mapped[str | None] = mapped_column(default=None)
+
+
+class ClientHandoff(IdMixin, Base):
+    """Penyerahan kebutuhan klien dari Sales ke Engineering. Satu peluang menang hanya dapat diserahkan sekali."""
+
+    __tablename__ = "client_handoffs"
+
+    opportunity_id: Mapped[str] = mapped_column(ForeignKey("sales_opportunities.id", ondelete="RESTRICT"), unique=True)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="RESTRICT"))
+    requirements: Mapped[list] = mapped_column(JSON, default=list)
+    task_ids: Mapped[list] = mapped_column(JSON, default=list)
+    created_by: Mapped[str] = mapped_column(default="ceo")
+
+
 class AppendOnlyError(RuntimeError):
     pass
 

@@ -30,6 +30,7 @@ export default function LeadDetailPage() {
   const [stageReason, setStageReason] = useState("");
   const [wonValue, setWonValue] = useState("");
   const [req, setReq] = useState("");
+  const [handedOff, setHandedOff] = useState<string[]>([]);
 
   const load = useCallback(async (reveal: boolean) => {
     setLead(await marketingApi.lead(id, reveal));
@@ -229,6 +230,14 @@ export default function LeadDetailPage() {
               </div>
             </>
           )}
+          {o.stage === "won" && (
+            <div>
+              <p className="small muted">{t("ext.handoff.hint")}</p>
+              <button type="button" disabled={busy || handedOff.includes(o.id)} onClick={() => void run(async () => { await marketingApi.handoff(o.id); setHandedOff((h) => [...h, o.id]); }, t("ext.handoff.done"))}>
+                {handedOff.includes(o.id) ? t("ext.handoff.done") : t("ext.handoff")}
+              </button>
+            </div>
+          )}
           <h4>{t("mkt.lead.requirements")}</h4>
           <ul>{o.requirements.map((r) => <li key={r.id}>{r.text}</li>)}</ul>
           <form
@@ -255,6 +264,7 @@ export default function LeadDetailPage() {
               )}
               {d.status === "ready_for_review" && (
                 <div className="actions">
+                  <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.requestSend(d.id), t("ext.requested"))}>{t("ext.requestSend")}</button>
                   <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.markSent(d.id))}>{t("mkt.outreach.markSent")}</button>
                   <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.cancelOutreach(d.id))}>{t("mkt.outreach.cancel")}</button>
                 </div>

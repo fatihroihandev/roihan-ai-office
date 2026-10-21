@@ -10,9 +10,9 @@ PERMISSIONS: dict[str, frozenset[str]] = {
     "lead_generation": frozenset({"company.read", "company.write", "lead.create", "lead.read_masked", "lead.update_enrichment",
                                   "source.create", "suppression.check"}),
     "sales_client_relations": frozenset({"company.read", "lead.read_masked", "lead.read_pii", "outreach.draft", "opportunity.read",
-                                         "requirement.write", "suppression.check", "product_brief.read"}),
+                                         "requirement.write", "suppression.check", "product_brief.read", "outbound.enqueue"}),
     "market_research": frozenset({"company.read", "product_brief.read", "research.write"}),
-    "content_promotion": frozenset({"product_brief.read"}),
+    "content_promotion": frozenset({"product_brief.read", "content.write", "campaign.read", "outbound.enqueue"}),
     "manager": frozenset({"company.read", "lead.read_masked", "opportunity.read"}),
 }
 

@@ -123,7 +123,7 @@ export type Approval = {
   action_type: string;
   risk_level: "low" | "medium" | "high" | "critical";
   status: "pending" | "approved" | "rejected" | "expired" | "cancelled";
-  payload: { title: string; description: string; role: string; action_type: string; acceptance_criteria: string[]; depends_on: string[] };
+  payload: { title: string; description: string; role: string; action_type: string; acceptance_criteria: string[]; depends_on: string[]; params?: Record<string, unknown> };
   requested_by: string;
   decided_by: string | null;
   decided_at: string | null;

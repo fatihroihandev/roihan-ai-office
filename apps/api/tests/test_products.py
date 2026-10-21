@@ -639,12 +639,18 @@ def test_lint_blocks_absolute_claims(text):
     assert not ok and "absolute_claim" in kinds
 
 
-@pytest.mark.parametrize("text", ["Produk beta ini sudah dirilis resmi", "Siap produksi, versi beta", "Aplikasi stabil dan sudah tersedia untuk semua", "Production-ready beta"])
+@pytest.mark.parametrize("text", ["Produk beta ini sudah dirilis resmi", "Siap produksi, versi beta", "Aplikasi stabil dan sudah tersedia untuk semua", "Production-ready beta",
+                                  "Kami senang mengumumkan peluncuran aplikasi (beta)", "Kami meluncurkan aplikasi baru, beta", "Aplikasi telah hadir untuk beta", "Produk beta diluncurkan hari ini"])
 def test_lint_blocks_release_claims_for_non_released_versions(text):
     ok, kinds = lint(text)
     assert not ok and "status_misrepresentation" in kinds
     ok2, kinds2 = lint(text, version={"status": "released"}, promotion_label="RILIS")
     assert "status_misrepresentation" not in kinds2
+
+
+def test_lint_allows_honest_beta_launch_wording():
+    ok, kinds = lint("Peluncuran versi beta Kalkulator Pro: menjumlahkan dua angka. Ini masih beta.")
+    assert "status_misrepresentation" not in kinds
 
 
 def test_lint_requires_beta_to_be_disclosed():

@@ -87,9 +87,10 @@ def test_only_one_task_runs_at_a_time(migrated_db, tmp_path):
 
 
 def test_role_without_executor_is_blocked_honestly(migrated_db, tmp_path):
-    env = build_env(migrated_db, tmp_path)
+    execs = {k: v for k, v in default_executors().items() if k != "content_promotion"}      # semua role kini punya agent; lepas satu
+    env = build_env(migrated_db, tmp_path, executors=execs)
     pid = make_project(env)
-    tid = add_task(env, pid, role="content_promotion", action_type="analysis")   # Marketing: belum ada agent
+    tid = add_task(env, pid, role="content_promotion", action_type="analysis")   # role tanpa executor terdaftar
     assert run(env.worker.run_once()) is False
     t = get(env, tid)
     assert (t.status, t.blocked_reason, t.last_error_kind, t.attempt_count) == ("blocked", "executor_not_available", "executor_not_available", 0)
@@ -308,7 +309,7 @@ def test_unexpected_executor_exception_fails_without_retry(migrated_db, tmp_path
 
 def test_default_executors_cover_only_roles_that_can_really_work():
     assert set(default_executors()) == {"manager", "analyst", "reporter", "developer", "qa", "reviewer", "market_research", "lead_generation",
-                                           "sales_client_relations"}
+                                           "sales_client_relations", "content_promotion"}
 
 
 def test_blocked_dependency_cascades_down_the_chain_and_recovers(migrated_db, tmp_path):

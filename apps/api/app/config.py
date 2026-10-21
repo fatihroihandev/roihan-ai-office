@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     lead_retention_auto_apply: bool = False   # bawaan: tandai yang jatuh tempo, anonimisasi menunggu keputusan CEO
     lead_min_score_for_sales: int = 40
 
+    # Aktivitas eksternal (Phase 9): usulan bawaan yang dapat diubah CEO. Tidak ada konektor pengiriman otomatis.
+    outreach_allowed_channels: str = "email"
+    outreach_min_days_between_contacts: int = 14   # jarak minimal antar pesan keluar ke prospek yang sama
+    outreach_max_per_day: int = 10
+    content_allowed_channels: str = "blog,website,linkedin,instagram,newsletter"
+    content_max_publish_per_day: int = 5
+
     worker_enabled: bool = True
     worker_poll_interval_s: float = 1.0
     retry_backoff_base_s: float = 5.0
@@ -95,6 +102,11 @@ class Settings(BaseSettings):
             raise ValueError("LEAD_RETENTION_* harus >= 1 hari")
         if not 0 <= self.lead_min_score_for_sales <= 100:
             raise ValueError("LEAD_MIN_SCORE_FOR_SALES harus 0..100")
+        for name in ("outreach_allowed_channels", "content_allowed_channels"):
+            if not [c for c in getattr(self, name).split(",") if c.strip()]:
+                raise ValueError(f"{name.upper()} tidak boleh kosong")
+        if self.outreach_min_days_between_contacts < 0 or self.outreach_max_per_day < 0 or self.content_max_publish_per_day < 0:
+            raise ValueError("OUTREACH_* dan CONTENT_MAX_PUBLISH_PER_DAY tidak boleh negatif")
         if self.approval_ttl_hours < 1:
             raise ValueError("APPROVAL_TTL_HOURS harus >= 1")
         if self.worker_poll_interval_s <= 0 or self.retry_backoff_base_s < 0:

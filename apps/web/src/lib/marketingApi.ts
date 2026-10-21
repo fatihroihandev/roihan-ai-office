@@ -15,6 +15,9 @@ export const NEXT_STAGE: Record<string, string[]> = {
   proposal: ["negotiation", "won", "lost"],
   negotiation: ["won", "lost"],
 };
+export const CONTENT_KINDS = ["social_post", "article", "landing_page", "demo_script", "newsletter"] as const;
+export const METRICS = ["impressions", "clicks", "replies", "leads", "cost_idr", "revenue_idr"] as const;
+export const NEXT_CAMPAIGN: Record<string, string[]> = { draft: ["active", "cancelled"], active: ["completed", "cancelled"] };
 export const SOURCE_TYPES = ["public_website", "public_registry", "referral", "inbound", "event", "manual"] as const;
 export const INTERACTION_KINDS = ["note", "email_out", "email_in", "call", "meeting"] as const;
 
@@ -39,7 +42,12 @@ export type Lead = {
   interactions?: Interaction[]; outreach?: Outreach[]; opportunities?: Opportunity[];
   outreach_task?: { task_id: string };
 };
+export type ExternalPolicy = {
+  outreach_channels: string[]; outreach_min_days_between_contacts: number; outreach_max_per_day: number; content_channels: string[];
+  content_max_publish_per_day: number;
+};
 export type Policy = {
+  external?: ExternalPolicy;
   allowed_sources: { type: string; label: string; needs_url: boolean; basis: string }[];
   forbidden_sources: { type: string; reason: string }[];
   retention: { no_interaction_days: number; after_last_interaction_days: number; auto_apply: boolean; action: string };
@@ -50,6 +58,17 @@ export type Analytics = {
   opportunities_open: number; win_rate: number | null; revenue_recorded_idr: number | null; customer_acquisition_cost_idr: number | null;
 };
 export type Research = { id: string; topic: string; summary: string; items: { statement: string; basis: string; verified: boolean; evidence_quote: string }[]; verified_count: number; unverified_count: number };
+export type ContentAsset = {
+  id: string; campaign_id: string | null; product_id: string; kind: string; channel: string; title: string; body: string; status: string;
+  claim_check: { ok: boolean; findings: Finding[] } | null; scheduled_for: string | null; created_by: string; task_id: string | null;
+};
+export type Campaign = {
+  id: string; name: string; product_id: string; objective: string; channels: string[]; status: string; budget_idr: number;
+  report?: { metrics: Record<string, number | null>; roi: number | null; content_by_status: Record<string, number> };
+  content?: ContentAsset[];
+};
+export type OutboundMessage = { id: string; kind: "content" | "outreach"; ref_id: string; channel: string; subject: string; body: string; status: string };
+export type Handoff = { id: string; opportunity_id: string; project_id: string; task_ids: string[]; requirements: { text: string; priority: string }[] };
 export type Retention = { policy: Policy["retention"]; due: { lead_id: string; reason: string }[] };
 export type QueuedTask = { task_id: string; project_id: string; status: string };
 
@@ -93,6 +112,25 @@ export const marketingApi = {
     apiFetch<QueuedTask>("/api/marketing/tasks/research", body("POST", clean({ topic, material, product_id }))),
   runIntake: (source: { source_type: string; url?: string; title?: string }, raw_text: string) =>
     apiFetch<QueuedTask>("/api/marketing/tasks/intake", body("POST", { source: clean(source), raw_text })),
+  campaigns: () => apiFetch<Campaign[]>("/api/marketing/campaigns"),
+  campaign: (id: string) => apiFetch<Campaign>(`/api/marketing/campaigns/${id}`),
+  createCampaign: (data: { name: string; product_id: string; objective?: string; channels: string[] }) =>
+    apiFetch<Campaign>("/api/marketing/campaigns", body("POST", clean(data))),
+  campaignStatus: (id: string, status: string) => apiFetch<Campaign>(`/api/marketing/campaigns/${id}/status`, body("POST", { status })),
+  recordMetric: (id: string, metric: string, value: number) => apiFetch<unknown>(`/api/marketing/campaigns/${id}/metrics`, body("POST", { metric, value })),
+  contents: () => apiFetch<ContentAsset[]>("/api/marketing/content"),
+  createContent: (data: { product_id: string; kind: string; channel: string; title: string; body: string; campaign_id?: string }) =>
+    apiFetch<ContentAsset>("/api/marketing/content", body("POST", clean(data))),
+  updateContent: (id: string, data: { title?: string; body?: string }) => apiFetch<ContentAsset>(`/api/marketing/content/${id}`, body("PATCH", data)),
+  requestPublish: (id: string) => apiFetch<QueuedTask>(`/api/marketing/content/${id}/request-publish`, body("POST", {})),
+  requestSend: (id: string) => apiFetch<QueuedTask>(`/api/marketing/outreach/${id}/request-send`, body("POST", {})),
+  contentTask: (data: { product_id: string; kind: string; channel: string; angle?: string; campaign_id?: string }) =>
+    apiFetch<QueuedTask>("/api/marketing/tasks/content", body("POST", clean(data))),
+  outbox: () => apiFetch<OutboundMessage[]>("/api/marketing/outbox"),
+  dispatch: (id: string) => apiFetch<OutboundMessage>(`/api/marketing/outbox/${id}/dispatch`, body("POST", {})),
+  cancelOutbox: (id: string) => apiFetch<OutboundMessage>(`/api/marketing/outbox/${id}/cancel`, body("POST", {})),
+  handoff: (oppId: string) => apiFetch<Handoff>(`/api/marketing/opportunities/${oppId}/handoff`, body("POST", {})),
+  handoffs: () => apiFetch<Handoff[]>("/api/marketing/handoffs"),
   suppression: () => apiFetch<{ id: string }[]>("/api/marketing/suppression"),
   retention: () => apiFetch<Retention>("/api/marketing/retention"),
   runRetention: () => apiFetch<{ anonymized: number }>("/api/marketing/retention/run?dry_run=false", body("POST", {})),

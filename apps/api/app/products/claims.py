@@ -17,7 +17,8 @@ ABSOLUTE = re.compile(
     r"best|guaranteed|bulletproof|unhackable|risk[\s-]?free)(?!\w)", re.I)
 RELEASED_CLAIM = re.compile(
     r"(?<!\w)(sudah\s+(dirilis|rilis|tersedia|launching|diluncurkan)|rilis\s+resmi|siap\s+(produksi|pakai|digunakan|dipakai)|"
-    r"production[\s-]?ready|generally\s+available|launched|stabil|stable|versi\s+final)(?!\w)", re.I)
+    r"production[\s-]?ready|generally\s+available|launched|stabil|stable|versi\s+final|diluncurkan|telah\s+hadir|resmi\s+(hadir|meluncur)|"
+    r"(peluncuran|meluncurkan)(?!\s+(versi\s+)?beta))(?!\w)", re.I)
 PRICING = re.compile(r"(\brp\.?\s?\d|\bidr\b|\busd\b|\$\s?\d|\bharga\b|\bgratis\b|\bfree\b|\bdiskon\b|\bpromo\s+hemat\b|/\s?bulan|per\s+bulan)", re.I)
 
 

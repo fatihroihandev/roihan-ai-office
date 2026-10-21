@@ -98,6 +98,7 @@ export default function MarketingPage() {
       <AppHeader />
       <h2>{t("mkt.title")}</h2>
       <p className="muted">{t("mkt.hint")}</p>
+      <p><Link className="button" href="/marketing/content">{t("mkt.nav.content")}</Link></p>
       {error && <p className="bad" role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
 
@@ -235,6 +236,7 @@ export default function MarketingPage() {
               </div>
               {d.status === "ready_for_review" && (
                 <div className="actions">
+                  <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.requestSend(d.id), t("ext.requested"))}>{t("ext.requestSend")}</button>
                   <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.markSent(d.id))}>{t("mkt.outreach.markSent")}</button>
                   <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.cancelOutreach(d.id))}>{t("mkt.outreach.cancel")}</button>
                 </div>

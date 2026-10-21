@@ -34,11 +34,19 @@ class Policy:
     retention_after_interaction_days: int
     retention_auto_apply: bool
     min_score_for_sales: int
+    outreach_channels: frozenset[str] = frozenset({"email"})
+    outreach_min_days_between: int = 14
+    outreach_max_per_day: int = 10
+    content_channels: frozenset[str] = frozenset({"blog", "website", "linkedin", "instagram", "newsletter"})
+    content_max_per_day: int = 5
 
     @classmethod
     def from_settings(cls, s: Settings) -> "Policy":
         return cls(frozenset(x.strip() for x in s.lead_allowed_sources.split(",") if x.strip()), s.lead_retention_no_interaction_days,
-                   s.lead_retention_after_interaction_days, s.lead_retention_auto_apply, s.lead_min_score_for_sales)
+                   s.lead_retention_after_interaction_days, s.lead_retention_auto_apply, s.lead_min_score_for_sales,
+                   frozenset(x.strip() for x in s.outreach_allowed_channels.split(",") if x.strip()), s.outreach_min_days_between_contacts,
+                   s.outreach_max_per_day, frozenset(x.strip() for x in s.content_allowed_channels.split(",") if x.strip()),
+                   s.content_max_publish_per_day)
 
     def describe(self) -> dict:
         return {
@@ -49,6 +57,13 @@ class Policy:
                           "after_last_interaction_days": self.retention_after_interaction_days,
                           "auto_apply": self.retention_auto_apply, "action": "anonimisasi data pribadi (data perusahaan dipertahankan)"},
             "min_score_for_sales": self.min_score_for_sales,
+            "external": {
+                "outreach_channels": sorted(self.outreach_channels), "outreach_min_days_between_contacts": self.outreach_min_days_between,
+                "outreach_max_per_day": self.outreach_max_per_day, "content_channels": sorted(self.content_channels),
+                "content_max_publish_per_day": self.content_max_per_day,
+                "rule": "Setiap pengiriman atau publikasi memerlukan approval CEO atas isi yang persis sama; tidak ada konektor yang mengirim sendiri.",
+                "paid_ads": "belum didukung (memerlukan approval eksplisit dan batas biaya)",
+            },
             "data_minimisation": {
                 "stored": ["nama perusahaan", "industri", "ukuran", "kota", "website/domain", "nama kontak bisnis", "jabatan", "email kantor", "telepon kantor"],
                 "rejected": ["NIK/KTP", "NPWP", "nomor kartu", "tanggal lahir", "alamat rumah", "agama", "kesehatan", "afiliasi politik",

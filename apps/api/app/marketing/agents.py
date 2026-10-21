@@ -8,8 +8,9 @@ import re
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 
-from app.db.models import Company, Lead, MarketResearch, Product, ProductVersion, Project
-from app.marketing import service
+from app.db.models import Company, ContentAsset, Lead, MarketResearch, OutreachRecord, Product, ProductVersion, Project
+from app.marketing import external, service
+from app.marketing.external import OPT_OUT_FOOTER
 from app.marketing.access import AccessDenied
 from app.marketing.policy import Policy, validate_source_type, validate_url
 from app.marketing.privacy import PolicyError, assert_clean, normalize_domain
@@ -20,7 +21,6 @@ from app.tasks.executors import ExecutionContext, ExecutorError, ExecutorOutcome
 MARKETING_PROJECT_NAME = "Marketing"
 MAX_MATERIAL = 8000
 MAX_CANDIDATES = 20
-OPT_OUT_FOOTER = "\n\n--\nJika Anda tidak ingin dihubungi lagi, balas email ini dengan kata \"berhenti\" dan kami tidak akan menghubungi Anda kembali."
 _EMAIL_IN_TEXT = re.compile(r"[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}")
 
 
@@ -331,8 +331,10 @@ class SalesOutreachExecutor:
     idempotent = False
 
     async def run(self, ctx: ExecutionContext) -> ExecutorOutcome:
+        if ctx.task.action_type == "external_outreach":
+            return _enqueue_outbound(ctx, "outreach", "sales_client_relations")
         if ctx.task.action_type != "draft_outreach":
-            raise ExecutorError("unsupported_action", "Sales hanya mengerjakan task draft_outreach", retryable=False)
+            raise ExecutorError("unsupported_action", "Sales hanya mengerjakan task draft_outreach atau external_outreach", retryable=False)
         p = _params(ctx)
         actor = "sales_client_relations"
         with ctx.session_factory() as s:
@@ -400,3 +402,110 @@ class SalesOutreachExecutor:
         return ExecutorOutcome(output=text, verified=ok,
                                verification={"method": "claim_lint", "passed": ok, "findings": (check or {}).get("findings", [])},
                                result={"output": text, "outreach_id": oid, "status": "ready_for_review" if ok else "blocked_by_claim_check"})
+
+
+# ------------------------------------------------------------------ tindakan eksternal: hanya setelah approval, berhenti di kotak keluar
+
+def _enqueue_outbound(ctx: ExecutionContext, kind: str, actor: str) -> ExecutorOutcome:
+    """Eksekusi tindakan eksternal yang SUDAH disetujui CEO. Seluruh syarat diperiksa ulang; hasilnya hanya masuk kotak keluar."""
+    p = _params(ctx)
+    policy = _policy(ctx)
+    with ctx.session_factory() as s:
+        try:
+            if kind == "content":
+                asset = s.get(ContentAsset, p.get("content_id") or "")
+                if asset is None:
+                    raise ExecutorError("content_not_found", "Konten tidak ditemukan", retryable=False)
+                msg = external.enqueue_publish(s, policy, asset, task_id=ctx.task.id, expected_hash=p.get("body_hash") or "", actor=actor)
+            else:
+                outreach = s.get(OutreachRecord, p.get("outreach_id") or "")
+                if outreach is None:
+                    raise ExecutorError("outreach_not_found", "Draf outreach tidak ditemukan", retryable=False)
+                msg = external.enqueue_outreach(s, policy, outreach, task_id=ctx.task.id, expected_hash=p.get("body_hash") or "", actor=actor)
+        except (service.MarketingError, AccessDenied, PolicyError) as e:
+            s.rollback()
+            raise ExecutorError(getattr(e, "code", "denied"), str(e), retryable=False) from e
+        s.commit()
+        mid = msg.id
+    text = "Masuk kotak keluar. Belum terkirim: CEO yang mengirim secara manual lalu mencatatnya."
+    return ExecutorOutcome(output=text, verified=True, verification={"method": "approval_and_policy_recheck", "passed": True},
+                           result={"output": text, "outbound_id": mid})
+
+
+CONTENT_SCHEMA = {"type": "object", "properties": {"title": {"type": "string"}, "body": {"type": "string"}}, "required": ["title", "body"]}
+
+
+class ContentOut(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    body: str = Field(min_length=30, max_length=20000)
+
+
+class ContentPromotionExecutor:
+    idempotent = False
+
+    async def run(self, ctx: ExecutionContext) -> ExecutorOutcome:
+        if ctx.task.action_type == "publish":
+            return _enqueue_outbound(ctx, "content", "content_promotion")
+        if ctx.task.action_type != "draft_content":
+            raise ExecutorError("unsupported_action", "Content & Promotion hanya mengerjakan draft_content atau publish", retryable=False)
+        p = _params(ctx)
+        policy = _policy(ctx)
+        kind, channel, angle = p.get("kind"), p.get("channel"), (p.get("angle") or "").strip()
+        if kind not in external.CONTENT_KINDS:
+            raise ExecutorError("invalid_kind", f"Jenis konten harus salah satu dari {external.CONTENT_KINDS}", retryable=False)
+        if channel not in policy.content_channels:
+            raise ExecutorError("channel_not_allowed", f"Kanal '{channel}' tidak diizinkan", retryable=False)
+        try:
+            assert_clean(angle=angle)
+        except PolicyError as e:
+            raise ExecutorError("sensitive_data", e.message, retryable=False) from e
+        with ctx.session_factory() as s:
+            try:
+                brief = external.load_brief(s, p.get("product_id"), p.get("version_id"))
+            except service.MarketingError as e:
+                raise ExecutorError(e.code, e.message, retryable=False) from e
+        if not brief["usable_for_promotion"]:
+            raise ExecutorError("product_not_cleared", "Produk belum diizinkan dipromosikan: " + "; ".join(brief["blocked_reasons"]), retryable=False)
+
+        claims = "\n".join(f"- {c['text']}" for c in brief["claims"]) or "- (belum ada klaim terverifikasi; jangan menyebut fitur)"
+        facts = "\n".join([
+            f"Produk: {brief['product']['name']} ({brief['version']['version']})", f"Deskripsi: {brief['product'].get('description') or '-'}",
+            f"Target pelanggan: {brief['product'].get('target_customers') or '-'}", f"Klaim terverifikasi:\n{claims}",
+            f"Keterbatasan: {'; '.join(brief['limitations']) or '-'}", f"Label: {brief['promotion_label']}",
+            f"Disclaimer wajib: {' '.join(brief['required_disclaimers']) or '-'}"])
+        base = (f"{facts}\n\nBuat konten jenis {kind} untuk kanal {channel}." + (f" Sudut pandang: {angle}." if angle else "") +
+                " Bahasa Indonesia, ringkas. HANYA gunakan fakta di atas. Jangan menyebut harga, jangan memakai klaim mutlak (100%, terbaik, dijamin, "
+                "tanpa bug), jangan menyiratkan produk sudah rilis kecuali labelnya RILIS, dan sebutkan bahwa produk beta jika labelnya BETA. "
+                "Balas HANYA JSON {title, body}.")
+        system = "Kamu adalah Content & Promotion Agent yang jujur. Kamu hanya memakai informasi produk resmi yang diberikan, tidak pernah mengarang fitur."
+        draft, feedback, check = None, None, None
+        for _ in range(3):
+            res = await ctx.generate(system, base + (f"\n\nDraf sebelumnya ditolak karena: {feedback}\nPerbaiki." if feedback else ""),
+                                     max_tokens=900, json_schema=CONTENT_SCHEMA)
+            try:
+                if res.truncated:
+                    raise ValueError("jawaban terpotong")
+                draft = ContentOut.model_validate(extract_json(res.text))
+            except (ValidationError, ValueError) as e:
+                feedback, draft = f"format tidak valid: {str(e)[:200]}", None
+                continue
+            check = external.lint_text(brief, f"{draft.title}\n{draft.body}")
+            if check["ok"]:
+                break
+            feedback = "; ".join(f"{f['detail']} ({f.get('match') or ''})" for f in check["findings"] if f["severity"] == "blocking")[:600]
+        if draft is None:
+            raise ExecutorError("invalid_content_output", f"Keluaran konten tidak valid: {feedback}")
+
+        with ctx.session_factory() as s:
+            try:
+                asset = external.create_content(s, policy, actor="content_promotion", product_id=p["product_id"], version_id=brief["version"]["id"], kind=kind,
+                                                channel=channel, title=draft.title, body=draft.body, campaign_id=p.get("campaign_id"), task_id=ctx.task.id)
+            except (service.MarketingError, PolicyError, AccessDenied) as e:
+                s.rollback()
+                raise ExecutorError(getattr(e, "code", "denied"), str(e), retryable=False) from e
+            s.commit()
+            aid, status = asset.id, asset.status
+        ok = status == "ready_for_review"
+        text = "Konten siap ditinjau CEO" if ok else "Konten diblokir pemeriksaan klaim; perlu ditulis ulang manusia"
+        return ExecutorOutcome(output=text, verified=ok, verification={"method": "claim_lint", "passed": ok, "findings": (check or {}).get("findings", [])},
+                               result={"output": text, "content_id": aid, "status": status})

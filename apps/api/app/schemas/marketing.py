@@ -117,3 +117,50 @@ class OutreachTaskBody(_Body):
     product_id: str
     version_id: str | None = None
     channel: str = Field(default="email", pattern="^email$")
+
+
+class CampaignCreate(_Body):
+    name: str = Field(min_length=1, max_length=120)
+    product_id: str
+    version_id: str | None = None
+    objective: str = Field(default="", max_length=2000)
+    channels: list[str] = Field(min_length=1, max_length=10)
+    starts_on: datetime | None = None
+    ends_on: datetime | None = None
+    budget_idr: int = Field(default=0, ge=0, le=10**13)
+
+
+class CampaignStatusBody(_Body):
+    status: str = Field(max_length=20)
+
+
+class MetricBody(_Body):
+    metric: str = Field(max_length=20)
+    value: int = Field(ge=0, le=10**13)
+    note: str | None = Field(default=None, max_length=500)
+
+
+class ContentCreate(_Body):
+    product_id: str
+    version_id: str | None = None
+    campaign_id: str | None = None
+    kind: str = Field(max_length=20)
+    channel: str = Field(max_length=30)
+    title: str = Field(min_length=1, max_length=200)
+    body: str = Field(min_length=1, max_length=20000)
+    scheduled_for: datetime | None = None
+
+
+class ContentUpdate(_Body):
+    title: str | None = Field(default=None, max_length=200)
+    body: str | None = Field(default=None, max_length=20000)
+    scheduled_for: datetime | None = None
+
+
+class ContentTaskBody(_Body):
+    product_id: str
+    version_id: str | None = None
+    campaign_id: str | None = None
+    kind: str = Field(max_length=20)
+    channel: str = Field(max_length=30)
+    angle: str = Field(default="", max_length=500)

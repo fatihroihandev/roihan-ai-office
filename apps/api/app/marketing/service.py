@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.db.base import utcnow
 from app.db.models import (
-    AuditLog, ClientRequirement, Company, Lead, LeadInteraction, LeadSource, OutreachRecord, Product, SalesOpportunity,
+    AuditLog, ClientRequirement, Company, Lead, LeadInteraction, LeadSource, OutboundMessage, OutreachRecord, Product, SalesOpportunity,
     SuppressionEntry,
 )
 from app.marketing import access
@@ -51,7 +51,7 @@ OPP_TRANSITIONS: dict[str, set[str]] = {
     "won": set(), "lost": set(),
 }
 OPEN_STAGES = {"qualification", "proposal", "negotiation"}
-OUTREACH_OPEN = {"draft", "blocked_by_claim_check", "ready_for_review"}
+OUTREACH_OPEN = {"draft", "blocked_by_claim_check", "ready_for_review", "queued_for_dispatch"}
 
 
 def _naive(dt: datetime | None) -> datetime | None:
@@ -350,6 +350,12 @@ def _anonymize(session: Session, lead: Lead, *, reason: str, now: datetime) -> N
         o.subject, o.body = "[dihapus]", f"[dihapus: {reason}]"
         if o.status in OUTREACH_OPEN:
             o.status = "cancelled"
+    _cancel_queued_outbound(session, lead)
+
+
+def _cancel_queued_outbound(session: Session, lead: Lead) -> None:
+    for m in session.scalars(select(OutboundMessage).where(OutboundMessage.lead_id == lead.id, OutboundMessage.status == "queued_manual")):
+        m.status = "cancelled"
 
 
 def opt_out(session: Session, lead: Lead, *, actor: str, reason: str | None = None, now: datetime | None = None) -> Lead:
@@ -359,6 +365,7 @@ def opt_out(session: Session, lead: Lead, *, actor: str, reason: str | None = No
     lead.do_not_contact, lead.status = True, "do_not_contact"
     for o in session.scalars(select(OutreachRecord).where(OutreachRecord.lead_id == lead.id, OutreachRecord.status.in_(OUTREACH_OPEN))):
         o.status = "cancelled"
+    _cancel_queued_outbound(session, lead)
     _audit(session, "lead.opt_out", "lead", lead.id, actor, {"reason": reason})
     return lead
 
