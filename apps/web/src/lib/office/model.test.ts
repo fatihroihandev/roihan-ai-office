@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  chooseMode, layoutAvatars, loungeSeat, poseOf, ROOMS, shouldApply, toneOf, workSeat, WORKROOM, type AgentSnapshot, type RoomId,
+  chooseMode, clipFor, layoutAvatars, loungeSeat, poseOf, ROOMS, shouldApply, toneOf, workSeat, WORKROOM, type AgentSnapshot, type RoomId,
 } from "./model";
 
 const ROLES = Object.keys(WORKROOM);
@@ -105,5 +105,13 @@ describe("mode tampilan dan fallback 2D", () => {
   it("pilihan manual dihormati jika perangkat mampu", () => {
     expect(chooseMode("3d", { webgl: true, reducedMotion: true })).toBe("3d");
     expect(chooseMode("2d", { webgl: true, reducedMotion: false })).toBe("2d");
+  });
+});
+
+describe("klip animasi", () => {
+  it("berjalan menimpa pose; selain itu mengikuti pose", () => {
+    for (const p of ["working", "waiting", "blocked", "error", "done", "idle"] as const) expect(clipFor(p, true)).toBe("Walking");
+    expect([clipFor("working", false), clipFor("idle", false), clipFor("waiting", false), clipFor("error", false), clipFor("done", false), clipFor("blocked", false)])
+      .toEqual(["Sitting", "Sitting", "Wave", "No", "ThumbsUp", "Idle"]);
   });
 });

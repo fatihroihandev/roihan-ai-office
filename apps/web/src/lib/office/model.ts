@@ -60,6 +60,18 @@ export function toneOf(status: string): Tone {
   }
 }
 
+/** Klip animasi model robot untuk sebuah pose. Berjalan selalu "Walking"; bekerja dan idle duduk (di meja atau sofa Lounge). */
+export function clipFor(pose: Pose, walking: boolean): string {
+  if (walking) return "Walking";
+  switch (pose) {
+    case "working": case "idle": return "Sitting";
+    case "waiting": return "Wave";
+    case "error": return "No";
+    case "done": return "ThumbsUp";
+    default: return "Idle"; // blocked
+  }
+}
+
 export type Avatar = {
   role: string;
   department: string;

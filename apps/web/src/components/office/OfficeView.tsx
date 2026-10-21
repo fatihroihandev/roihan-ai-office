@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Component, useCallback, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { Dashboard } from "@/lib/dashboardApi";
 import { chooseMode, isModePref, layoutAvatars, ROOM_ORDER, type Capabilities, type ModePref, type RoomId } from "@/lib/office/model";
+import type { Nearby } from "@/lib/office/walk";
 import { Office2D } from "@/components/office/Office2D";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
@@ -62,6 +63,44 @@ const subscribePref = (cb: () => void) => {
   return () => void prefListeners.delete(cb);
 };
 
+// ---- kualitas efek (bayangan dan bloom): tinggi secara bawaan, rendah jika perangkat meminta gerak berkurang
+type Quality = "high" | "low";
+const QUALITY_KEY = "roihan.office.quality";
+const qualityListeners = new Set<() => void>();
+let memoryQuality: Quality | null = null;
+
+function readQuality(): Quality {
+  if (memoryQuality) return memoryQuality;
+  try {
+    const v = window.localStorage.getItem(QUALITY_KEY);
+    if (v === "high" || v === "low") return v;
+  } catch {
+    /* penyimpanan tidak tersedia */
+  }
+  return detectCaps().reducedMotion ? "low" : "high";
+}
+
+export function useOfficeQuality(): [Quality, (q: Quality) => void] {
+  const q = useSyncExternalStore(
+    (cb) => {
+      qualityListeners.add(cb);
+      return () => void qualityListeners.delete(cb);
+    },
+    readQuality,
+    () => "high" as Quality,
+  );
+  const set = useCallback((v: Quality) => {
+    memoryQuality = v;
+    try {
+      window.localStorage.setItem(QUALITY_KEY, v);
+    } catch {
+      /* hanya berlaku selama sesi */
+    }
+    qualityListeners.forEach((l) => l());
+  }, []);
+  return [q, set];
+}
+
 class Boundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
@@ -101,8 +140,13 @@ export function ModeControls({ pref, setPref }: { pref: ModePref; setPref: (v: M
 }
 
 /** Area adegan: 3D memenuhi induknya; 2D menjadi kisi kartu biasa. */
-export function OfficeScene({ data, mode, onFail, selected, onSelect }: {
-  data: Dashboard; mode: "3d" | "2d"; onFail: () => void; selected: string | null; onSelect: (role: string) => void;
+export type WalkProps = {
+  walking: boolean; start?: [number, number]; view: "third" | "first"; quality: Quality;
+  onNearby: (n: Nearby | null) => void; onInteract: (n: Nearby) => void; onToggleView: () => void; onExit: () => void;
+};
+
+export function OfficeScene({ data, mode, onFail, selected, onSelect, walk }: {
+  data: Dashboard; mode: "3d" | "2d"; onFail: () => void; selected: string | null; onSelect: (role: string) => void; walk: WalkProps;
 }) {
   const { t } = useLanguage();
   const avatars = useMemo(() => layoutAvatars(data.agents), [data.agents]);
@@ -124,7 +168,8 @@ export function OfficeScene({ data, mode, onFail, selected, onSelect }: {
       <Boundary onError={onFail}>
         <Office3D
           avatars={avatars} selected={selected} onSelect={onSelect} hologram={hologram}
-          roomLabels={roomLabels} roleLabels={roleLabels} statusLabels={statusLabels} onFail={onFail}
+          roomLabels={roomLabels} roleLabels={roleLabels} statusLabels={statusLabels} onFail={onFail} quality={walk.quality}
+          ceo={{ walking: walk.walking, start: walk.start, view: walk.view, label: t("office.ceo"), onNearby: walk.onNearby, onInteract: walk.onInteract, onToggleView: walk.onToggleView, onExit: walk.onExit }}
         />
       </Boundary>
     </div>

@@ -3,10 +3,12 @@
 // Render 3D saja. Tidak ada logika bisnis di sini: posisi, pose, dan warna datang dari lib/office/model (potret backend).
 // Yang dilakukan di sini murni visual: avatar berjalan menuju kursi yang ditentukan model, meja menyala sesuai pose, dan seterusnya.
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, type RefObject } from "react";
+import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
+import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useLogoTexture, useWordmarkTexture } from "@/components/brand/useBrandTextures";
+import { CeoRig, ModelBoundary, RobotWalker, type WalkRigProps } from "@/components/office/scene/models";
 import { DEPARTMENT_COLOR, loungeSeat, ROOM_ORDER, ROOMS, workSeat, WORKROOM, type Avatar, type Pose, type RoomId } from "@/lib/office/model";
 
 const TONE_COLOR = { ok: "#39ff88", warn: "#ffb020", bad: "#ff3860", idle: "#4b5563" } as const;
@@ -23,6 +25,8 @@ export type Office3DProps = {
   roleLabels: Record<string, string>;
   statusLabels: Record<string, string>;
   onFail: () => void;
+  quality: "high" | "low";
+  ceo: Pick<WalkRigProps, "walking" | "start" | "view" | "label" | "onNearby" | "onInteract" | "onToggleView" | "onExit">;
 };
 
 // ------------------------------------------------------------------ tekstur
@@ -111,7 +115,7 @@ function BrandSign({ position, scale = 1, tagline = true }: { position: [number,
 
 // ------------------------------------------------------------------ kamera
 
-function Controls({ focus }: { focus: [number, number] | null }) {
+function Controls({ focus, enabled }: { focus: [number, number] | null; enabled: boolean }) {
   const { camera, gl } = useThree();
   const ref = useRef<OrbitControls | null>(null);
   useEffect(() => {
@@ -126,9 +130,18 @@ function Controls({ focus }: { focus: [number, number] | null }) {
     return () => c.dispose();
   }, [camera, gl]);
   const goal = useMemo(() => new THREE.Vector3(), []);
-  useFrame((_, dt) => {
+  useEffect(() => {
     const c = ref.current;
     if (!c) return;
+    c.enabled = enabled;
+    if (enabled) {
+      camera.position.set(0, 18, 24); // kembali ke sudut pandang atas saat keluar dari mode jalan
+      c.target.set(0, 0, 2);
+    }
+  }, [enabled, camera]);
+  useFrame((_, dt) => {
+    const c = ref.current;
+    if (!c || !enabled) return;
     goal.set(focus ? focus[0] * 0.6 : 0, focus ? 0.8 : 0, focus ? focus[1] * 0.6 + 1 : 2); // mengikuti agent terpilih secara halus
     c.target.lerp(goal, 1 - Math.exp(-3 * dt));
     c.update();
@@ -262,17 +275,27 @@ function Plant({ position, s = 1 }: { position: [number, number, number]; s?: nu
   );
 }
 
-function RoomShell({ id, name, glow }: { id: RoomId; name: string; glow: THREE.Texture }) {
+function RoomShell({ id, name, glow, ceiling }: { id: RoomId; name: string; glow: THREE.Texture; ceiling: boolean }) {
   const r = ROOMS[id];
   const [w, d] = r.size;
   const edges = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(w, 0.12, d)), [w, d]);
   useEffect(() => () => edges.dispose(), [edges]);
   const raised = id === "ceo" ? 0.35 : 0;
-  const wall = (pos: [number, number, number], size: [number, number, number]) => (
-    <mesh position={pos}>
-      <boxGeometry args={size} />
-      <meshBasicMaterial color={r.color} transparent opacity={0.1} depthWrite={false} />
-    </mesh>
+  const pane = (pos: [number, number, number], size: [number, number, number]) => (
+    <group position={pos}>
+      <mesh>
+        <boxGeometry args={size} />
+        <meshPhysicalMaterial color={r.color} transparent opacity={0.07} roughness={0.05} metalness={0.1} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, size[1] / 2, 0]}>
+        <boxGeometry args={[size[0] + 0.02, 0.05, size[2] + 0.02]} />
+        <meshBasicMaterial color={r.color} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, -size[1] / 2, 0]}>
+        <boxGeometry args={[size[0] + 0.02, 0.05, size[2] + 0.02]} />
+        <meshBasicMaterial color={r.color} toneMapped={false} />
+      </mesh>
+    </group>
   );
   return (
     <group position={[r.center[0], raised, r.center[1]]}>
@@ -280,21 +303,23 @@ function RoomShell({ id, name, glow }: { id: RoomId; name: string; glow: THREE.T
         <planeGeometry args={[w + 5, d + 5]} />
         <meshBasicMaterial map={glow} color={r.color} transparent opacity={0.35} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
-      <mesh position={[0, 0.02, 0]}>
+      <mesh position={[0, 0.02, 0]} receiveShadow>
         <boxGeometry args={[w, 0.12, d]} />
         <meshStandardMaterial color="#0a1226" metalness={0.85} roughness={0.22} emissive={r.color} emissiveIntensity={0.06} />
       </mesh>
       <lineSegments geometry={edges} position={[0, 0.02, 0]}>
         <lineBasicMaterial color={r.color} toneMapped={false} />
       </lineSegments>
-      {wall([0, 0.75, -d / 2], [w, 1.4, 0.06])}
-      {wall([-w / 2, 0.75, 0], [0.06, 1.4, d])}
-      {wall([w / 2, 0.75, 0], [0.06, 1.4, d])}
-      <mesh position={[0, 1.46, -d / 2]}>
-        <boxGeometry args={[w, 0.04, 0.06]} />
-        <meshBasicMaterial color={r.color} toneMapped={false} />
-      </mesh>
-      <SpriteLabel lines={[{ text: name.toUpperCase(), color: r.color }]} position={[0, 1.0, d / 2 + 0.55]} scale={[w * 0.7, 0.9]} />
+      {pane([0, 1.6, -d / 2], [w, 3.2, 0.06])}
+      {pane([-w / 2, 1.6, 0], [0.06, 3.2, d])}
+      {pane([w / 2, 1.6, 0], [0.06, 3.2, d])}
+      {ceiling && [-1, 1].map((sx) => (
+        <mesh key={sx} position={[sx * w * 0.28, 3.08, 0]}>
+          <boxGeometry args={[w * 0.24, 0.04, 0.22]} />
+          <meshBasicMaterial color="#8fb4ff" toneMapped={false} />
+        </mesh>
+      ))}
+      <SpriteLabel lines={[{ text: name.toUpperCase(), color: r.color }]} position={[0, ceiling ? 3.6 : 1.0, d / 2 + 0.55]} scale={ceiling ? [w * 0.42, 0.55] : [w * 0.7, 0.9]} />
       <pointLight position={[0, 3.2, 0]} color={r.color} intensity={55} distance={14} decay={2} />
     </group>
   );
@@ -349,6 +374,24 @@ function Workstation({ role, pose, color }: { role: string; pose: Pose; color: s
         <boxGeometry args={[0.55, 0.03, 0.18]} />
         <meshBasicMaterial color={color} transparent opacity={pose === "working" ? 0.9 : 0.25} toneMapped={false} />
       </mesh>
+      <group position={[0, 0, 1.05]}>
+        <mesh position={[0, 0.46, 0]} castShadow>
+          <boxGeometry args={[0.55, 0.08, 0.5]} />
+          <meshStandardMaterial color="#10162f" roughness={0.6} />
+        </mesh>
+        <mesh position={[0, 0.82, 0.24]} castShadow>
+          <boxGeometry args={[0.55, 0.62, 0.07]} />
+          <meshStandardMaterial color="#10162f" emissive={color} emissiveIntensity={0.12} roughness={0.6} />
+        </mesh>
+        <mesh position={[0, 0.22, 0]}>
+          <cylinderGeometry args={[0.04, 0.04, 0.4, 8]} />
+          <meshStandardMaterial color="#1b2447" metalness={0.7} roughness={0.3} />
+        </mesh>
+        <mesh position={[0, 0.03, 0]}>
+          <cylinderGeometry args={[0.3, 0.3, 0.04, 5]} />
+          <meshStandardMaterial color="#1b2447" metalness={0.7} roughness={0.3} />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -599,7 +642,7 @@ function Walker({ a, selected, onSelect, name, status }: { a: Avatar; selected: 
 
 // ------------------------------------------------------------------ adegan
 
-export default function Office3D({ avatars, selected, onSelect, hologram, roomLabels, roleLabels, statusLabels, onFail }: Office3DProps) {
+export default function Office3D({ avatars, selected, onSelect, hologram, roomLabels, roleLabels, statusLabels, onFail, quality, ceo }: Office3DProps) {
   const glow = useMemo(() => glowTexture(), []);
   useEffect(() => () => glow.dispose(), [glow]);
   const byRole = useMemo(() => new Map(avatars.map((a) => [a.role, a])), [avatars]);
@@ -611,6 +654,7 @@ export default function Office3D({ avatars, selected, onSelect, hologram, roomLa
 
   return (
     <Canvas
+      shadows={quality === "high"}
       dpr={[1, 1.5]}
       camera={{ position: [0, 18, 24], fov: 45, near: 0.5, far: 140 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
@@ -626,8 +670,8 @@ export default function Office3D({ avatars, selected, onSelect, hologram, roomLa
       <fog attach="fog" args={["#05060f", 40, 90]} />
       <ambientLight intensity={0.5} />
       <hemisphereLight args={["#5b7cff", "#1a0b2e", 0.55]} />
-      <directionalLight position={[8, 16, 10]} intensity={0.5} color="#9fb4ff" />
-      <Controls focus={focus} />
+      <directionalLight position={[8, 16, 10]} intensity={0.6} color="#9fb4ff" castShadow={quality === "high"} shadow-mapSize={[2048, 2048]} shadow-camera-left={-26} shadow-camera-right={26} shadow-camera-top={22} shadow-camera-bottom={-18} shadow-camera-near={1} shadow-camera-far={60} shadow-bias={-0.0004} />
+      <Controls focus={focus} enabled={!ceo.walking} />
       <Skyline />
       <GlassWall />
       <Particles />
@@ -638,7 +682,7 @@ export default function Office3D({ avatars, selected, onSelect, hologram, roomLa
       <gridHelper args={[70, 70, "#1c2a55", "#0e1630"]} position={[0, -0.02, 0]} />
       <BrandSign position={[-0.6, 3.9, -14.2]} scale={0.72} />
 
-      {ROOM_ORDER.map((id) => <RoomShell key={id} id={id} name={roomLabels[id]} glow={glow} />)}
+      {ROOM_ORDER.map((id) => <RoomShell key={id} id={id} name={roomLabels[id]} glow={glow} ceiling={ceo.walking} />)}
 
       {ROLES.filter((r) => WORKROOM[r] === "engineering").map((r) => <Workstation key={r} role={r} pose={byRole.get(r)?.pose ?? "idle"} color={DEPARTMENT_COLOR.engineering} />)}
       <Rack position={[ex - 3.6, 0.06, ez - 3.0]} />
@@ -655,15 +699,37 @@ export default function Office3D({ avatars, selected, onSelect, hologram, roomLa
       <BrandSign position={[ROOMS.ceo.center[0], 0.85, ROOMS.ceo.center[1] - ROOMS.ceo.size[1] / 2 + 0.25]} scale={0.2} tagline={false} />
       <Plant position={[cx - 3.4, 0.4, cz - 1.6]} s={1.1} />
       <Plant position={[cx + 3.4, 0.4, cz - 1.6]} s={1.1} />
-      <TextPlane lines={hologram} position={[cx, 2.9, cz - 1.9]} size={[6.2, 2.9]} />
+      <mesh position={[cx, 2.25, cz - 2.38]}>
+        <planeGeometry args={[5.0, 2.3]} />
+        <meshBasicMaterial color="#060a1c" transparent opacity={0.82} />
+      </mesh>
+      <TextPlane lines={hologram} position={[cx, 2.25, cz - 2.36]} size={[4.8, 2.1]} />
 
       {ROLES.map((r) => <Sofa key={r} role={r} />)}
       <Plant position={[lx + 4.1, 0.06, lz - 1.9]} s={1.2} />
       <Plant position={[lx - 4.1, 0.06, lz + 1.9]} s={1.2} />
 
-      {avatars.map((a) => (
-        <Walker key={a.role} a={a} selected={selected === a.role} onSelect={onSelect} name={roleLabels[a.role] ?? a.role} status={statusLabels[a.status] ?? a.status} />
-      ))}
+      <ModelBoundary
+        fallback={avatars.map((a) => (
+          <Walker key={a.role} a={a} selected={selected === a.role} onSelect={onSelect} name={roleLabels[a.role] ?? a.role} status={statusLabels[a.status] ?? a.status} />
+        ))}
+      >
+        <Suspense fallback={null}>
+          {avatars.map((a) => (
+            <RobotWalker key={a.role} a={a} selected={selected === a.role} onSelect={onSelect} name={roleLabels[a.role] ?? a.role} status={statusLabels[a.status] ?? a.status} />
+          ))}
+        </Suspense>
+      </ModelBoundary>
+      <ModelBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <CeoRig {...ceo} avatars={avatars} />
+        </Suspense>
+      </ModelBoundary>
+      {quality === "high" && (
+        <EffectComposer multisampling={0}>
+          <Bloom intensity={0.85} luminanceThreshold={0.62} luminanceSmoothing={0.25} mipmapBlur />
+        </EffectComposer>
+      )}
     </Canvas>
   );
 }

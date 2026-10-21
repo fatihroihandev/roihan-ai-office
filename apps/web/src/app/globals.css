@@ -381,3 +381,14 @@ button, input, textarea, select { font-family: inherit; }
 .brand .brand-name { font-weight: 800; font-size: 1.12rem; letter-spacing: 0.32em; text-transform: uppercase; background: none; color: #ffffff; -webkit-text-fill-color: #ffffff; text-shadow: 0 0 14px rgba(0, 229, 255, 0.35); }
 .brand .brand-sub { font-weight: 600; font-size: 0.56rem; letter-spacing: 0.62em; text-transform: uppercase; background: var(--brand-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .neon-grad, .kpi strong { background-image: var(--brand-grad); }
+
+/* ================================================================== Mode jalan CEO */
+.hud-walk { bottom: 12px; left: 50%; transform: translateX(-50%); max-width: min(900px, 92%); text-align: center; }
+.stage[data-walk="on"] .hud-bl { display: none; }
+.hud-prompt { bottom: 68px; left: 50%; transform: translateX(-50%); font-weight: 700; padding: 0.55rem 1rem; border-color: rgba(255, 209, 102, 0.7); box-shadow: 0 0 24px rgba(255, 209, 102, 0.25); }
+kbd { display: inline-block; min-width: 1.6rem; padding: 0.1rem 0.45rem; margin-right: 0.35rem; text-align: center; border-radius: 6px; border: 1px solid #ffd166; color: #ffd166; font-family: inherit; font-weight: 800; }
+.crosshair { position: absolute; z-index: 3; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 1px solid rgba(232, 236, 255, 0.8); border-radius: 50%; pointer-events: none; box-shadow: 0 0 8px rgba(0, 229, 255, 0.6); }
+.stage[data-walk="on"] .scene { cursor: grab; }
+button.primary-btn { background: var(--brand-grad); color: #05060f; font-weight: 800; border: 0; box-shadow: 0 0 20px rgba(139, 92, 246, 0.45); }
+button.primary-btn:hover:not(:disabled) { filter: brightness(1.15); color: #05060f; }
+.credits { margin-top: 0.6rem; }

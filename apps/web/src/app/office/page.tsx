@@ -1,23 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { DashboardPanel } from "@/components/office/DashboardPanel";
-import { ModeControls, OfficeScene, useOfficeMode } from "@/components/office/OfficeView";
+import { ModeControls, OfficeScene, useOfficeMode, useOfficeQuality } from "@/components/office/OfficeView";
 import { useOfficeData } from "@/lib/office/useOfficeData";
+import type { Nearby } from "@/lib/office/walk";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
 
 export default function OfficePage() {
   const { t } = useLanguage();
+  const router = useRouter();
+  const params = useSearchParams(); // ?walk=1 langsung masuk mode jalan; ?view=first orang pertama
   const label = (key: string) => t(key as MessageKey);
   const { data, stale, connected, updatedAt } = useOfficeData();
   const { mode, pref, setPref, caps, failed, onFail } = useOfficeMode();
+  const [quality, setQuality] = useOfficeQuality();
   const [selected, setSelected] = useState<string | null>(null);
-  const [panel, setPanel] = useState(true);
+  const [walking, setWalking] = useState(params.get("walk") === "1");
+  const [panel, setPanel] = useState(params.get("walk") !== "1");
+  const [view, setView] = useState<"third" | "first">(params.get("view") === "first" ? "first" : "third");
+  const [nearby, setNearby] = useState<Nearby | null>(null);
   const stage = useRef<HTMLDivElement>(null);
+  const startParam = params.get("pos")?.split(",").map(Number); // ?pos=x,z memindahkan CEO langsung ke titik itu (tautan/uji)
+  const start = startParam && startParam.length === 2 && startParam.every(Number.isFinite) ? ([startParam[0], startParam[1]] as [number, number]) : undefined;
   const agent = data?.agents.find((a) => a.role === selected) ?? null;
+  const walkOn = walking && mode === "3d";
+
+  const onToggleView = useCallback(() => setView((v) => (v === "third" ? "first" : "third")), []);
+  const onExit = useCallback(() => {
+    setWalking(false);
+    setNearby(null);
+  }, []);
+  const onInteract = useCallback((n: Nearby) => {
+    if (n.kind === "agent") setSelected(n.role);
+    else router.push(n.href);
+  }, [router]);
 
   const toggleFullscreen = () => {
     const el = stage.current;
@@ -25,6 +46,10 @@ export default function OfficePage() {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void el.requestFullscreen?.();
   };
+
+  const prompt = nearby
+    ? nearby.kind === "agent" ? t("office.walk.talk").replace("{name}", label(`role.${nearby.role}`)) : label(`office.walk.place.${nearby.id}`)
+    : null;
 
   return (
     <main data-office>
@@ -36,8 +61,11 @@ export default function OfficePage() {
       {!data && !stale && <p>{t("common.loading")}</p>}
       {!data && stale && <p className="bad" role="alert">{t("office.unavailable")}</p>}
       {data && (
-        <div className="stage" data-mode={mode} ref={stage}>
-          <OfficeScene data={data} mode={mode} onFail={onFail} selected={selected} onSelect={setSelected} />
+        <div className="stage" data-mode={mode} data-walk={walkOn ? "on" : "off"} data-view={view} ref={stage}>
+          <OfficeScene
+            data={data} mode={mode} onFail={onFail} selected={selected} onSelect={setSelected}
+            walk={{ walking: walkOn, start, view, quality, onNearby: setNearby, onInteract, onToggleView, onExit }}
+          />
 
           <div className="hud hud-tl glass" role="status">
             <span className="badge" data-task={connected ? "completed" : "failed"}>{connected ? t("office.live") : t("office.polling")}</span>
@@ -47,15 +75,36 @@ export default function OfficePage() {
           </div>
 
           <div className="hud hud-tr glass">
+            {mode === "3d" && (
+              <button type="button" className={walkOn ? "danger" : "primary-btn"} onClick={() => { if (walkOn) onExit(); else { setWalking(true); setPanel(false); } }}>
+                {walkOn ? t("office.walk.exit") : t("office.walk.enter")}
+              </button>
+            )}
             <ModeControls pref={pref} setPref={setPref} />
+            {mode === "3d" && (
+              <button type="button" aria-pressed={quality === "high"} onClick={() => setQuality(quality === "high" ? "low" : "high")}>
+                {t("office.quality")}: {t(quality === "high" ? "office.quality.high" : "office.quality.low")}
+              </button>
+            )}
             <button type="button" aria-pressed={panel} onClick={() => setPanel((p) => !p)}>{t("office.panel")}</button>
             <button type="button" onClick={toggleFullscreen}>{t("office.fullscreen")}</button>
           </div>
 
-          {panel && (
+          {panel && !walkOn && (
             <aside className="hud hud-right glass">
               <DashboardPanel d={data} />
             </aside>
+          )}
+
+          {walkOn && (
+            <>
+              {view === "first" && <div className="crosshair" aria-hidden="true" />}
+              <div className="hud hud-walk glass" role="note">
+                <span className="small">{t("office.walk.help")}</span>
+                <span className="small muted"> · {t(view === "first" ? "office.walk.view.first" : "office.walk.view.third")}</span>
+              </div>
+              {prompt && <div className="hud hud-prompt glass" role="status"><kbd>E</kbd> {prompt.replace(/^E: /, "")}</div>}
+            </>
           )}
 
           <div className="hud hud-bl glass" aria-live="polite">
@@ -74,6 +123,7 @@ export default function OfficePage() {
           </div>
         </div>
       )}
+      <p className="small muted credits">{t("office.credits")}</p>
     </main>
   );
 }
