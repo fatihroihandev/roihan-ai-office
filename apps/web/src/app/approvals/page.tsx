@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { PageHero } from "@/components/ui/PageHero";
 import { tasksApi, type Approval } from "@/lib/tasksApi";
 import { useTaskEvents } from "@/lib/useTaskEvents";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -54,10 +55,16 @@ export default function ApprovalsPage() {
   const history = items.filter((a) => a.status !== "pending");
 
   return (
-    <main className="wide">
+    <main className="wide" data-accent="amber">
       <AppHeader />
-      <h2>{t("approvals.title")}</h2>
-      <p className="muted">{t("approvals.hint")}</p>
+      <PageHero
+        code="05" route="SYS://APPROVALS" art="approvals" title={t("approvals.title")} hint={t("approvals.hint")}
+        stats={[
+          { label: t("hero.stat.pending"), value: pending.length, tone: pending.length > 0 ? "warn" : undefined },
+          { label: t("hero.stat.critical"), value: pending.filter((a) => a.risk_level === "critical").length, tone: "bad" },
+          { label: t("hero.stat.history"), value: history.length },
+        ]}
+      />
       {error && <p className="bad" role="alert">{error}</p>}
 
       <h3>{t("approvals.pending")} ({pending.length})</h3>

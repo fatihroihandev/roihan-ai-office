@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { Loading, PageHero } from "@/components/ui/PageHero";
 import type { Project } from "@/lib/api";
 import { BOARD_COLUMNS, tasksApi, type Agent, type SandboxStatus, type Task, type WorkerStatus } from "@/lib/tasksApi";
 import { useTaskEvents } from "@/lib/useTaskEvents";
@@ -98,9 +99,18 @@ export default function TasksPage() {
   const label = (key: string) => t(key as MessageKey);
 
   return (
-    <main className="wide">
+    <main className="wide" data-accent="cyan">
       <AppHeader />
-      <h2>{t("tasks.title")}</h2>
+      <PageHero
+        code="02" route="SYS://TASKS" art="tasks" title={t("tasks.title")} hint={t("hero.tasks.hint")}
+        stats={[
+          { label: t("hero.stat.running"), value: tasks.filter((x) => x.status === "running").length, tone: "ok" },
+          { label: t("hero.stat.queued"), value: tasks.filter((x) => ["queued", "draft"].includes(x.status)).length },
+          { label: t("hero.stat.waiting"), value: tasks.filter((x) => x.status === "pending_approval").length, tone: "warn" },
+          { label: t("hero.stat.done"), value: tasks.filter((x) => x.status === "completed").length },
+          { label: t("hero.stat.problems"), value: tasks.filter((x) => ["failed", "blocked", "interrupted"].includes(x.status)).length, tone: "bad" },
+        ]}
+      />
       {error && <p className="bad" role="alert">{error}</p>}
       {tasks.some((x) => x.status === "pending_approval") && (
         <p className="banner">
@@ -109,6 +119,7 @@ export default function TasksPage() {
         </p>
       )}
 
+      <div className="duo">
       <section className="card">
         <div className="row">
           <label>
@@ -148,7 +159,7 @@ export default function TasksPage() {
 
       <section className="card">
         <h3>{t("sandbox.title")}</h3>
-        {!sandbox && <p className="muted">{t("common.loading")}</p>}
+        {!sandbox && <Loading lines={2} />}
         {sandbox && (
           <>
             <div className="chips">
@@ -186,6 +197,8 @@ export default function TasksPage() {
         )}
       </section>
 
+      </div>
+
       <section className="card">
         <h3>{t("tasks.agents")}</h3>
         <div className="agents">
@@ -209,7 +222,7 @@ export default function TasksPage() {
             <section key={col.key} className="column" data-col={col.key}>
               <h4>{label(`col.${col.key}`)} <span className="muted">({items.length})</span></h4>
               {items.map((x) => (
-                <article key={x.id} className="task" data-risk={x.risk_level}>
+                <article key={x.id} className="task" data-risk={x.risk_level} data-status={x.status}>
                   <Link href={`/tasks/${x.id}`}><strong>{x.title}</strong></Link>
                   <div className="muted small">{label(`role.${x.role}`)} · {x.action_type}</div>
                   <div className="chips">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { Loading, PageHero } from "@/components/ui/PageHero";
 import {
   marketingApi, PIPELINE, SOURCE_TYPES, type Analytics, type Lead, type Opportunity, type Outreach, type Policy, type Research, type Retention,
 } from "@/lib/marketingApi";
@@ -94,14 +95,22 @@ export default function MarketingPage() {
   const pct = (v: number | null) => (v === null ? unknown : `${Math.round(v * 100)}%`);
 
   return (
-    <main>
+    <main data-accent="magenta">
       <AppHeader />
-      <h2>{t("mkt.title")}</h2>
-      <p className="muted">{t("mkt.hint")}</p>
+      <PageHero
+        code="04" route="SYS://MARKETING" art="marketing" title={t("mkt.title")} hint={t("mkt.hint")}
+        stats={[
+          { label: t("hero.stat.leads"), value: stats?.leads_total ?? 0 },
+          { label: t("hero.stat.opps"), value: stats?.opportunities_open ?? 0, tone: "ok" },
+          { label: t("hero.stat.drafts"), value: drafts.filter((d) => d.status === "ready_for_review").length, tone: "warn" },
+          { label: t("office.stat.outbox"), value: drafts.filter((d) => d.status === "queued_for_dispatch").length },
+        ]}
+      />
       <p><Link className="button" href="/marketing/content">{t("mkt.nav.content")}</Link></p>
       {error && <p className="bad" role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
 
+      <div className="duo">
       {policy && (
         <section className="card">
           <h3>{t("mkt.policy")}</h3>
@@ -140,6 +149,8 @@ export default function MarketingPage() {
         </section>
       )}
 
+      </div>
+
       <form className="card" onSubmit={onCreate}>
         <h3>{t("mkt.newLead")}</h3>
         <label>{t("mkt.company")}<input value={company} maxLength={200} onChange={(e) => setCompany(e.target.value)} required /></label>
@@ -174,7 +185,7 @@ export default function MarketingPage() {
 
       <section className="card">
         <h3>{t("mkt.pipeline")}</h3>
-        {leads === null && !error && <p>{t("common.loading")}</p>}
+        {leads === null && !error && <Loading />}
         {leads?.length === 0 && <p>{t("mkt.empty")}</p>}
         {PIPELINE.map((st) => {
           const rows = (leads ?? []).filter((l) => l.status === st);

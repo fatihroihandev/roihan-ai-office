@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { Loading, PageHero } from "@/components/ui/PageHero";
 import type { Project } from "@/lib/api";
 import { productsApi, type Line, type Product } from "@/lib/productsApi";
 import { tasksApi } from "@/lib/tasksApi";
@@ -52,12 +53,19 @@ export default function ProductsPage() {
   const label = (key: string) => t(key as MessageKey);
 
   return (
-    <main>
+    <main data-accent="violet">
       <AppHeader />
-      <h2>{t("products.title")}</h2>
-      <p className="muted">{t("products.hint")}</p>
+      <PageHero
+        code="03" route="SYS://PRODUCTS" art="products" title={t("products.title")} hint={t("hero.products.hint")}
+        stats={[
+          { label: t("hero.stat.products"), value: products?.length ?? 0 },
+          { label: t("hero.stat.beta"), value: products?.filter((p) => p.status === "beta").length ?? 0, tone: "warn" },
+          { label: t("hero.stat.released"), value: products?.filter((p) => p.status === "released").length ?? 0, tone: "ok" },
+          { label: t("hero.stat.cleared"), value: products?.filter((p) => p.effective_permission !== "not_allowed").length ?? 0, tone: "ok" },
+        ]}
+      />
 
-      <form className="card" onSubmit={onCreate}>
+      <form className="card grid2" onSubmit={onCreate}>
         <h3>{t("products.new")}</h3>
         <label>{t("products.name")}<input value={name} maxLength={120} onChange={(e) => setName(e.target.value)} required /></label>
         <label>
@@ -80,9 +88,9 @@ export default function ProductsPage() {
       </form>
 
       {error && <p className="bad" role="alert">{error}</p>}
-      {products === null && !error && <p>{t("common.loading")}</p>}
+      {products === null && !error && <Loading />}
       {products?.length === 0 && <p>{t("products.empty")}</p>}
-      <ul className="list">
+      <ul className="list tiles">
         {products?.map((p) => (
           <li key={p.id} className="card">
             <div>

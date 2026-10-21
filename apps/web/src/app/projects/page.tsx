@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { Loading, PageHero } from "@/components/ui/PageHero";
 import { api, type Project } from "@/lib/api";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
@@ -43,11 +44,18 @@ export default function ProjectsPage() {
   }
 
   return (
-    <main>
+    <main data-accent="blue">
       <AppHeader />
-      <h2>{t("projects.title")}</h2>
+      <PageHero
+        code="01" route="SYS://PROJECTS" art="projects" title={t("projects.title")} hint={t("hero.projects.hint")}
+        stats={[
+          { label: t("hero.stat.projects"), value: projects?.length ?? 0 },
+          { label: t("hero.stat.active"), value: projects?.filter((p) => p.status === "active").length ?? 0, tone: "ok" },
+          { label: t("hero.stat.archived"), value: projects?.filter((p) => p.status === "archived").length ?? 0 },
+        ]}
+      />
 
-      <form className="card" onSubmit={onCreate}>
+      <form className="card grid2" onSubmit={onCreate}>
         <h3>{t("projects.new")}</h3>
         <label>
           {t("projects.name")}
@@ -61,10 +69,10 @@ export default function ProjectsPage() {
       </form>
 
       {error && <p className="bad" role="alert">{error}</p>}
-      {projects === null && !error && <p>{t("common.loading")}</p>}
+      {projects === null && !error && <Loading />}
       {projects?.length === 0 && <p>{t("projects.empty")}</p>}
 
-      <ul className="list">
+      <ul className="list tiles">
         {projects?.map((p) => (
           <li key={p.id} className="card">
             <div>

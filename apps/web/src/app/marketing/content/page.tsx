@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { Loading, PageHero } from "@/components/ui/PageHero";
 import {
   CONTENT_KINDS, marketingApi, type Campaign, type ContentAsset, type OutboundMessage, type Policy,
 } from "@/lib/marketingApi";
@@ -73,11 +74,18 @@ export default function ContentPage() {
   const ext = policy?.external;
 
   return (
-    <main>
+    <main data-accent="magenta">
       <AppHeader />
       <p><Link href="/marketing">← {t("ext.back")}</Link></p>
-      <h2>{t("ext.title")}</h2>
-      <p className="muted">{t("ext.hint")}</p>
+      <PageHero
+        code="04.1" route="SYS://CONTENT" art="marketing" title={t("ext.title")} hint={t("ext.hint")}
+        stats={[
+          { label: t("ext.content"), value: contents?.length ?? 0 },
+          { label: t("hero.stat.drafts"), value: (contents ?? []).filter((a) => a.status === "ready_for_review").length, tone: "warn" },
+          { label: t("ext.campaigns"), value: campaigns.length },
+          { label: t("office.stat.outbox"), value: box.filter((m) => m.status === "queued_manual").length, tone: "ok" },
+        ]}
+      />
       {error && <p className="bad" role="alert">{error}</p>}
       {notice && <p role="status">{notice} <Link href="/approvals">{t("nav.approvals")}</Link></p>}
 
@@ -160,7 +168,7 @@ export default function ContentPage() {
 
       <section className="card">
         <h3>{t("ext.content")}</h3>
-        {contents === null && !error && <p>{t("common.loading")}</p>}
+        {contents === null && !error && <Loading />}
         {contents?.length === 0 && <p className="muted">{t("ext.content.empty")}</p>}
         <ul className="list">
           {(contents ?? []).map((a) => (

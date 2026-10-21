@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { Loading, PageHero } from "@/components/ui/PageHero";
 import { aiApi, pct, type Budget, type GenerateResult, type ModelRow, type Provider, type UsageResponse } from "@/lib/aiApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
@@ -81,14 +82,23 @@ export default function AiControlCenterPage() {
   const tri = (v: boolean | null) => t(v === null ? "tri.unknown" : v ? "tri.yes" : "tri.no");
 
   return (
-    <main>
+    <main data-accent="teal">
       <AppHeader />
-      <h2>{t("ai.title")}</h2>
+      <PageHero
+        code="06" route="SYS://AI-CORE" art="ai" title={t("ai.title")} hint={t("hero.ai.hint")}
+        stats={[
+          { label: t("hero.stat.providers"), value: providers?.filter((p) => p.enabled && p.health?.status === "up").length ?? 0, tone: "ok" },
+          { label: t("hero.stat.models"), value: models.length },
+          { label: t("hero.stat.calls"), value: usage?.summary.total ?? 0 },
+          { label: t("hero.stat.paid"), value: t(budget?.allow_paid_calls ? "hero.stat.on" : "hero.stat.off"), tone: budget?.allow_paid_calls ? "bad" : "ok" },
+        ]}
+      />
       {error && <p className="bad" role="alert">{error}</p>}
 
+      <div className="duo">
       <section className="card">
         <h3>{t("ai.providers")}</h3>
-        {!providers && !error && <p>{t("common.loading")}</p>}
+        {!providers && !error && <Loading />}
         <table>
           <tbody>
             {providers?.map((p) => {
@@ -135,6 +145,9 @@ export default function AiControlCenterPage() {
         </section>
       )}
 
+      </div>
+
+      <div className="duo">
       <section className="card">
         <h3>{t("ai.models")}</h3>
         <button type="button" onClick={onSync} disabled={syncing}>
@@ -201,6 +214,8 @@ export default function AiControlCenterPage() {
           </>
         )}
       </form>
+
+      </div>
 
       <section className="card">
         <h3>{t("ai.usage")}</h3>
