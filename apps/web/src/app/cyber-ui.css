@@ -46,7 +46,7 @@ button[aria-pressed="false"]:not(:hover) { color: rgba(200, 220, 255, 0.78); }
 /* utama */
 button.primary-btn, a.button.primary {
   --edge: var(--magenta); color: #05060f; font-weight: 800; padding: 0.6rem 1.5rem;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.55));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
   background: linear-gradient(var(--magenta), var(--magenta)) left bottom / 100% 2px no-repeat, var(--brand-grad);
 }
 button.primary-btn:hover:not(:disabled), a.button.primary:hover { filter: brightness(1.12) drop-shadow(0 0 18px rgba(217, 70, 239, 0.8)); color: #05060f; }
@@ -134,31 +134,101 @@ legend { padding: 0 0.5rem; color: var(--neon); font-size: 0.68rem; font-weight:
 .actions { gap: 0.6rem; }
 
 /* ---------------------------------------------------------------- navigasi */
-header.topbar nav { gap: 0.25rem; }
-header.topbar nav a {
-  position: relative; padding: 0.42rem 0.85rem; border: 0; border-radius: 0; clip-path: var(--chamfer-sm);
-  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: rgba(165, 185, 225, 0.8);
-  transition: color 0.2s, background-color 0.2s;
-}
-header.topbar nav a::before { /* garis bawah yang tumbuh dari kiri saat disorot */
-  content: ""; position: absolute; left: 0.85rem; right: 0.85rem; bottom: 3px; height: 2px; transform: scaleX(0); transform-origin: left;
-  background: linear-gradient(90deg, var(--neon), var(--magenta)); transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-header.topbar nav a:hover { color: #fff; border: 0; background: rgba(0, 229, 255, 0.07); text-shadow: 0 0 10px rgba(0, 229, 255, 0.7); }
-header.topbar nav a:hover::before { transform: scaleX(1); }
-header.topbar nav a[aria-current="page"] { color: #05060f; background: none; box-shadow: none; text-shadow: none; }
-header.topbar nav a[aria-current="page"]::before { display: none; }
-.nav-pill { border-radius: 0; clip-path: var(--chamfer-sm); background: linear-gradient(90deg, var(--neon), #3b82f6 55%, #8b5cf6); box-shadow: none; filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.6)); }
-header.topbar nav a:focus-visible { outline: 2px solid var(--neon); outline-offset: 1px; clip-path: none; }
-
 /* tautan kembali (← ...) menjadi tombol HUD */
 main > p > a:only-child { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.8rem 0.3rem 0.5rem; text-decoration: none; clip-path: var(--chamfer-sm); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--neon); background: rgba(0, 229, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.35); transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, padding-left 0.2s; }
 main > p > a:only-child:hover { padding-left: 0.2rem; color: #05060f; background: var(--neon); box-shadow: inset 0 0 0 1px #fff; }
 
 @media (prefers-reduced-motion: reduce) {
-  button, a.button, header.topbar nav a, header.topbar nav a::before, input, textarea, select { transition: none; }
+  button, a.button, input, textarea, select { transition: none; }
 }
 @media (max-width: 640px) {
   button, a.button { padding: 0.5rem 0.9rem; letter-spacing: 0.07em; }
-  header.topbar nav a { padding: 0.4rem 0.6rem; letter-spacing: 0.08em; }
 }
+
+/* ================================================================== Tombol navigasi melayang (menggantikan bilah atas)
+   Hanya transform/opacity yang dianimasikan, tanpa blur latar, agar tetap ringan di atas kanvas 3D. */
+.fnav { position: fixed; z-index: 90; top: calc(var(--dock-y) * 100%); width: 0; height: 0; }
+.fnav[data-side="right"] { right: 18px; }
+.fnav[data-side="left"] { left: 18px; }
+.fnav-btn {
+  position: absolute; top: -28px; width: 56px; height: 56px; min-height: 0; padding: 0; display: grid; place-items: center; cursor: grab; touch-action: none; user-select: none;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); color: inherit;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.28), rgba(139, 92, 246, 0.4)), #070a1c; box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.7);
+}
+.fnav[data-side="right"] .fnav-btn { right: 0; }
+.fnav[data-side="left"] .fnav-btn { left: 0; }
+.fnav-btn:active { cursor: grabbing; }
+.fnav-btn::after { display: none; }
+.fnav-btn img { width: 30px; height: 30px; pointer-events: none; }
+.fnav-ring { position: absolute; inset: 5px; border: 1px solid rgba(0, 229, 255, 0.35); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); pointer-events: none; transition: transform 0.3s, opacity 0.3s; }
+.fnav-btn:hover { box-shadow: inset 0 0 0 1px var(--neon), inset 0 0 18px rgba(0, 229, 255, 0.35); background: linear-gradient(135deg, rgba(0, 229, 255, 0.4), rgba(217, 70, 239, 0.45)), #070a1c; }
+.fnav[data-open="true"] .fnav-ring { transform: rotate(90deg) scale(0.9); opacity: 1; border-color: var(--magenta); }
+.fnav-btn:focus-visible { outline: 2px solid var(--neon); outline-offset: 3px; clip-path: none; }
+
+.fnav-scrim { position: fixed; inset: 0; z-index: -1; background: rgba(3, 4, 12, 0.55); animation: fnav-fade 0.18s ease-out both; }
+.fnav-panel {
+  position: absolute; width: min(300px, calc(100vw - 36px)); margin: 0; padding: 0; display: block; overflow: hidden;
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+  background: linear-gradient(180deg, rgba(14, 20, 50, 0.97), rgba(6, 8, 24, 0.98)); box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.45);
+  animation: fnav-pop 0.2s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.fnav-panel[hidden] { display: none; }
+.fnav[data-side="right"] .fnav-panel { right: 0; transform-origin: right bottom; }
+.fnav[data-side="left"] .fnav-panel { left: 0; transform-origin: left bottom; }
+.fnav[data-vert="up"] .fnav-panel { bottom: 40px; }
+.fnav[data-vert="down"] .fnav-panel { top: 40px; transform-origin: right top; }
+.fnav[data-vert="down"][data-side="left"] .fnav-panel { transform-origin: left top; }
+.fnav-head { display: flex; align-items: center; gap: 0.7rem; padding: 0.85rem 1rem; border-bottom: 1px solid rgba(0, 229, 255, 0.22); background: linear-gradient(90deg, rgba(0, 229, 255, 0.1), transparent); }
+.fnav-head img { width: 34px; height: 34px; }
+.fnav-brand { display: flex; flex-direction: column; gap: 0.25rem; line-height: 1; }
+.fnav-brand b { font-weight: 800; font-size: 1rem; letter-spacing: 0.3em; color: #fff; }
+.fnav-brand i { font-style: normal; font-weight: 600; font-size: 0.52rem; letter-spacing: 0.55em; background: var(--brand-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fnav-list { list-style: none; margin: 0; padding: 0.4rem; display: grid; gap: 2px; }
+.fnav-list a {
+  position: relative; display: flex; align-items: center; gap: 0.8rem; padding: 0.62rem 0.8rem; text-decoration: none; color: rgba(190, 210, 245, 0.88);
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; border-left: 2px solid transparent; transition: background-color 0.15s, color 0.15s, border-color 0.15s, padding-left 0.15s;
+}
+.fnav-idx { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; color: var(--neon); opacity: 0.75; font-variant-numeric: tabular-nums; }
+.fnav-list a:hover { color: #fff; background: rgba(0, 229, 255, 0.09); border-left-color: var(--neon); padding-left: 1.05rem; }
+.fnav-list a[aria-current="page"] { color: #05060f; background: linear-gradient(90deg, var(--neon), #3b82f6 55%, #8b5cf6); border-left-color: var(--magenta); }
+.fnav-list a[aria-current="page"] .fnav-idx { color: #05060f; opacity: 1; }
+.fnav-list a:focus-visible { outline: 2px solid var(--magenta); outline-offset: -2px; }
+.fnav-foot { display: flex; flex-direction: column; gap: 0.55rem; padding: 0.7rem 1rem 0.85rem; border-top: 1px solid rgba(0, 229, 255, 0.22); }
+.fnav-foot .lang { align-self: flex-start; }
+.fnav-hint { font-size: 0.6rem; letter-spacing: 0.04em; color: rgba(150, 165, 205, 0.7); line-height: 1.5; }
+
+@keyframes fnav-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fnav-pop { from { opacity: 0; transform: scale(0.92) translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fnav-panel, .fnav-scrim { animation: none; } .fnav-ring, .fnav-list a { transition: none; } }
+@media (max-width: 640px) { .fnav[data-side="right"] { right: 12px; } .fnav[data-side="left"] { left: 12px; } }
+
+/* ================================================================== Kecepatan: denyut hanya lewat opacity (dikomposit GPU)
+   Animasi box-shadow/background-position menggambar ulang elemen tiap frame; cahaya kini statis dan yang berdenyut hanya opacity. */
+.task[data-status="running"] { animation: none; }
+.task[data-status="pending_approval"], .card.approval { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 18px rgba(255, 176, 32, 0.2); }
+.agent[data-state="error"] { box-shadow: 0 0 18px rgba(255, 92, 138, 0.22); }
+.badge[data-task="running"], .badge[data-agent="working"], .badge[data-agent="planning"], .badge[data-agent="testing"], .badge[data-agent="reviewing"],
+.badge[data-agent="researching"], .badge[data-agent="prospecting"], .badge[data-agent="creating_content"], .badge[data-agent="client_followup"],
+.badge[data-task="pending_approval"], .badge[data-agent="awaiting_approval"] { box-shadow: 0 0 8px -1px currentColor; }
+
+/* Ilustrasi SVG halaman: Chromium tidak mengomposit animasi di dalam SVG (tiap frame = gambar ulang + hitung ulang gaya).
+   Gerak dibatasi ~10 frame/dtk lewat steps() (hampir tak terlihat pada gerak lambat; beban turun ~6x), efek glow filter diganti cincin tipis,
+   dan gambar garis diulang beberapa kali saja. */
+.art polygon, .art line.draw, .art-layer line { animation-timing-function: steps(34); animation-iteration-count: 3; animation-fill-mode: both; }
+.art-check { animation-timing-function: steps(26); animation-iteration-count: 3; animation-fill-mode: both; }
+.art-path { animation-timing-function: steps(14); }
+.art-synapse { animation-timing-function: steps(12); }
+.spin-slow { animation-timing-function: steps(140); }
+.art-sweep { animation-timing-function: steps(36); }
+.spin-rev { animation-timing-function: steps(90); }
+.art-blip { animation-timing-function: steps(29); }
+.art-neuron { animation-timing-function: steps(21); }
+.art-dot { animation-timing-function: steps(16); }
+.art-dot, .art-runner, .art-blip, .art-neuron { filter: none; stroke: var(--pg); stroke-opacity: 0.35; stroke-width: 5; paint-order: stroke; }
+/* transform di dalam SVG (transform-box: fill-box) memaksa hitung ulang tata letak tiap frame; denyut cukup lewat opacity */
+@keyframes neuron-o { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes blip-o { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0.1; } }
+.art-neuron { animation-name: neuron-o; transform-box: view-box; }
+.art-blip { animation-name: blip-o; transform-box: view-box; }
+/* puluhan garis sinapsis beranimasi dash = biaya terbesar halaman AI; garis dibuat statis, denyut neuron tetap hidup */
+.art-synapse { animation: none; }

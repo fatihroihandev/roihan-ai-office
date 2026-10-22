@@ -54,12 +54,8 @@ export default function OfficePage() {
   return (
     <PageTransition>
 <main data-office>
-      <div className="office-title">
-        <h2>{t("office.heading")}</h2>
-        <p className="muted small">{t("office.hint")}</p>
-      </div>
-      {!data && !stale && <p>{t("common.loading")}</p>}
-      {!data && stale && <p className="bad" role="alert">{t("office.unavailable")}</p>}
+      {!data && !stale && <p className="office-msg">{t("common.loading")}</p>}
+      {!data && stale && <p className="bad office-msg" role="alert">{t("office.unavailable")}</p>}
       {data && (
         <div className="stage" data-mode={mode} data-walk={walkOn ? "on" : "off"} data-view={view} ref={stage}>
           <OfficeScene
@@ -68,6 +64,7 @@ export default function OfficePage() {
           />
 
           <div className="hud hud-tl glass" role="status">
+            <h2 className="hud-title">{t("office.heading")}</h2>
             <span className="badge" data-task={connected ? "completed" : "failed"}>{connected ? t("office.live") : t("office.polling")}</span>
             {stale && <span className="bad small"> {t("office.stale")}{updatedAt ? ` (${new Date(updatedAt).toLocaleTimeString()})` : ""}</span>}
             {!caps.webgl && <span className="small muted"> {t("office.noWebgl")}</span>}

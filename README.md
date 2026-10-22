@@ -157,6 +157,10 @@ kosong (tanpa secret), batas memori/proses/CPU/waktu, tanpa mount drive Windows,
 - Profil 3D: buka `/office?perf=1` untuk melihat FPS dan draw call; efek turun ke "Rendah" otomatis jika perangkat lambat.
 - Tidak ada migrasi database; cukup mulai ulang backend dan frontend.
 
+## Navigasi layar penuh
+
+Tidak ada bilah navigasi: gunakan **tombol menu melayang** (klik, atau tekan `M`; `Esc` menutup). Tombol dapat diseret ke tepi kiri/kanan dan posisinya diingat di peramban.
+
 ## Evaluasi cloud (Phase 12)
 
 Hasil evaluasi ada di `docs/CLOUD_EVALUATION.md`: rekomendasi **tetap lokal**, pemicu migrasi yang terukur, uji kompatibilitas PostgreSQL, estimasi biaya, dan rencana migrasi.
