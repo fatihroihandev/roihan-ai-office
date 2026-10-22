@@ -4,17 +4,18 @@
 
 ### Local-First AI Software House, Multi-Agent Platform & Cyberpunk Virtual Office
 
-**Versi:** 2.1
+**Versi:** 2.3
 
-**Terakhir diperbarui:** 2026-10-20
+**Terakhir diperbarui:** 2026-10-22
 
-**Status:** Master Development Specification
+**Status:** Master Development Specification (Phase 0-12 selesai; Phase 13-15 direncanakan menurut Addendum v2.3, Bagian 29)
 
 **Tujuan:** Sumber acuan utama untuk perencanaan, implementasi, pengujian, dan pengembangan Roihan Software House.
 
 ## Cara Membaca Dokumen Ini
 
 - **Prioritas jika ada konflik:** Bagian 25 (Keputusan yang Sudah Dikunci) > bagian lain dokumen ini > dokumen turunan (`ARCHITECTURE.md`, `SECURITY.md`, dll.).
+- **Addendum v2.3** (Office Power Control, SEO Specialist, proyek akhir Company Profile) terintegrasi di Bagian 4.4, 6.3, roadmap Phase 13-15, Bagian 25, 27, dan spesifikasi normatifnya di **Bagian 29**. Bagian 29 mengikat untuk Phase 13-15; yang sudah dibangun (Phase 0-12) tidak berubah.
 - **Penanda:** blok kode, konfigurasi, endpoint, dan skema entity adalah *contoh konseptual*, bukan klaim bahwa fitur sudah ada. Item berlabel **Usulan** belum dikunci dan menunggu keputusan CEO (lihat Bagian 27).
 - **Istilah:** lihat Glosarium di Bagian 28.
 - **Dokumen turunan** yang disebut di Bagian 19 bersifat rencana; dokumen tersebut baru dibuat ketika milestone terkait dimulai.
@@ -286,13 +287,28 @@ Marketing bukan agensi pemasaran untuk perusahaan lain dan tidak bertugas menjua
 
 Agent ini tidak berwenang menyetujui harga final, kontrak, SLA, atau komitmen teknis atas nama perusahaan.
 
+### E. SEO Specialist (peran on-demand, direncanakan Phase 14)
+
+SEO Specialist adalah peran resmi yang **dipanggil sesuai kebutuhan oleh Orchestrator**, bukan model yang selalu aktif. Model terpisah baru dipertimbangkan setelah volume kerja, kualitas, waktu, dan biaya menunjukkan manfaat terukur. Rincian tanggung jawab dan batas: Bagian 29.B.
+
+- SEO teknis: keterjangkauan dan indeksabilitas, metadata, sitemap, robots.txt, canonical, struktur URL, performa halaman, tautan rusak; menghasilkan rekomendasi untuk Engineering.
+- Keyword research dan strategi konten (brief, rencana editorial); **tidak mengarang** volume pencarian atau tingkat persaingan.
+- SEO lokal dan analitik (impresi, klik, kueri, posisi, konversi) hanya dari sumber data yang benar-benar tersedia; membedakan "data belum ada" dari "hasil nol".
+- Tidak mengubah kode produksi atau memublikasikan perubahan tanpa melewati workflow Engineering dan approval.
+- Tidak menjamin peringkat atau pendapatan tertentu.
+
+### F. Marketing Analytics (peran on-demand, direncanakan Phase 14)
+
+- Mengevaluasi performa pemasaran dari data yang tersedia (lead, sumber, konversi, trafik, biaya, pendapatan tercatat).
+- Tidak menyimpulkan ROI bila data biaya atau pendapatan belum memadai (aturan yang sudah berlaku di modul kampanye).
+
 ## 4.5 Jumlah Role Agent
 
 - 1 Manager / Orchestrator.
 - 5 role spesialis Engineering.
 - 4 role spesialis Marketing.
 
-Total: **10 role spesialis dan 1 role koordinasi.**
+Total saat ini (Phase 0-12): **10 role spesialis dan 1 role koordinasi.** Dengan Addendum v2.3 (Phase 14) bertambah 2 peran on-demand Marketing (SEO Specialist, Marketing Analytics): rencana **12 role spesialis dan 1 role koordinasi.**
 
 Role tidak harus berarti 11 model AI yang selalu aktif. Sistem boleh menggunakan model yang sama untuk beberapa role, dengan instruksi, tools, akses, dan konteks berbeda.
 
@@ -421,6 +437,7 @@ Frontend tetap satu aplikasi, tetapi memiliki modul dengan batas tanggung jawab 
 - Client Requirements.
 - Marketing Analytics.
 - Marketing Approval Queue.
+- SEO & Digital Marketing (direncanakan Phase 14).
 
 ## 6.4 Integrasi Antarmodul
 
@@ -1855,6 +1872,46 @@ Batasan yang diketahui:
 
 Batasan: benchmark dari satu mesin dengan PostgreSQL lokal (tanpa latensi jaringan nyata); harga model dan infrastruktur adalah asumsi; login pengguna belum ada dan merupakan prasyarat cloud multi-pengguna; mekanisme cadangan PostgreSQL belum dibuat (hanya dirancang).
 
+## Phase 13 — Office Power Control, Checkpoint, Pause/Resume & Recovery
+
+**Status: direncanakan (belum dimulai).** Spesifikasi normatif: Bagian 29.A. Prioritas tinggi.
+
+- Status operasional global `RUNNING`, `PAUSING`, `PAUSED`, `RESUMING`, `RECOVERY_REQUIRED`, `ERROR` (status global, bukan pengganti status task).
+- OFF: hentikan penjadwalan, hentikan task aktif secara terkontrol, simpan checkpoint, verifikasi, baru `PAUSED`. ON: validasi checkpoint, database, workspace, Git, dependensi, operasi eksternal; pulihkan hanya yang aman.
+- Checkpoint persisten dan atomik/bervariasi versi; tanpa rahasia.
+- Idempotensi OFF/ON; operasi eksternal tidak boleh terduplikasi (idempotency key, `RECOVERY_REQUIRED` bila hasil tidak diketahui).
+- Tombol Power Control di kantor 3D yang mengikuti status backend; event real-time; laporan pemulihan dan audit log.
+
+**Fondasi yang sudah ada** (dari fase sebelumnya, akan dipakai ulang, bukan dibangun ulang): `TaskWorker.recover()` (running -> interrupted, antre ulang hanya yang idempoten, tanpa approval, sisa retry), `TaskWorker.stop()`/`cancel_running()`, antrean berbasis database, repositori Git per proyek (`workspace.git.ensure_repo`), cadangan dan restore terverifikasi (Phase 11), game day kill -9 (`scripts/gameday_restart.py`), approval terikat hash dan sekali pakai, outbox pesan keluar manual, ledger pemakaian model.
+
+**Belum ada** (harus dibangun): entitas dan API status global; permintaan pause/resume; tabel checkpoint dan validasi; `RecoveryLog`; status operasi eksternal terpisah; pemeriksaan "proses sebelumnya berhenti tidak normal"; checkpoint isi kerja (ringkasan konteks, hash file, status working tree Git, hasil tool); UI tombol; event WebSocket status power.
+
+**Pengujian wajib** (Bagian 29.A.14 dan 29.D): OFF tanpa task aktif; OFF saat antrean penuh; OFF saat coding; OFF saat testing; provider lambat; resume normal; restart aplikasi; crash (kill -9 nyata); checkpoint rusak; perubahan Git belum di-commit; pencegahan duplikasi; dependensi; tindakan eksternal; OFF/ON berulang; budget API berbayar; pemulihan manual. Tes tidak boleh dinyatakan berhasil sebelum dijalankan.
+
+**Exit criteria:** 16 acceptance criteria Bagian 29.A.14 terbukti lewat tes dan game day nyata; audit keamanan (`scripts/audit_security.py`, tes otentikasi rute) dijalankan ulang untuk rute baru; dokumentasi diperbarui.
+
+## Phase 14 — SEO Specialist & Marketing Analytics
+
+**Status: direncanakan (belum dimulai).** Spesifikasi normatif: Bagian 29.B.
+
+- Peran on-demand `seo_specialist` dan `marketing_analytics` pada registri executor dan matriks akses (deny-by-default), dengan aturan bukti yang sama seperti Market Research (klaim wajib bersumber; data tidak tersedia ditandai, tidak diisi).
+- Modul SEO & Digital Marketing: content brief, rencana editorial, audit SEO teknis, keyword research tanpa angka karangan; semua publikasi tetap lewat approval terikat hash isi dan workflow Engineering/QA/Reviewer.
+- KPI marketing tambahan (Bagian 29.B.7) di dashboard; ROI hanya bila biaya dan pendapatan tercatat.
+- Integrasi Search Console/Analytics/crawl bersifat bertahap dan opsional; tidak diasumsikan tersedia; API berbayar tunduk pada budget manager.
+
+**Exit criteria:** peran dapat dipanggil Orchestrator dan menghasilkan brief/audit yang lolos linter klaim dan aturan bukti; tidak ada angka karangan; perubahan teknis hanya lewat workflow berlaku; tes dan mutation-test aturan bukti dijalankan.
+
+## Phase 15 — Proyek Akhir: Website Company Profile Roihan Software House
+
+**Status: direncanakan; hanya boleh dimulai setelah gate Bagian 29.E terpenuhi (Phase 13 lulus).** Spesifikasi normatif: Bagian 29.C.
+
+- Proyek nyata untuk menguji seluruh siklus platform: brief -> analisis -> pembangunan -> SEO -> QA -> review -> laporan -> persetujuan CEO -> deployment -> verifikasi pascarilis.
+- Repositori Git tersendiri; website publik tidak bergantung pada kantor 3D atau platform internal; website portofolio pribadi CEO tetap terpisah.
+- Halaman MVP: Home, Services, Portfolio/Case Studies, Products, About, Contact/Request a Quote. Konten dan klaim hanya yang dapat dibuktikan; demo diberi label.
+- Deployment hanya dengan approval CEO; dokumentasi deployment dan rollback; hosting dipilih setelah evaluasi biaya (lihat `docs/CLOUD_EVALUATION.md`).
+
+**Exit criteria:** 14 acceptance criteria Bagian 29.C.8; kelulusan tidak boleh dinyatakan hanya karena kode dan tampilan jadi: bukti tes dan verifikasi rilis wajib ada. Jika platform belum memenuhi prasyarat, laporkan kekurangannya; jangan lewati gate.
+
 ---
 
 # 22. RISIKO UTAMA DAN MITIGASI
@@ -1878,6 +1935,12 @@ Batasan: benchmark dari satu mesin dengan PostgreSQL lokal (tanpa latensi jaring
 | API lokal diakses halaman web lain | Bind `127.0.0.1`, token lokal, CORS terbatas (14.3) |
 | Database SQLite terkunci atau rusak saat worker dan API berjalan bersamaan | WAL mode, transaksi singkat, backup dan uji pemulihan |
 | Pelanggaran privasi data prospek | Minimasi data, retensi, opt-out, tinjauan kepatuhan UU PDP |
+| Tindakan eksternal terduplikasi saat pause, resume, atau crash | Idempotency key, status operasi eksternal terpisah, `RECOVERY_REQUIRED` bila hasil tidak diketahui, approval kedaluwarsa tidak otomatis berlaku (29.A.9) |
+| Checkpoint rusak atau tidak valid | Penulisan atomik/versi, validasi integritas saat resume, checkpoint valid terakhir dipertahankan, tanpa rahasia di checkpoint |
+| Status PAUSED palsu (belum benar-benar berhenti) | `PAUSED` hanya setelah penghentian dan penyimpanan terverifikasi; ketidakpastian ditampilkan, bukan disembunyikan |
+| SEO mengarang data atau menjanjikan peringkat | Aturan bukti, tanpa volume/persaingan karangan, membedakan data tidak ada dari nol, tidak ada jaminan hasil |
+| Website company profile menampilkan klaim, proyek, atau produk yang belum nyata | Verifikasi klaim, label demo/proyek internal, Product Release Gate, approval CEO sebelum rilis |
+| Website publik bergantung pada platform internal | Website mandiri dengan repositori dan deployment terpisah (29.C.7) |
 
 ---
 
@@ -1972,6 +2035,11 @@ Keputusan berikut menjadi baseline sampai ada perubahan yang disetujui CEO:
 18. Eksekusi dilakukan berdasarkan roadmap dan acceptance criteria.
 19. Antarmuka menggunakan bahasa Indonesia sebagai default dan mendukung pergantian ke bahasa Inggris; teks UI disimpan di file terjemahan (i18n), bukan ditulis langsung di komponen.
 20. Model lokal kandidat awal adalah `qwen2.5-coder:7b`; keputusan final tetap menunggu benchmark.
+21. (v2.3) Office Power Control: `PAUSED` dan status global lain adalah status sistem, bukan pengganti status task; checkpoint persisten dan terverifikasi; resume memulihkan keadaan kerja yang dapat diverifikasi, bukan keadaan internal model.
+22. (v2.3) Setiap proyek memiliki repositori Git sendiri; checkpoint tidak wajib membuat commit dan tidak boleh membuang perubahan yang belum di-commit.
+23. (v2.3) SEO Specialist adalah peran resmi on-demand (bukan model terpisah) pada tahap awal; SEO tidak menjamin peringkat atau pendapatan.
+24. (v2.3) Website company profile Roihan Software House adalah **proyek akhir** setelah platform inti dan Office Power Control lolos gate; terpisah dari website portofolio pribadi CEO.
+25. (v2.3) Website publik tidak boleh bergantung pada kantor 3D yang sedang berjalan; deployment publik hanya setelah approval CEO.
 
 ---
 
@@ -2012,6 +2080,11 @@ Hal berikut belum ditetapkan dan perlu keputusan CEO. Kolom rekomendasi hanyalah
 | 8 | Sumber prospek yang diizinkan | Sumber publik dan sah saja | Phase 8 (**diterapkan sebagai usulan**: situs publik, registri publik, rujukan, inbound, acara, input manual; daftar beli, scraping, data bocor, grup privat dilarang; menunggu konfirmasi CEO) |
 | 9 | Kebijakan outreach (kanal, batas frekuensi, opt-out) | Semua outreach melalui approval | Phase 9 (**diterapkan sebagai usulan**: outreach email, konten blog/website/LinkedIn/Instagram/newsletter, maks. 10 outreach dan 5 publikasi per hari, jarak 14 hari ke prospek yang sama, semua lewat approval CEO dan kotak keluar manual; menunggu konfirmasi CEO) |
 | 10 | ~~Bahasa antarmuka~~ | **Diputuskan:** Indonesia default, bisa ganti ke Inggris (Bagian 25 no. 19) | Selesai |
+| 11 | Layanan yang benar-benar boleh ditawarkan di website company profile (website, aplikasi web, custom software, otomasi proses, solusi AI) | Hanya layanan dengan kemampuan dan ruang lingkup yang dapat dibuktikan | Phase 15 |
+| 12 | Proyek/studi kasus yang boleh ditampilkan sebagai portofolio (nyata vs demo internal berlabel) | Hanya yang dapat diverifikasi; demo diberi label | Phase 15 |
+| 13 | Hosting, domain, dan alat analitik company profile | Pilih setelah evaluasi biaya dan keamanan; mulai dari opsi termurah yang memadai | Phase 15 |
+| 14 | Akses Search Console / Analytics dan alat SEO berbayar | Mulai tanpa alat berbayar; tambah bila terbukti perlu dan sesuai budget | Phase 14 |
+| 15 | Kebijakan retensi checkpoint dan riwayat pemulihan | Simpan beberapa checkpoint valid terakhir per task; arsipkan sisanya | Phase 13 |
 
 Setelah diputuskan, pindahkan ke Bagian 25 dan catat di `docs/DECISIONS.md`.
 
@@ -2035,10 +2108,221 @@ Setelah diputuskan, pindahkan ke Bagian 25 dan catat di `docs/DECISIONS.md`.
 | Idempotency | Sifat tindakan yang aman diulang tanpa efek ganda |
 | Provenance | Catatan sumber dan waktu pengumpulan sebuah data |
 | Human-in-the-loop | Keputusan penting memerlukan persetujuan manusia |
+| Checkpoint | Salinan persisten keadaan kerja task yang dapat diverifikasi, dipakai untuk melanjutkan pekerjaan |
+| Power state | Status operasional global sistem (RUNNING, PAUSING, PAUSED, RESUMING, RECOVERY_REQUIRED, ERROR) |
+| Recovery | Pemulihan pekerjaan atau operasi yang terputus setelah pause, restart, atau crash |
+| SEO Specialist | Peran Marketing on-demand untuk SEO teknis, keyword, konten, dan analitik pencarian organik |
+
+---
+
+# 29. ADDENDUM v2.3 — SPESIFIKASI NORMATIF
+
+Integrasi: Master Development v2.0 dan Addendum v2.1-v2.2. Berlaku untuk Phase 13-15. Arsitektur tetap local-first, modular monolith, hybrid-ready.
+
+## 29.A Office Power Control
+
+### 29.A.1 Tujuan
+
+CEO dapat menghentikan sementara pekerjaan AI agent yang dikelola platform, menyimpan keadaan kerja, menutup aplikasi, dan melanjutkannya kemudian. Fitur terintegrasi dengan orchestrator, task engine, worker, database, workspace, Git, AI provider, budget manager, approval manager, dan frontend 3D.
+
+1. Menghentikan penjadwalan pekerjaan baru saat OFF.
+2. Menghentikan pekerjaan aktif secara terkontrol.
+3. Menyimpan checkpoint dan status proyek secara persisten.
+4. Mempertahankan antrean, dependensi, riwayat, dan perubahan file.
+5. Melanjutkan dari checkpoint valid saat ON.
+6. Mempertahankan catatan penggunaan model, biaya, dan audit log.
+7. Mencegah pekerjaan dan tindakan eksternal terduplikasi.
+8. Menampilkan status kantor sesuai kondisi backend sebenarnya.
+9. Menangani pemulihan setelah aplikasi atau laptop mati mendadak.
+
+OFF tidak berarti mematikan laptop; fitur ini menghentikan pekerjaan yang dikelola platform.
+
+### 29.A.2 Status operasional global
+
+- `RUNNING`: sistem menerima dan menjalankan tugas sesuai kebijakan.
+- `PAUSING`: scheduler dihentikan dan pekerjaan sedang disimpan atau dihentikan.
+- `PAUSED`: pekerjaan yang dapat dikendalikan telah dihentikan dengan aman.
+- `RESUMING`: checkpoint divalidasi dan pekerjaan sedang dipulihkan.
+- `RECOVERY_REQUIRED`: ada pekerjaan atau operasi yang memerlukan intervensi.
+- `ERROR`: kegagalan menghalangi operasi normal.
+
+CEO melihat jumlah proyek aktif, tugas berjalan, antrean, selesai, gagal/terblokir, checkpoint berhasil, dan tugas yang butuh pemulihan. `PAUSED` hanya diberikan setelah penghentian dan penyimpanan yang dipersyaratkan **terverifikasi**.
+
+### 29.A.3 Perilaku OFF
+
+1. Backend menerima dan mencatat perintah. 2. Status global menjadi `PAUSING`. 3. Scheduler berhenti mengambil/memulai tugas baru. 4. Worker menerima sinyal penghentian terkontrol. 5. Tugas aktif menyelesaikan langkah aman jika mungkin. 6. Operasi yang mendukung cancellation menerima sinyal pembatalan. 7. Sistem menyimpan file, status tugas, hasil tool, log, dan checkpoint. 8. Antrean dan dependensi dipertahankan. 9. Integritas checkpoint diperiksa. 10. Proses yang gagal berhenti atau belum terverifikasi dicatat. 11. Status menjadi `PAUSED` jika semua persyaratan terpenuhi.
+
+Perintah OFF **idempoten**: pengiriman berulang tidak menyebabkan penghentian ganda atau merusak checkpoint.
+
+### 29.A.4 Perilaku ON
+
+1. Validasi status sistem dan checkpoint. 2. Periksa konsistensi database, workspace, dan Git. 3. Validasi dependensi. 4. Periksa operasi eksternal yang mungkin sudah berjalan. 5. Tugas `completed` tidak dijalankan lagi. 6. Tugas yang menunggu dependensi tetap menunggu. 7. Tugas terputus dipulihkan dari checkpoint valid terakhir. 8. Tanpa checkpoint: retry atau recovery khusus. 9. Aktifkan scheduler sesuai konkurensi dan budget. 10. Catat hasil pemulihan.
+
+Resume memulihkan **keadaan kerja yang dapat diverifikasi**, bukan keadaan internal model pada token terakhir.
+
+### 29.A.5 Checkpoint dan persistensi
+
+Checkpoint disimpan persisten (bukan di memori). Informasi minimum: `checkpoint_id`, `project_id`, `task_id`, `agent_id`, `attempt_id`; status tugas dan langkah terakhir yang berhasil; ringkasan konteks kerja; referensi file relevan beserta hash; commit dan perubahan Git; hasil tool dan pengujian; dependensi; retry count dan policy; status operasi eksternal; penggunaan model dan biaya tercatat; waktu; versi skema; hasil validasi dan status pemulihan.
+
+Gunakan penulisan atomik atau versioning agar checkpoint valid terakhir tetap ada jika penyimpanan gagal. **Jangan** menyimpan API key, kredensial, atau rahasia di checkpoint maupun log.
+
+### 29.A.6 Status task engine
+
+Status task tetap: `draft`, `pending_approval`, `queued`, `running`, `blocked`, `completed`, `failed`, `cancelled`, `interrupted`. `PAUSED` adalah status **global**, bukan pengganti. Tugas antrean tetap `queued` tetapi tidak dieksekusi; selesai tetap `completed`; yang menunggu prasyarat tetap menunggu; yang terputus dapat `interrupted`. Proses penyimpanan checkpoint dicatat di metadata operasional.
+
+### 29.A.7 Git per proyek
+
+Setiap proyek memiliki repositori Git terpisah dari repositori platform. Sebelum checkpoint coding valid: simpan perubahan file yang diperlukan; catat status working tree; pertahankan perubahan yang belum di-commit; validasi file dapat dibaca; catat commit terakhir jika ada; hindari commit otomatis yang tidak perlu. Checkpoint tidak wajib membuat commit (Git mengelola versi kode, checkpoint menyimpan keadaan tugas/proses di luar Git). Dilarang reset atau operasi destruktif yang membuang perubahan pengguna.
+
+### 29.A.8 AI provider dan budget
+
+Mendukung Ollama, adapter provider berbayar, model router, capability registry, budget manager, approval manager, retry, dan timeout. Saat OFF: tidak ada panggilan model baru; panggilan aktif ditangani sesuai dukungan cancellation; jika penghentian tidak terkonfirmasi, status mencerminkan ketidakpastian; hasil dan biaya yang tercatat dipertahankan. Saat ON: semua panggilan tetap tunduk pada budget dan approval, tanpa fallback berbayar tanpa izin, batas konkurensi dan retry tetap berlaku.
+
+### 29.A.9 Keamanan tindakan eksternal
+
+Operasi yang diperiksa sebelum diulang: email calon klien, publikasi konten, deployment, transaksi/pembayaran, permintaan ke layanan pihak ketiga. Gunakan idempotency key bila didukung. Bila hasil tidak diketahui, tandai `RECOVERY_REQUIRED` dan minta verifikasi/persetujuan sesuai risiko. Approval yang kedaluwarsa atau berubah konteks tidak otomatis berlaku.
+
+### 29.A.10 Kantor virtual 3D
+
+Status visual bersumber dari backend: `RUNNING` avatar menampilkan aktivitas sesuai tugas; `PAUSING` tampilkan proses penyimpanan/penghentian; `PAUSED` hentikan animasi kerja dan tampilkan ringkasan terakhir; `RESUMING` tampilkan progres validasi/pemulihan; `RECOVERY_REQUIRED`/`ERROR` tampilkan masalah dan akses ke detail. UI bukan sumber kebenaran; bila WebSocket terputus, frontend mengambil status terbaru lewat API.
+
+### 29.A.11 Komponen arsitektur
+
+`OfficePowerController`, `GlobalPauseController`, `CheckpointManager`, `ResumeManager`, `RecoveryManager`, `PowerStateRepository`, `CheckpointRepository`, `RecoveryLog`. Tetap modular monolith; tidak ada microservices atau infrastruktur baru tanpa kebutuhan nyata.
+
+### 29.A.12 Database, API, dan event
+
+Entitas: status global kantor; permintaan pause/resume; checkpoint tugas; riwayat pemulihan; validasi checkpoint; status operasi eksternal. Endpoint: meminta OFF dan ON; membaca status global; membaca progres pause/resume; melihat checkpoint tugas; melihat tugas yang perlu tindakan manual. Event real-time: perubahan status, progres checkpoint, hasil pemulihan. Semua operasi melewati autentikasi, otorisasi, validasi, dan audit log; UI tidak menganggap permintaan berhasil sebelum backend mengonfirmasi.
+
+### 29.A.13 Ketahanan terhadap crash
+
+Bila aplikasi/laptop mati mendadak: gunakan checkpoint valid terakhir; saat startup periksa apakah proses sebelumnya berhenti tidak normal; jangan anggap tugas yang sedang berjalan telah selesai; validasi database dan workspace; periksa operasi eksternal yang hasilnya belum diketahui; pulihkan jika aman; tandai yang tidak aman `RECOVERY_REQUIRED`. Bila laptop dimatikan, proses lokal berhenti dan pemulihan dilakukan saat dinyalakan kembali; eksekusi saat laptop mati memerlukan worker cloud terpisah dan di luar cakupan.
+
+### 29.A.14 Acceptance criteria Office Power Control
+
+Selesai hanya jika pengujian membuktikan: (1) OFF menghentikan scheduler memulai tugas baru; (2) status tugas mencerminkan keadaan sebenarnya; (3) checkpoint tersimpan dan dapat dibaca kembali; (4) tugas selesai tidak dijalankan ulang; (5) antrean dan dependensi konsisten; (6) tugas terputus dipulihkan dari checkpoint valid; (7) file proyek tidak hilang atau rusak; (8) perubahan Git yang belum di-commit terjaga; (9) penggunaan model dan biaya tercatat konsisten; (10) operasi eksternal tidak diulang secara tidak aman; (11) visualisasi sesuai status backend; (12) pemulihan setelah restart berhasil; (13) crash dan checkpoint tidak valid ditangani; (14) OFF/ON berulang aman; (15) log audit dan laporan pemulihan tersedia; (16) tugas yang butuh intervensi manusia ditampilkan jelas.
+
+## 29.B Marketing Department dan SEO Specialist
+
+### 29.B.1 Tujuan
+
+Marketing memperoleh klien untuk layanan Roihan Software House dan memasarkan produk digital yang benar-benar dimiliki atau dikembangkan Roihan Software House. Tidak boleh mengklaim fitur, hasil, atau produk yang belum tersedia.
+
+### 29.B.2 Struktur peran
+
+Orchestrator membagi dan memantau pekerjaan. Peran: **Market Research**, **Lead Generation**, **SEO Specialist**, **Content & Promotion**, **Sales & Client Relations**, **Marketing Analytics**. Tidak harus enam model aktif; Orchestrator dapat menjalankan peran lewat model yang tersedia dan memanggil spesialis sesuai kebutuhan. SEO Specialist peran resmi **on-demand**; model terpisah hanya setelah manfaat terukur.
+
+### 29.B.3 Tanggung jawab SEO Specialist
+
+- **SEO teknis:** keterjangkauan dan indeksabilitas; rekomendasi metadata, sitemap, robots.txt, canonical, struktur URL; masalah performa, struktur halaman, tautan rusak; rekomendasi perbaikan untuk Engineering.
+- **Keyword research:** kata kunci relevan dengan layanan; dikelompokkan menurut niat pencarian; membedakan informasional dan berpotensi permintaan layanan; prioritas menurut relevansi bisnis, persaingan, dan sumber daya; **tidak mengarang** volume atau persaingan bila data tidak ada.
+- **Strategi konten:** content brief dan rencana editorial; halaman layanan, artikel edukasi, FAQ, studi kasus; kolaborasi dengan Content & Promotion; klaim teknis sesuai kemampuan sebenarnya; hindari konten massal berkualitas rendah dan publikasi otomatis tanpa kontrol.
+- **SEO lokal:** informasi bisnis lokal bila relevan; nama, kontak, layanan konsisten; rekomendasi profil bisnis sesuai aturan platform.
+- **Analitik dan optimasi:** impresi, klik, kueri, posisi dari sumber yang tersedia; kunjungan halaman layanan; prospek dan konversi yang dapat diatribusikan; perbaikan berdasarkan data; membedakan data yang belum tersedia dari hasil nol.
+
+SEO tidak menjamin peringkat atau pendapatan; hasil dievaluasi dalam jangka realistis.
+
+### 29.B.4 Kolaborasi SEO, Engineering, dan Sales
+
+1. SEO mengidentifikasi peluang dan membuat brief. 2. Orchestrator memprioritaskan menurut manfaat, biaya, risiko. 3. Engineering mengimplementasikan perubahan teknis/halaman yang disetujui. 4. QA menguji halaman, tautan, formulir, responsivitas, fungsi penting. 5. Reviewer memeriksa kualitas, keamanan, kesesuaian klaim. 6. Dipublikasikan sesuai approval policy. 7. SEO memantau hasil. 8. Lead Management mencatat prospek kanal organik bila atribusi tersedia. SEO Specialist tidak boleh mengubah kode produksi atau memublikasikan tanpa workflow engineering dan persetujuan.
+
+### 29.B.5 Tools dan data SEO
+
+Bertahap, tergantung akses/API/izin: Google Search Console, Google Analytics atau alat analitik terpilih, data crawl, performa halaman, data lead/CRM. Jangan mengasumsikan akses tersedia. API berbayar tunduk pada budget manager; tanpa biaya tersembunyi atau fallback berbayar tanpa persetujuan.
+
+### 29.B.6 Modul dan status produk
+
+Modul: Market Intelligence, Lead Management/CRM, Product Catalog, Content Workspace, Campaign Manager, Sales Pipeline, Client Requirements, Marketing Analytics, Marketing Approval Queue, SEO & Digital Marketing. Status produk: `draft`, `in_development`, `internal_testing`, `beta`, `released`, `deprecated`, `archived`. Status produk dan izin pemasaran dipisahkan; produk hanya dipromosikan dengan klaim sesuai status, fitur terverifikasi, batasan, harga, dan target pengguna.
+
+### 29.B.7 Keamanan, etika, dan KPI
+
+Email, outreach, publikasi, dan iklan mengikuti kebijakan persetujuan, aturan platform, perlindungan data, batas frekuensi, dan opt-out. Dilarang spam, pesan menyesatkan, atau klaim belum terverifikasi. Tindakan eksternal dicatat dan aman terhadap duplikasi saat pause, resume, atau crash.
+
+KPI: lead memenuhi kriteria; sumber lead; rasio lead -> pertemuan; rasio peluang -> pelanggan; waktu respons; trafik organik relevan; klik dan impresi pencarian bila tersedia; konversi halaman layanan; pendapatan tercatat; biaya pemasaran dan ROI bila data biaya serta atribusi pendapatan tersedia. Jangan menyimpulkan ROI bila data belum memadai.
+
+## 29.C Proyek Akhir: Website Company Profile
+
+### 29.C.1 Keputusan
+
+Website company profile Roihan Software House adalah **proyek akhir** dalam roadmap, setelah platform inti dan fitur operasional utama selesai dan lolos acceptance criteria. Ia adalah proyek nyata untuk memvalidasi kemampuan platform. Website portofolio pribadi CEO tetap terpisah dan tidak perlu diganti. Perbedaan: portofolio pribadi = profil individu, keahlian, pengalaman, proyek personal; website Roihan = bisnis, layanan, bukti kemampuan, produk digital, jalur konversi calon klien. Boleh saling menaut, tetapi tidak membingungkan fungsi atau identitas.
+
+### 29.C.2 Tujuan
+
+Identitas resmi bisnis; halaman penawaran jasa software development; tempat proyek dan studi kasus yang dapat diverifikasi; katalog produk digital; kanal permintaan konsultasi/penawaran; fondasi SEO; sumber lead bagi Marketing dan CRM internal; proyek akhir penguji platform dari awal sampai rilis. Tidak boleh diposisikan sebagai layanan yang sudah tersedia bila kemampuannya belum siap.
+
+### 29.C.3 Ruang lingkup MVP
+
+- **Home:** nilai utama, ringkasan layanan, bukti kemampuan/proyek, ajakan konsultasi/penawaran, navigasi jelas.
+- **Services:** hanya layanan yang benar-benar dapat ditawarkan (website, aplikasi web, custom software, otomasi proses bisnis, solusi AI bila kemampuan dan ruang lingkup jelas); tiap layanan: masalah yang diselesaikan, ruang lingkup, proses kerja, cara menghubungi.
+- **Portfolio / Case Studies:** proyek, masalah awal, solusi, teknologi, hasil yang dapat dibuktikan; demo internal diberi label; dilarang menampilkan proyek fiktif sebagai pekerjaan klien.
+- **Products:** produk milik Roihan, deskripsi, target pengguna, fitur yang benar-benar ada, status ketersediaan, harga dan cara membeli bila siap dijual; produk dalam pengembangan tidak ditampilkan seolah sudah rilis.
+- **About:** profil, pendekatan, nilai dan visi, kredibilitas tanpa klaim yang tidak terbukti.
+- **Contact / Request a Quote:** formulir kebutuhan (nama, kontak, jenis layanan, deskripsi singkat, estimasi waktu/anggaran opsional), konfirmasi penerimaan, proteksi spam, validasi input. Data dibatasi pada yang relevan, disimpan aman, dengan pemberitahuan privasi.
+
+### 29.C.4 Integrasi dengan platform
+
+Website adalah proyek **pertama** yang memakai platform sebagai alat pengembangan, bukan bagian yang harus dibangun sebelum platform selesai. Alur: CEO membuat proyek -> Orchestrator menganalisis brief dan memecah tugas -> Analyst menyusun kebutuhan, sitemap, user flow, acceptance criteria -> Developer membangun frontend/backend -> SEO Specialist menyusun strategi halaman, keyword, metadata -> QA menguji fungsional, responsivitas, formulir, keamanan, SEO teknis -> Reviewer menilai kode, desain, aksesibilitas, klaim -> Reporter menyusun dokumentasi, hasil tes, laporan rilis -> CEO meninjau dan menyetujui -> deployment setelah semua pemeriksaan dan approval -> verifikasi pascarilis. Gunakan satu Developer Agent default dan aktifkan spesialis backend/frontend hanya untuk tugas kompleks, dengan kontrak API, kepemilikan file, dan acceptance criteria jelas.
+
+### 29.C.5 Persyaratan teknis
+
+Next.js dan TypeScript (kecuali ada alasan teknis terdokumentasi); backend: API platform bila sesuai atau backend terpisah bila benar-benar perlu; responsif desktop dan seluler; fondasi SEO teknis; validasi input dan proteksi spam; rahasia di server; pengukuran performa dan error; tes otomatis fungsi utama; dokumentasi deployment dan rollback; repositori Git proyek tersendiri.
+
+### 29.C.6 Tahap pelaksanaan
+
+1. **Brief dan riset:** target pelanggan, layanan prioritas, kata kunci dan kompetitor relevan, struktur halaman dan pesan, aset dan bukti proyek.
+2. **Desain dan implementasi:** wireframe, desain visual, halaman MVP, formulir kontak, metadata dan fondasi SEO, analitik yang disetujui.
+3. **QA dan review:** desktop/seluler, navigasi dan tautan, validasi dan pengiriman formulir, keamanan dan penanganan data, metadata/sitemap/canonical/indeksabilitas, performa dan aksesibilitas, verifikasi semua klaim layanan dan studi kasus.
+4. **Persetujuan dan rilis:** hasil tes ke CEO, selesaikan temuan kritis, approval rilis, deploy, verifikasi pascadeploy, prosedur rollback, monitoring dan pencatatan error.
+5. **Optimasi pascarilis:** pantau trafik dan konversi, perbaiki berdasarkan data, konten SEO bertahap, hubungkan lead ke CRM bila integrasi siap, evaluasi kualitas prospek dan sumber pendapatan.
+
+### 29.C.7 Kemandirian website
+
+Website publik tidak boleh bergantung pada kantor virtual 3D yang sedang berjalan; gangguan platform internal tidak boleh membuat website publik tidak tersedia. Hosting dan deployment ditentukan menurut anggaran, trafik, keamanan, dan hasil uji; tanpa infrastruktur berbayar tanpa evaluasi biaya.
+
+### 29.C.8 Acceptance criteria Company Profile
+
+(1) Semua halaman MVP yang disetujui tersedia; (2) responsif dan berfungsi pada perangkat target; (3) formulir kontak tervalidasi dan diuji; (4) data calon klien ditangani aman; (5) fondasi SEO teknis terverifikasi; (6) konten dan klaim sesuai kemampuan bisnis sebenarnya; (7) proyek dan produk diberi label jujur; (8) kode di repositori Git proyek tersendiri; (9) tes wajib benar-benar dijalankan dan hasilnya dicatat; (10) tidak ada bug kritis yang belum ditangani; (11) dokumentasi deployment, konfigurasi, dan rollback tersedia; (12) CEO menyetujui sebelum rilis publik; (13) website diverifikasi setelah deployment; (14) hasil kerja, laporan, dan artefak tersimpan di platform. Penyelesaian tidak boleh dinyatakan hanya karena kode atau tampilan jadi; bukti tes dan verifikasi rilis wajib.
+
+## 29.D Prompt implementasi untuk AI coding agent
+
+**Office Power Control** (peran: Senior Software Architect, Backend, Frontend, QA Engineer). Konteks: Next.js, TypeScript, Three.js/R3F, FastAPI, SQLite, worker AI, Ollama, adapter provider, model router, budget manager, approval manager, task engine. Pelajari repositori aktual dahulu; jangan mengarang file, mengganti arsitektur tanpa alasan, atau membangun ulang komponen yang sudah berfungsi.
+
+Tugas: audit struktur repositori dan task engine; identifikasi scheduler, worker, database, workspace, Git, provider, WebSocket; buat rencana; implementasikan global pause/resume controller; checkpoint persisten dan validasi integritas; integrasi cancellation dan penghentian worker; resume, recovery, dan crash; API dan event real-time; hubungkan tombol Power Control ke backend; pastikan status visual sesuai kondisi aktual; pertahankan budget, approval, keamanan, batas retry; jalankan tes wajib dan perbaiki temuan; perbarui dokumentasi dan buat laporan berbasis bukti.
+
+Pengujian wajib: OFF tanpa tugas aktif; OFF saat antrean penuh; saat coding; saat testing; provider lambat; resume normal; restart aplikasi; crash; checkpoint rusak; perubahan Git belum di-commit; pencegahan duplikasi; dependensi; tindakan eksternal; perintah berulang; budget API berbayar; pemulihan manual. **Jangan menyatakan tes berhasil jika belum dijalankan.** Definition of Done: checkpoint persisten, penghentian scheduler, resume, recovery, integrasi UI, keamanan, pengujian, dan dokumentasi terverifikasi. Mulai dengan audit repositori; implementasikan bertahap dan laporkan berdasarkan bukti.
+
+**Company Profile** (peran: Product Analyst, Project Orchestrator, Developer, SEO Specialist, QA Engineer, Reviewer, Reporter sesuai kebutuhan). Tujuan: bangun website setelah platform lolos pengujian, sebagai bukti platform dapat menerima brief, membagi tugas, membangun, menguji, meninjau, mendokumentasikan, dan menyiapkan rilis. Instruksi: audit kemampuan platform sebelum membuat proyek; project brief, target pengguna, sitemap, kebutuhan, acceptance criteria; riset layanan dan keyword tanpa mengarang data; desain dan implementasi MVP (Home, Services, Portfolio/Case Studies, Products, About, Contact); SEO teknis dan analitik sesuai akses; formulir aman dan berfungsi; repositori terpisah; tes otomatis dan manual; periksa keamanan, responsivitas, performa, SEO, kebenaran klaim; sajikan hasil, risiko, laporan, bukti tes kepada CEO; **jangan deploy tanpa persetujuan CEO**; setelah rilis, verifikasi dan siapkan rollback; dokumentasikan batasan dan pekerjaan lanjutan.
+
+Aturan penting: jangan mengklaim fitur yang belum dibangun; jangan menampilkan demo sebagai proyek klien nyata; jangan memublikasikan atau deploy tanpa approval; jangan memakai layanan berbayar tanpa pemeriksaan budget dan persetujuan; jangan menganggap website selesai hanya karena kode jadi; bila platform belum memenuhi prasyarat, laporkan kekurangannya dan jangan melewati acceptance gate.
+
+## 29.E Urutan pengembangan dan gate sebelum proyek akhir
+
+Urutan menurut Addendum: (1) fondasi; (2) proyek, file, workspace; (3) Ollama dan AI Control Center; (4) task engine, scheduler, Orchestrator; (5) Developer, QA, sandbox; (6) Reviewer, reporting, approval, audit; (7) Product Catalog dan Release Gate; (8) Marketing Foundation; (9) Content, Sales, serah terima; (10) SEO & Digital Marketing; (11) Dashboard dan kantor 3D; (12) Office Power Control; (13) validasi integrasi, E2E, backup, keamanan, stabilitas; (14) **proyek akhir Company Profile**; (15) verifikasi, persetujuan CEO, deployment; (16) optimasi SEO, integrasi CRM, evaluasi cloud berdasarkan penggunaan nyata.
+
+Pemetaan ke roadmap repositori ini: butir 1-9 dan 11 = Phase 0-10; validasi/backup/keamanan dan evaluasi cloud = Phase 11-12 (sudah selesai, dikerjakan sebelum Power Control sehingga **harus diulang untuk fitur baru**); SEO = Phase 14; Power Control = Phase 13; Company Profile = Phase 15. Urutan detail boleh disesuaikan karena dependensi teknis, tetapi Company Profile tetap menjadi proyek akhir.
+
+**Gate sebelum Phase 15** (semua harus terpenuhi, atau pengecualian didokumentasikan dan disetujui): task engine menjalankan dan mencatat tugas; Orchestrator membagi pekerjaan dengan benar; workspace terisolasi dan Git bekerja; Developer dan QA menyelesaikan siklus coding dan testing; Reviewer dan Reporter menghasilkan hasil yang dapat diperiksa; approval dan budget policy berjalan; **Office Power Control teruji untuk pause, resume, recovery**; status backend dan visual kantor konsisten; pengujian integrasi inti lulus; sistem menyimpan artefak, laporan, dan riwayat proyek.
+
+## 29.F Format laporan dan aturan pengembangan tambahan
+
+Setiap tugas mencatat: Task ID dan tujuan; status akhir; file dibuat/diubah; hasil implementasi; tes yang benar-benar dijalankan; hasil dan bukti verifikasi; hasil review; dependensi dan masalah terbuka; risiko dan mitigasi; penggunaan model dan biaya; approval yang diperlukan; langkah berikutnya.
+
+Aturan: backend dan database adalah sumber kebenaran status; data proyek dan checkpoint persisten; setiap proyek punya repositori Git sendiri; perubahan pengguna tidak dihapus saat recovery; agent tidak mengubah budget atau permission miliknya sendiri; tindakan eksternal berisiko memerlukan approval; tidak menjalankan file unggahan otomatis; tidak memakai API berbayar tanpa izin; tidak menyatakan fitur atau tes selesai tanpa bukti; modular monolith sampai ada alasan terukur; model bersama lewat peran spesialis on-demand bila lebih efisien; pisahkan simulasi UI dari integrasi backend yang benar-benar berfungsi; perubahan produksi melalui pengujian dan approval; catat keterbatasan dan ketidakpastian secara jujur.
+
+**Keputusan akhir:** bangun platform kantor virtual AI terlebih dahulu, termasuk Office Power Control dan sistem pemulihan yang terverifikasi; setelah memenuhi gate pengujian, gunakan platform itu untuk membangun website company profile Roihan Software House sebagai proyek akhir yang menguji seluruh siklus kerja AI software house secara nyata.
 
 ---
 
 # CHANGELOG
+
+**Versi 2.3 (2026-10-22)**
+
+- Mengintegrasikan Addendum v2.3 (konsolidasi v2.1-v2.2): Office Power Control, checkpoint persisten, pause/resume, dan recovery (Bagian 29.A, Phase 13).
+- Menambahkan SEO Specialist dan Marketing Analytics sebagai peran on-demand, modul SEO & Digital Marketing, dan KPI (Bagian 4.4, 6.3, 29.B, Phase 14).
+- Menetapkan website company profile Roihan Software House sebagai proyek akhir dengan gate, ruang lingkup MVP, tahap, dan acceptance criteria (Bagian 29.C, 29.E, Phase 15).
+- Menambahkan analisis kesenjangan terhadap implementasi yang ada (fondasi yang dipakai ulang vs yang belum dibangun) pada Phase 13.
+- Menambah keputusan terkunci 21-25, keputusan terbuka 11-15, risiko baru, dan glosarium.
+- Catatan urutan: Addendum menempatkan Power Control sebelum validasi/backup/keamanan; karena Phase 11-12 sudah selesai, Phase 13 wajib menjalankan ulang tes ketahanan dan audit keamanan untuk fitur baru.
 
 **Versi 2.1**
 
