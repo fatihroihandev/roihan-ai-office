@@ -6,6 +6,7 @@ import { ensureRootEnv } from "@/lib/server-env";
 import { isLang, translate, type Lang } from "@/i18n/dictionaries";
 import "@fontsource-variable/montserrat";
 import "./globals.css";
+import "./cyber-ui.css";
 
 async function resolveLang(): Promise<Lang> {
   const cookieLang = (await cookies()).get("lang")?.value;
