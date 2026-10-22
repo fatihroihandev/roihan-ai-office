@@ -34,6 +34,7 @@ export const WORKROOM: Record<string, RoomId> = {
   manager: "meeting",
   analyst: "engineering", developer: "engineering", qa: "engineering", reviewer: "engineering", reporter: "engineering",
   market_research: "marketing", lead_generation: "marketing", content_promotion: "marketing", sales_client_relations: "marketing",
+  seo_specialist: "marketing", marketing_analytics: "marketing",
 };
 
 export const DEPARTMENT_COLOR: Record<string, string> = { coordination: "#8b5cf6", engineering: "#3b82f6", marketing: "#d946ef" };

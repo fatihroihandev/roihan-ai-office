@@ -326,10 +326,12 @@ def default_executors() -> dict[str, Executor]:
     from app.engineering.agents import DeveloperExecutor, QAExecutor
     from app.reporting.agent import ReporterExecutor
     from app.marketing.agents import ContentPromotionExecutor, LeadIntakeExecutor, MarketResearchExecutor, SalesOutreachExecutor
+    from app.marketing.seo_agents import MarketingAnalyticsExecutor, SeoSpecialistExecutor
     from app.review.reviewer import ReviewerExecutor
 
     text = LLMTextExecutor()
     return {"manager": ManagerPlanExecutor(), "analyst": text, "reporter": ReporterExecutor(text),
             "developer": DeveloperExecutor(), "qa": QAExecutor(), "reviewer": ReviewerExecutor(),
             "market_research": MarketResearchExecutor(), "lead_generation": LeadIntakeExecutor(),
-            "sales_client_relations": SalesOutreachExecutor(), "content_promotion": ContentPromotionExecutor()}
+            "sales_client_relations": SalesOutreachExecutor(), "content_promotion": ContentPromotionExecutor(),
+            "seo_specialist": SeoSpecialistExecutor(), "marketing_analytics": MarketingAnalyticsExecutor()}

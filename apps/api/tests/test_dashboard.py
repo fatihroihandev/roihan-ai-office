@@ -124,7 +124,7 @@ def test_insights_empty_system_uses_null_not_zero_for_unknowns(client, auth):
     assert d["quality"] == {"finished_7d": 0, "success_rate_7d": None, "avg_minutes": None}
     assert d["projects"] == [] and d["activity"] == [] and len(d["ai_hourly"]) == 24
     assert [s["stage"] for s in d["funnel"]["stages"]] == ["new", "qualified", "contacted", "meeting", "opportunity", "won"]
-    assert d["workload"][0]["role"] == "manager" and len(d["workload"]) == 10
+    assert d["workload"][0]["role"] == "manager" and len(d["workload"]) == len(ROLES)
 
 
 def test_insights_progress_throughput_and_quality_from_real_tasks(client, auth, pid):

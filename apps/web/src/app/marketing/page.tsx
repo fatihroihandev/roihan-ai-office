@@ -106,7 +106,7 @@ export default function MarketingPage() {
           { label: t("office.stat.outbox"), value: drafts.filter((d) => d.status === "queued_for_dispatch").length },
         ]}
       />
-      <p><Link className="button" href="/marketing/content">{t("mkt.nav.content")}</Link></p>
+      <p className="actions"><Link className="button" href="/marketing/content">{t("mkt.nav.content")}</Link> <Link className="button" href="/marketing/seo">{t("mkt.nav.seo")}</Link></p>
       {error && <p className="bad" role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
 

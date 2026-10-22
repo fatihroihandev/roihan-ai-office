@@ -672,6 +672,36 @@ class ExternalOperation(IdMixin, Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
 
+class MarketingArtifact(IdMixin, Base):
+    """Artefak SEO/analitik untuk ditinjau (audit, kata kunci, brief, laporan). Hanya usulan: tidak mengubah apa pun di luar."""
+
+    __tablename__ = "marketing_artifacts"
+    __table_args__ = (Index("ix_marketing_artifacts_kind", "kind", "created_at"),)
+
+    task_id: Mapped[str | None] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"), default=None)
+    kind: Mapped[str] = mapped_column()  # audit | keywords | brief | analysis
+    title: Mapped[str] = mapped_column()
+    summary: Mapped[str] = mapped_column(Text, default="")
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+    verified_count: Mapped[int] = mapped_column(default=0)
+    unverified_count: Mapped[int] = mapped_column(default=0)
+    created_by: Mapped[str] = mapped_column(default="seo_specialist")
+    handed_off_task_id: Mapped[str | None] = mapped_column(default=None)
+
+
+class SeoMetric(IdMixin, Base):
+    """Metrik pencarian organik yang dicatat manusia (mis. dari Search Console). Tidak ada angka yang dikarang sistem."""
+
+    __tablename__ = "seo_metrics"
+
+    metric: Mapped[str] = mapped_column()  # impressions | clicks | organic_sessions | conversions | position
+    value: Mapped[float] = mapped_column(Float)
+    period: Mapped[str] = mapped_column()  # YYYY-MM atau YYYY-MM-DD
+    page: Mapped[str | None] = mapped_column(default=None)
+    note: Mapped[str | None] = mapped_column(Text, default=None)
+    recorded_by: Mapped[str] = mapped_column()
+
+
 class AppendOnlyError(RuntimeError):
     pass
 

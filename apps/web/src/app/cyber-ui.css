@@ -247,3 +247,6 @@ main > p > a:only-child:hover { padding-left: 0.2rem; color: #05060f; background
 .hud-power button { margin-top: 0.4rem; }
 .power-items li { margin-bottom: 0.6rem; }
 @media (max-width: 900px) { .hud-power { position: static; transform: none; max-width: none; } }
+
+/* indikator tanpa data: teks kecil, bukan angka besar */
+.kpi strong.kpi-null { font-size: 0.85rem; font-weight: 600; background: none; color: var(--muted); -webkit-text-fill-color: var(--muted); padding: 0.55rem 0; }

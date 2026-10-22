@@ -1906,14 +1906,24 @@ Yang dibangun (`apps/api/app/power/`, `app/api/power.py`, migrasi `0010`, UI di 
 
 ## Phase 14 — SEO Specialist & Marketing Analytics
 
-**Status: direncanakan (belum dimulai).** Spesifikasi normatif: Bagian 29.B.
+**Status Phase 14: selesai (2026-10-22).** Spesifikasi normatif: Bagian 29.B.
 
-- Peran on-demand `seo_specialist` dan `marketing_analytics` pada registri executor dan matriks akses (deny-by-default), dengan aturan bukti yang sama seperti Market Research (klaim wajib bersumber; data tidak tersedia ditandai, tidak diisi).
-- Modul SEO & Digital Marketing: content brief, rencana editorial, audit SEO teknis, keyword research tanpa angka karangan; semua publikasi tetap lewat approval terikat hash isi dan workflow Engineering/QA/Reviewer.
-- KPI marketing tambahan (Bagian 29.B.7) di dashboard; ROI hanya bila biaya dan pendapatan tercatat.
-- Integrasi Search Console/Analytics/crawl bersifat bertahap dan opsional; tidak diasumsikan tersedia; API berbayar tunduk pada budget manager.
+Yang dibangun (`app/marketing/seo.py`, `seo_agents.py`, `app/api/seo.py`, migrasi `0011`, halaman `/marketing/seo`):
+- **Dua peran on-demand** `seo_specialist` dan `marketing_analytics` (departemen Marketing; role dipanggil lewat task, bukan model terpisah yang selalu aktif). Total role kini 12 + manager. Izin deny-by-default: keduanya **tidak** dapat membaca PII prospek, membuat draf outreach, atau memasukkan pesan keluar; publikasi tetap hanya lewat Content & Promotion + approval CEO terikat hash.
+- **Audit SEO teknis deterministik (tanpa model, tanpa jaringan)** atas HTML/robots.txt/sitemap yang diberikan: title, meta description, h1, noindex, canonical, lang, viewport, alt gambar, Open Graph, JSON-LD valid, tautan internal, robots memblokir semua, URL ada di sitemap. Setiap temuan punya tingkat (kritis/peringatan/info) dan rekomendasi; hal yang tidak dapat diperiksa (tautan rusak, kecepatan, peringkat) dinyatakan eksplisit.
+- **Riset kata kunci**: model hanya mengusulkan; volume dan persaingan **hanya disimpan bila kutipan buktinya ada pada materi yang diberikan dan memuat kata kunci serta angkanya**, selain itu `null` ("tidak tersedia"); rasional yang berisi jaminan peringkat dibuang dan ditandai. **Content brief**: judul, niat, kerangka, FAQ, tautan internal, klaim yang dihindari; ditolak bila memuat jaminan peringkat/pendapatan atau klaim produk yang belum terverifikasi (`check_claims`).
+- **Marketing Analytics**: laporan KPI deterministik (tanpa model) dari data tercatat; nilai belum diketahui tetap `null` (bukan nol); ROI hanya bila biaya DAN pendapatan kampanye tercatat; pengamatan bersifat deskriptif, bukan sebab-akibat atau jaminan.
+- **Metrik pencarian manual** (`seo_metrics`: impresi, klik, sesi organik, konversi, posisi) dengan validasi; CTR dan rata-rata posisi dihitung hanya dari data yang ada.
+- **Serah terima ke Engineering**: rekomendasi audit menjadi satu task **draft** `developer/code_change` (CEO yang mengantrekan; QA dan Reviewer tetap berlaku); satu artefak hanya dapat diserahkan sekali. SEO tidak mengubah kode produksi.
+- **UI** `/marketing/seo`: KPI ("belum ada data" untuk yang kosong), form audit/kata kunci/brief/metrik/analitik, daftar artefak dengan detail, serah terima. Kantor 3D: 2 avatar baru di ruang Marketing (model karakter dipakai ulang dengan aksesori berbeda).
 
-**Exit criteria:** peran dapat dipanggil Orchestrator dan menghasilkan brief/audit yang lolos linter klaim dan aturan bukti; tidak ada angka karangan; perubahan teknis hanya lewat workflow berlaku; tes dan mutation-test aturan bukti dijalankan.
+**Bukti verifikasi:** backend `pytest` 878 lulus (tes baru `tests/test_seo.py` + penyesuaian jumlah role pada tes lama); Vitest 86 lulus; lint/tsc/build bersih; **uji langsung** `scripts/live_seo.py` (uvicorn + Ollama `qwen2.5-coder:7b`): audit, kata kunci, brief, dan analitik selesai, tidak ada angka karangan (semua volume `null` atau persis dari materi), 0 panggilan berbayar. Halaman `/marketing/seo` dilihat lewat Edge headless.
+
+**Batasan yang diketahui:**
+- Pemeriksaan keyword sangat ketat: model 7B sering mengubah frasa kata kunci sehingga kutipan bukti tidak cocok; pada uji langsung semua volume menjadi `null`. Ini lebih aman daripada angka karangan, tetapi berarti data volume hanya muncul bila model menyalin frasa persis dari materi.
+- Audit hanya memeriksa HTML yang ditempel; belum ada crawler dan integrasi Search Console/Analytics (metrik dimasukkan manual). Akses alat SEO berbayar tidak diasumsikan.
+- Atribusi lead ke kanal organik belum mungkin; "lead inbound" hanya perkiraan.
+- Avatar SEO dan Analytics memakai ulang model karakter yang ada (tidak ada aset CC0 baru).
 
 ## Phase 15 — Proyek Akhir: Website Company Profile Roihan Software House
 

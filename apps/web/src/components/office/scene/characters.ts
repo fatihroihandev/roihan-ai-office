@@ -16,6 +16,8 @@ export const ROLE_LOOK: Record<string, Look> = {
   lead_generation: { file: `${base}r.glb`, props: ["headset"] },       // pemburu prospek senyap
   content_promotion: { file: `${base}e.glb`, props: ["megaphone"] },   // kreatif
   sales_client_relations: { file: `${base}n.glb`, props: ["briefcase"] }, // penyambut klien
+  seo_specialist: { file: `${base}r.glb`, props: ["magnifier"] },         // pemburu kata kunci (model karakter dipakai ulang; aksesori berbeda)
+  marketing_analytics: { file: `${base}n.glb`, props: ["tablet"] },        // pembaca angka (model karakter dipakai ulang; aksesori berbeda)
 };
 export const CEO_LOOK: Look = { file: `${base}q.glb`, props: ["crown"] }; // jas hitam berdasi merah
 export const ALL_LOOK_FILES = [...new Set([...Object.values(ROLE_LOOK), CEO_LOOK].map((l) => l.file))];

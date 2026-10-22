@@ -13,6 +13,9 @@ PERMISSIONS: dict[str, frozenset[str]] = {
                                          "requirement.write", "suppression.check", "product_brief.read", "outbound.enqueue"}),
     "market_research": frozenset({"company.read", "product_brief.read", "research.write"}),
     "content_promotion": frozenset({"product_brief.read", "content.write", "campaign.read", "outbound.enqueue"}),
+    # SEO dan Analytics tidak pernah membaca data pribadi prospek dan tidak dapat memasukkan pesan keluar (publikasi tetap lewat Content + approval)
+    "seo_specialist": frozenset({"product_brief.read", "seo.write", "campaign.read"}),
+    "marketing_analytics": frozenset({"campaign.read", "lead.read_masked", "opportunity.read", "analytics.read"}),
     "manager": frozenset({"company.read", "lead.read_masked", "opportunity.read"}),
 }
 

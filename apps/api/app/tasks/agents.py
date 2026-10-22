@@ -10,7 +10,7 @@ from app.tasks.catalog import ROLES
 
 RUNNING_STATUS = {
     "manager": "planning", "analyst": "planning", "developer": "working", "qa": "testing", "reviewer": "reviewing",
-    "reporter": "working", "market_research": "researching", "lead_generation": "prospecting",
+    "reporter": "working", "market_research": "researching", "seo_specialist": "researching", "marketing_analytics": "researching", "lead_generation": "prospecting",
     "content_promotion": "creating_content", "sales_client_relations": "client_followup",
 }
 COMPLETED_VISIBLE_FOR = timedelta(seconds=60)

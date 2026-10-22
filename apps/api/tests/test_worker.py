@@ -309,7 +309,7 @@ def test_unexpected_executor_exception_fails_without_retry(migrated_db, tmp_path
 
 def test_default_executors_cover_only_roles_that_can_really_work():
     assert set(default_executors()) == {"manager", "analyst", "reporter", "developer", "qa", "reviewer", "market_research", "lead_generation",
-                                           "sales_client_relations", "content_promotion"}
+                                           "sales_client_relations", "content_promotion", "seo_specialist", "marketing_analytics"}
 
 
 def test_blocked_dependency_cascades_down_the_chain_and_recovers(migrated_db, tmp_path):

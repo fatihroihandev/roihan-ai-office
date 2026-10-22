@@ -1,3 +1,4 @@
+from app.tasks.catalog import ROLES
 import asyncio
 import json
 
@@ -140,7 +141,7 @@ def test_cancel_running_task_through_api(settings, auth):
 
 def test_agents_status_is_derived_from_tasks(client, auth, pid):
     base = {a["role"]: a for a in client.get("/api/agents", headers=auth).json()}
-    assert len(base) == 10 and {a["status"] for a in base.values()} == {"idle"}
+    assert len(base) == len(ROLES) and {a["status"] for a in base.values()} == {"idle"}
     assert base["manager"]["department"] == "coordination" and base["qa"]["department"] == "engineering"
     mk(client, auth, pid, role="developer", action_type="code_change")
     t = mk(client, auth, pid, role="sales_client_relations", action_type="external_outreach")
