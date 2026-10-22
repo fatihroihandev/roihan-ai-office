@@ -64,7 +64,7 @@ export default function OfficePage() {
         <div className="stage" data-mode={mode} data-walk={walkOn ? "on" : "off"} data-view={view} ref={stage}>
           <OfficeScene
             data={data} mode={mode} onFail={onFail} selected={selected} onSelect={setSelected}
-            walk={{ walking: walkOn, start, view, quality, onNearby: setNearby, onInteract, onToggleView, onExit }}
+            walk={{ walking: walkOn, start, view, quality, onSlow: () => setQuality("low"), onNearby: setNearby, onInteract, onToggleView, onExit }}
           />
 
           <div className="hud hud-tl glass" role="status">

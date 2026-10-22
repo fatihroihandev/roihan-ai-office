@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, approvals, dashboard, engineering, events, health, marketing, products, projects, tasks
+from app.api import ai, approvals, backups, dashboard, engineering, events, health, marketing, products, projects, tasks
 from app.config import Settings, get_settings
 from app.db.session import create_db_engine, create_session_factory
 from app.logging_config import correlation_id, new_correlation_id, setup_logging
@@ -22,6 +22,26 @@ from app.tasks.worker import TaskWorker
 
 logger = logging.getLogger("roihan.api")
 
+# Respons API adalah JSON: tidak boleh ditebak tipenya, dibingkai, di-cache, atau membocorkan referrer.
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
+    "Cache-Control": "no-store", "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+}
+
+
+async def _backup_loop(app: FastAPI) -> None:
+    """Cadangan terjadwal: satu segera bila belum ada yang cukup baru, lalu tiap `backup_interval_hours`. Kegagalan hanya dicatat."""
+    from app.api.backups import run_backup
+
+    settings = app.state.settings
+    interval = settings.backup_interval_hours * 3600
+    while True:
+        try:
+            await asyncio.to_thread(run_backup, settings, "auto")
+        except Exception:
+            logger.exception("backup terjadwal gagal")
+        await asyncio.sleep(interval)
+
 
 def create_app(settings: Settings | None = None, providers: dict[str, ModelProvider] | None = None,
                executors: dict[str, Executor] | None = None, sandbox: Sandbox | None = None) -> FastAPI:
@@ -34,7 +54,10 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
         if settings.worker_enabled:
             worker = app.state.worker
             task = asyncio.create_task(worker.run_forever())
+        backup_task = asyncio.create_task(_backup_loop(app)) if settings.backup_enabled else None
         yield
+        if backup_task is not None:
+            backup_task.cancel()
         if task is not None:
             app.state.worker.stop()
             task.cancel()
@@ -71,6 +94,8 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
         try:
             response = await call_next(request)
             response.headers["X-Request-ID"] = cid
+            for k, v in SECURITY_HEADERS.items():
+                response.headers.setdefault(k, v)
             logger.info(
                 "request",
                 extra={"method": request.method, "path": request.url.path, "status": response.status_code,
@@ -90,6 +115,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
     app.include_router(products.router)
     app.include_router(marketing.router)
     app.include_router(dashboard.router)
+    app.include_router(backups.router)
     return app
 
 

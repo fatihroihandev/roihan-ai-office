@@ -9,6 +9,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useLogoTexture, useWordmarkTexture } from "@/components/brand/useBrandTextures";
 import { CeoRig, CharacterWalker, ModelBoundary, type WalkRigProps } from "@/components/office/scene/models";
+import { sanitizeFrames, shouldDowngrade, summarizeFrames } from "@/lib/office/perf";
 import { DEPARTMENT_COLOR, loungeSeat, ROOM_ORDER, ROOMS, workSeat, WORKROOM, type Avatar, type Pose, type RoomId } from "@/lib/office/model";
 
 const TONE_COLOR = { ok: "#39ff88", warn: "#ffb020", bad: "#ff3860", idle: "#4b5563" } as const;
@@ -26,6 +27,7 @@ export type Office3DProps = {
   statusLabels: Record<string, string>;
   onFail: () => void;
   quality: "high" | "low";
+  onSlow?: () => void;
   ceo: Pick<WalkRigProps, "walking" | "start" | "view" | "label" | "onNearby" | "onInteract" | "onToggleView" | "onExit">;
 };
 
@@ -640,9 +642,72 @@ function Walker({ a, selected, onSelect, name, status }: { a: Avatar; selected: 
   );
 }
 
+// ------------------------------------------------------------------ profil kinerja
+
+const WARMUP_S = 4; // abaikan awal: memuat model dan kompilasi shader
+
+/** Mengukur frame dan beban render. `?perf=1` menampilkan lapisan angka; tanpa itu hanya menurunkan efek otomatis saat perangkat lambat. */
+function PerfProbe({ quality, onSlow }: { quality: "high" | "low"; onSlow?: () => void }) {
+  const gl = useThree((s) => s.gl);
+  const frames = useRef<number[]>([]);
+  const acc = useRef({ since: 0, t: 0 });
+  const box = useRef<HTMLDivElement | null>(null);
+  const counted = useRef(0);
+
+  // bloom merender beberapa lintasan per frame: hitungan three direset tiap lintasan, jadi dikumpulkan sendiri dan dirata-rata per frame
+  useEffect(() => {
+    const info = gl.info;
+    Object.assign(info, { autoReset: false });
+    return () => {
+      Object.assign(info, { autoReset: true });
+    };
+  }, [gl]);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("perf") !== "1") return;
+    const el = document.createElement("div");
+    el.setAttribute("data-testid", "perf-overlay");
+    el.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:200;padding:6px 10px;font:12px/1.4 monospace;color:#7dffb2;background:rgba(5,6,15,.82);border:1px solid #1c2a55;pointer-events:none;white-space:pre";
+    document.body.appendChild(el);
+    box.current = el;
+    return () => {
+      el.remove();
+      box.current = null;
+    };
+  }, []);
+
+  useFrame((_, dt) => {
+    const a = acc.current;
+    a.t += dt;
+    counted.current += 1;
+    if (a.t < WARMUP_S) {
+      gl.info.reset();
+      counted.current = 0;
+      return;
+    }
+    frames.current.push(dt * 1000);
+    if (frames.current.length > 240) frames.current.shift();
+    a.since += dt;
+    if (a.since < 1) return;
+    a.since = 0;
+    const stats = summarizeFrames(sanitizeFrames(frames.current));
+    const info = gl.info;
+    const snap = { fps: Math.round(stats.fps), p95Ms: Math.round(stats.p95Ms), calls: Math.round(info.render.calls / Math.max(1, counted.current)), triangles: Math.round(info.render.triangles / Math.max(1, counted.current)),
+      geometries: info.memory.geometries, textures: info.memory.textures, quality };
+    info.reset();
+    counted.current = 0;
+    (window as unknown as { __roihanPerf?: unknown }).__roihanPerf = snap;
+    if (box.current) box.current.textContent = `FPS ${snap.fps}  p95 ${snap.p95Ms}ms
+calls ${snap.calls}  tri ${snap.triangles}
+geom ${snap.geometries}  tex ${snap.textures}  q:${quality}`;
+    if (onSlow && shouldDowngrade(stats, quality)) onSlow();
+  });
+  return null;
+}
+
 // ------------------------------------------------------------------ adegan
 
-export default function Office3D({ avatars, selected, onSelect, hologram, roomLabels, roleLabels, statusLabels, onFail, quality, ceo }: Office3DProps) {
+export default function Office3D({ avatars, selected, onSelect, hologram, roomLabels, roleLabels, statusLabels, onFail, quality, onSlow, ceo }: Office3DProps) {
   const glow = useMemo(() => glowTexture(), []);
   useEffect(() => () => glow.dispose(), [glow]);
   const byRole = useMemo(() => new Map(avatars.map((a) => [a.role, a])), [avatars]);
@@ -671,6 +736,7 @@ export default function Office3D({ avatars, selected, onSelect, hologram, roomLa
       <ambientLight intensity={0.5} />
       <hemisphereLight args={["#5b7cff", "#1a0b2e", 0.55]} />
       <directionalLight position={[8, 16, 10]} intensity={0.6} color="#9fb4ff" castShadow={quality === "high"} shadow-mapSize={[2048, 2048]} shadow-camera-left={-26} shadow-camera-right={26} shadow-camera-top={22} shadow-camera-bottom={-18} shadow-camera-near={1} shadow-camera-far={60} shadow-bias={-0.0004} />
+      <PerfProbe quality={quality} onSlow={onSlow} />
       <Controls focus={focus} enabled={!ceo.walking} />
       <Skyline />
       <GlassWall />

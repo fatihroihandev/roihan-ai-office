@@ -142,6 +142,21 @@ kosong (tanpa secret), batas memori/proses/CPU/waktu, tanpa mount drive Windows,
 - **Realtime**: lencana "Realtime" berarti WebSocket tersambung; jika terputus, data dimuat berkala dan potret terakhir ditandai usang sampai tersambung lagi.
 - Tidak ada perubahan database pada fase ini; cukup mulai ulang backend dan jalankan `npm install` di `apps/web` (ada paket `three` dan `@react-three/fiber`).
 
+## Backup, pemulihan, dan keamanan (Phase 11)
+
+- **Cadangan otomatis** setiap 24 jam (dan saat backend mulai) ke `data/backups/<waktu>-auto/` (database + folder proyek + `manifest.json`); 14 terbaru disimpan. Atur lewat `BACKUP_*` di `.env`. **Salin folder ini ke disk lain secara berkala.**
+- Perintah (dari `apps/api`):
+  ```
+  .venv/Scripts/python -m app.backup create            # cadangan manual
+  .venv/Scripts/python -m app.backup list
+  .venv/Scripts/python -m app.backup verify <nama>     # periksa hash + integritas
+  ```
+- **Memulihkan**: hentikan backend, lalu `.venv/Scripts/python -m app.backup restore <nama> --force`. Keadaan sebelumnya otomatis diselamatkan sebagai cadangan `...-pre-restore`. Setelah itu jalankan backend: task yang terputus dipulihkan oleh worker.
+- Uji bencana nyata (proses mati paksa saat task berjalan): `apps/api/.venv/Scripts/python scripts/gameday_restart.py` (butuh Ollama).
+- Audit keamanan: `python scripts/audit_security.py --deps`; ringkasan ancaman dan temuan di `docs/SECURITY.md`.
+- Profil 3D: buka `/office?perf=1` untuk melihat FPS dan draw call; efek turun ke "Rendah" otomatis jika perangkat lambat.
+- Tidak ada migrasi database; cukup mulai ulang backend dan frontend.
+
 ## Tes
 
 ```

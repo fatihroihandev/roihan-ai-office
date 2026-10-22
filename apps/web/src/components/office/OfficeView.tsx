@@ -141,7 +141,7 @@ export function ModeControls({ pref, setPref }: { pref: ModePref; setPref: (v: M
 
 /** Area adegan: 3D memenuhi induknya; 2D menjadi kisi kartu biasa. */
 export type WalkProps = {
-  walking: boolean; start?: [number, number]; view: "third" | "first"; quality: Quality;
+  walking: boolean; start?: [number, number]; view: "third" | "first"; quality: Quality; onSlow?: () => void;
   onNearby: (n: Nearby | null) => void; onInteract: (n: Nearby) => void; onToggleView: () => void; onExit: () => void;
 };
 
@@ -168,7 +168,7 @@ export function OfficeScene({ data, mode, onFail, selected, onSelect, walk }: {
       <Boundary onError={onFail}>
         <Office3D
           avatars={avatars} selected={selected} onSelect={onSelect} hologram={hologram}
-          roomLabels={roomLabels} roleLabels={roleLabels} statusLabels={statusLabels} onFail={onFail} quality={walk.quality}
+          roomLabels={roomLabels} roleLabels={roleLabels} statusLabels={statusLabels} onFail={onFail} quality={walk.quality} onSlow={walk.onSlow}
           ceo={{ walking: walk.walking, start: walk.start, view: walk.view, label: t("office.ceo"), onNearby: walk.onNearby, onInteract: walk.onInteract, onToggleView: walk.onToggleView, onExit: walk.onExit }}
         />
       </Boundary>

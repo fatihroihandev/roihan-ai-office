@@ -1811,6 +1811,26 @@ Batasan yang diketahui:
 
 **Exit criteria:** aplikasi dapat pulih dari kegagalan yang sudah diuji dan data penting dapat dipulihkan.
 
+**Status Phase 11: selesai (2026-10-22).**
+
+Yang dibangun:
+- **Backup dan restore** (`apps/api/app/backup/`): salinan konsisten lewat API backup SQLite (aman saat aplikasi berjalan), opsional arsip `projects.tar.gz`, dan `manifest.json` berisi SHA-256, jumlah baris per tabel, serta revisi migrasi. Pembuatan atomik (folder sementara lalu rename). `.env` dan token tidak pernah ikut. Pemulihan hanya lewat CLI saat backend berhenti: menolak menimpa tanpa `--force`, membuat cadangan `pre-restore` otomatis (tidak pernah dipangkas), menolak database yang sedang dipakai, cadangan rusak/diubah, cadangan dari revisi migrasi lebih baru, dan arsip proyek tidak aman; sisa file WAL/SHM dibuang.
+- **CLI** `python -m app.backup {create|list|verify|restore|prune}`; **API** `GET/POST /api/backups` dan `POST /api/backups/{nama}/verify` (bertoken); **penjadwal** di lifespan (`BACKUP_ENABLED`, `BACKUP_INTERVAL_HOURS=24`, `BACKUP_KEEP=14`, `BACKUP_INCLUDE_PROJECTS`, `BACKUP_MAX_PROJECT_MB`).
+- **Uji ketahanan** (`tests/test_backup.py`, `tests/test_recovery.py`): round-trip restore ke database baru (isi, jumlah baris, integritas sama); cadangan diubah/hilang/manifest rusak/path traversal terdeteksi; cadangan saat penulisan bersamaan tetap valid; restart berulang idempoten; rantai dependensi berlanjut berurutan setelah crash; pekerjaan selesai tidak diulang; task berisiko/non-idempoten yang terputus tidak dijalankan ulang otomatis; skenario bencana (cadangan saat task berjalan -> pulihkan -> worker menyelesaikan).
+- **Game day nyata** (`scripts/gameday_restart.py`): proses uvicorn sungguhan + Ollama `qwen2.5-coder:7b` sungguhan; backend dimatikan paksa (`taskkill /F`) saat task `running`, dinyalakan ulang. Hasil: riwayat `running -> interrupted(worker_restart) -> queued(recovered) -> running -> completed`, percobaan lama `interrupted`, data proyek utuh, cadangan saat hidup valid.
+- **Audit keamanan** (`docs/SECURITY.md`, `scripts/audit_security.py`, `tests/test_security_audit.py`): setiap operasi `/api` diuji 401 tanpa token/token salah; WebSocket tiket sekali pakai + Origin; CORS; header keamanan di API dan Next.js (CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy); pemindai rahasia, nilai bawaan aman, token tidak ada di bundel klien. `pip-audit` bersih; `npm audit` produksi bersih.
+- **Profiling 3D**: `?perf=1` menampilkan FPS, p95, draw call/frame, segitiga, geometri, tekstur. **Kualitas adaptif**: efek (bayangan + bloom) turun otomatis ke "Rendah" jika FPS rata-rata < 24 dan p95 > 50 ms setelah >= 90 frame (fungsi murni `lib/office/perf.ts`, diuji; tidak pernah naik sendiri agar tidak berosilasi).
+
+Hasil ukur 3D (Edge headless, render perangkat lunak, kualitas Tinggi): sekitar **390 draw call/frame**, ~6.100 segitiga, 351 geometri, 29 tekstur. Segitiga rendah; beban ada pada jumlah draw call (banyak mesh kecil). Tidak dilakukan penggabungan geometri karena belum ada bukti masalah di GPU nyata dan risikonya terhadap animasi avatar; penurunan kualitas otomatis menjadi pengaman.
+
+Batasan yang diketahui:
+- FPS sebenarnya **tidak terukur** (render perangkat lunak dan waktu virtual); angka draw call valid, FPS harus dibaca CEO di `/office?perf=1` pada perangkat nyata. Jika di perangkat itu lambat, penggabungan mesin statis (instancing) adalah langkah berikutnya.
+- Cadangan terjadwal memakai interval sederhana (tanpa jam tetap) dan hanya menyimpan di disk yang sama; **salin `data/backups/` ke disk lain secara berkala**. Cadangan tidak dienkripsi.
+- Restore belum tersedia dari antarmuka web (disengaja: backend harus berhenti); tes tautan simbolik dilewati di Windows tanpa hak simlink.
+- Mati paksa di tengah penulisan file proyek (bukan database) dapat meninggalkan artefak setengah jadi; task idempoten menimpanya saat diulang.
+- CSP memakai `'unsafe-inline'` untuk skrip hidrasi Next; tanpa login pengguna (token lokal). Lihat `docs/SECURITY.md`.
+- 5 temuan npm tingkat tinggi tersisa hanya di tooling pengembangan (eslint).
+
 ## Phase 12 — Cloud Evaluation
 
 - Evaluasi kebutuhan cloud.

@@ -1,0 +1,301 @@
+"""Backup dan pemulihan data (Fase 11).
+
+Cadangan = satu folder: `roihan.db` (salinan konsisten lewat API backup SQLite, aman saat aplikasi berjalan),
+opsional `projects.tar.gz`, dan `manifest.json` berisi hash SHA-256, jumlah baris per tabel, serta revisi migrasi.
+Rahasia (`.env`, token) tidak pernah ikut. Pemulihan hanya lewat CLI saat backend berhenti.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import shutil
+import sqlite3
+import tarfile
+import time
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+
+MANIFEST = "manifest.json"
+DB_FILE = "roihan.db"
+PROJECTS_FILE = "projects.tar.gz"
+MANIFEST_FORMAT = 1
+API_ROOT = Path(__file__).resolve().parents[2]
+
+
+class BackupError(Exception):
+    """Kegagalan backup/restore yang pesannya aman ditampilkan kepada pengguna."""
+
+
+@dataclass(frozen=True)
+class VerifyResult:
+    ok: bool
+    problems: list[str]
+    manifest: dict | None
+
+
+def _utcnow() -> datetime:
+    return datetime.now(UTC)
+
+
+def _sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _tables(conn: sqlite3.Connection) -> list[str]:
+    rows = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").fetchall()
+    return [r[0] for r in rows]
+
+
+def table_counts(db: Path) -> dict[str, int]:
+    conn = sqlite3.connect(f"file:{db.as_posix()}?mode=ro", uri=True)
+    try:
+        return {t: conn.execute(f'SELECT COUNT(*) FROM "{t}"').fetchone()[0] for t in _tables(conn)}
+    finally:
+        conn.close()
+
+
+def db_revision(db: Path) -> str | None:
+    conn = sqlite3.connect(f"file:{db.as_posix()}?mode=ro", uri=True)
+    try:
+        if "alembic_version" not in _tables(conn):
+            return None
+        row = conn.execute("SELECT version_num FROM alembic_version").fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
+
+
+def integrity_ok(db: Path) -> bool:
+    try:
+        conn = sqlite3.connect(f"file:{db.as_posix()}?mode=ro", uri=True)
+        try:
+            return conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        finally:
+            conn.close()
+    except sqlite3.DatabaseError:
+        return False
+
+
+def known_revisions() -> tuple[set[str], str | None]:
+    """Semua revisi migrasi yang dikenal kode ini beserta head-nya."""
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+
+    cfg = Config(str(API_ROOT / "alembic.ini"))
+    cfg.set_main_option("script_location", str(API_ROOT / "migrations"))
+    script = ScriptDirectory.from_config(cfg)
+    return {r.revision for r in script.walk_revisions()}, script.get_current_head()
+
+
+def _archive_projects(projects_dir: Path, target: Path) -> None:
+    with tarfile.open(target, "w:gz") as tar:
+        for path in sorted(projects_dir.rglob("*")):
+            if path.is_symlink():
+                continue  # tautan simbolik tidak dicadangkan (hindari keluar dari folder proyek)
+            tar.add(path, arcname=path.relative_to(projects_dir).as_posix(), recursive=False)
+
+
+def _dir_size(path: Path) -> int:
+    return sum(p.stat().st_size for p in path.rglob("*") if p.is_file() and not p.is_symlink())
+
+
+def create_backup(db_path: Path, backups_dir: Path, projects_dir: Path | None = None, *, include_projects: bool = True,
+                  max_project_bytes: int = 500 * 1024 * 1024, label: str = "manual", app_version: str = "") -> Path:
+    """Buat cadangan baru secara atomik (folder sementara lalu di-rename). Mengembalikan folder cadangan."""
+    if not db_path.exists():
+        raise BackupError(f"Database tidak ditemukan: {db_path}")
+    backups_dir.mkdir(parents=True, exist_ok=True)
+    stamp = _utcnow().strftime("%Y%m%dT%H%M%S")
+    name = f"{stamp}-{label}"
+    final = backups_dir / name
+    n = 1
+    while final.exists():
+        n += 1
+        final = backups_dir / f"{name}-{n}"
+    tmp = backups_dir / f".tmp-{final.name}"
+    if tmp.exists():
+        shutil.rmtree(tmp)
+    tmp.mkdir()
+    try:
+        # salinan konsisten lewat API backup SQLite (aman walau ada penulisan bersamaan)
+        src = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True, timeout=30)
+        dst = sqlite3.connect(tmp / DB_FILE)
+        try:
+            src.backup(dst)
+        finally:
+            dst.close()
+            src.close()
+        if not integrity_ok(tmp / DB_FILE):
+            raise BackupError("Salinan database gagal uji integritas; cadangan dibatalkan.")
+
+        files = {DB_FILE: {"sha256": _sha256(tmp / DB_FILE), "bytes": (tmp / DB_FILE).stat().st_size}}
+        warnings: list[str] = []
+        if include_projects and projects_dir is not None and projects_dir.exists():
+            size = _dir_size(projects_dir)
+            if size > max_project_bytes:
+                warnings.append(f"folder proyek ({size // (1024 * 1024)} MB) melebihi batas {max_project_bytes // (1024 * 1024)} MB; tidak dicadangkan")
+            else:
+                _archive_projects(projects_dir, tmp / PROJECTS_FILE)
+                files[PROJECTS_FILE] = {"sha256": _sha256(tmp / PROJECTS_FILE), "bytes": (tmp / PROJECTS_FILE).stat().st_size}
+        manifest = {
+            "format": MANIFEST_FORMAT, "created_at": _utcnow().isoformat(), "label": label, "app_version": app_version,
+            "alembic_revision": db_revision(tmp / DB_FILE), "tables": table_counts(tmp / DB_FILE), "files": files, "warnings": warnings,
+        }
+        (tmp / MANIFEST).write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp, final)
+    except BaseException:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise
+    return final
+
+
+def read_manifest(backup: Path) -> dict:
+    try:
+        data = json.loads((backup / MANIFEST).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        raise BackupError(f"Manifest cadangan tidak terbaca: {e}") from e
+    if not isinstance(data, dict) or data.get("format") != MANIFEST_FORMAT or "files" not in data:
+        raise BackupError("Format manifest cadangan tidak dikenal.")
+    return data
+
+
+def verify_backup(backup: Path) -> VerifyResult:
+    """Periksa hash, integritas SQLite, jumlah baris, dan revisi migrasi. Tidak mengubah apa pun."""
+    problems: list[str] = []
+    try:
+        manifest = read_manifest(backup)
+    except BackupError as e:
+        return VerifyResult(False, [str(e)], None)
+    for fname, meta in manifest["files"].items():
+        if Path(fname).name != fname:
+            problems.append(f"nama berkas tidak valid di manifest: {fname}")
+            continue
+        path = backup / fname
+        if not path.is_file():
+            problems.append(f"berkas hilang: {fname}")
+        elif _sha256(path) != meta.get("sha256"):
+            problems.append(f"hash tidak cocok (berkas berubah atau rusak): {fname}")
+    db = backup / DB_FILE
+    if db.is_file() and not problems:
+        if not integrity_ok(db):
+            problems.append("uji integritas SQLite gagal")
+        else:
+            try:
+                if table_counts(db) != manifest.get("tables"):
+                    problems.append("jumlah baris tabel tidak sesuai manifest")
+            except sqlite3.DatabaseError as e:
+                problems.append(f"database tidak terbaca: {e}")
+    return VerifyResult(not problems, problems, manifest)
+
+
+def list_backups(backups_dir: Path) -> list[dict]:
+    out: list[dict] = []
+    if not backups_dir.exists():
+        return out
+    for d in sorted((p for p in backups_dir.iterdir() if p.is_dir() and not p.name.startswith(".")), reverse=True):
+        try:
+            m = read_manifest(d)
+        except BackupError:
+            out.append({"name": d.name, "valid": False})
+            continue
+        out.append({
+            "name": d.name, "valid": True, "created_at": m.get("created_at"), "label": m.get("label"),
+            "alembic_revision": m.get("alembic_revision"), "bytes": sum(f.get("bytes", 0) for f in m["files"].values()),
+            "has_projects": PROJECTS_FILE in m["files"], "warnings": m.get("warnings", []),
+        })
+    return out
+
+
+def prune_backups(backups_dir: Path, keep: int) -> list[str]:
+    """Hapus cadangan lama, sisakan `keep` terbaru. Cadangan pre-restore tidak pernah dihapus otomatis."""
+    if keep < 1:
+        raise BackupError("keep harus minimal 1")
+    dirs = sorted((p for p in backups_dir.iterdir() if p.is_dir() and not p.name.startswith(".") and not p.name.endswith("-pre-restore")),
+                  reverse=True) if backups_dir.exists() else []
+    removed = []
+    for d in dirs[keep:]:
+        shutil.rmtree(d)
+        removed.append(d.name)
+    return removed
+
+
+def _live_db_locked(db: Path) -> bool:
+    """True bila ada proses lain (mis. backend) yang sedang memakai database."""
+    conn = sqlite3.connect(db, timeout=0.2)
+    try:
+        conn.execute("BEGIN EXCLUSIVE")
+        conn.rollback()
+        return False
+    except sqlite3.OperationalError:
+        return True
+    finally:
+        conn.close()
+
+
+def _safe_extract(archive: Path, dest: Path) -> None:
+    with tarfile.open(archive, "r:gz") as tar:
+        for m in tar.getmembers():
+            p = Path(m.name)
+            if p.is_absolute() or ".." in p.parts or not (m.isfile() or m.isdir()):
+                raise BackupError(f"arsip proyek berisi entri tidak aman: {m.name}")
+        tar.extractall(dest, filter="data")
+
+
+def restore_backup(backup: Path, db_path: Path, backups_dir: Path, projects_dir: Path | None = None, *, force: bool = False,
+                   app_version: str = "") -> dict:
+    """Pulihkan database (dan folder proyek) dari cadangan. Backend harus berhenti.
+
+    Menolak menimpa data yang ada tanpa `force`; dengan `force` selalu membuat cadangan `pre-restore` terlebih dahulu.
+    """
+    result = verify_backup(backup)
+    if not result.ok:
+        raise BackupError("Cadangan tidak valid: " + "; ".join(result.problems))
+    manifest = result.manifest or {}
+    revs, _ = known_revisions()
+    rev = manifest.get("alembic_revision")
+    if rev is not None and rev not in revs:
+        raise BackupError(f"Cadangan berasal dari versi aplikasi yang lebih baru (revisi {rev}); perbarui aplikasi dahulu.")
+
+    pre: Path | None = None
+    if db_path.exists():
+        if not force:
+            raise BackupError("Database tujuan sudah ada. Gunakan --force untuk menimpa (cadangan pre-restore dibuat otomatis).")
+        if _live_db_locked(db_path):
+            raise BackupError("Database sedang dipakai proses lain. Hentikan backend sebelum memulihkan.")
+        pre = create_backup(db_path, backups_dir, projects_dir, include_projects=projects_dir is not None and projects_dir.exists(),
+                            label="pre-restore", app_version=app_version)
+
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_db = db_path.with_name(db_path.name + ".restore-tmp")
+    shutil.copyfile(backup / DB_FILE, tmp_db)
+    try:
+        if not integrity_ok(tmp_db):
+            raise BackupError("Salinan pemulihan gagal uji integritas.")
+        for suffix in ("-wal", "-shm"):  # sisa jurnal lama tidak boleh dipasangkan dengan database hasil pulih
+            Path(str(db_path) + suffix).unlink(missing_ok=True)
+        os.replace(tmp_db, db_path)
+    finally:
+        tmp_db.unlink(missing_ok=True)
+
+    restored_projects = False
+    if projects_dir is not None and (backup / PROJECTS_FILE).exists():
+        staging = projects_dir.with_name(projects_dir.name + ".restore-tmp")
+        shutil.rmtree(staging, ignore_errors=True)
+        staging.mkdir(parents=True)
+        try:
+            _safe_extract(backup / PROJECTS_FILE, staging)
+            if projects_dir.exists():
+                shutil.move(projects_dir, projects_dir.with_name(f"{projects_dir.name}.replaced-{int(time.time())}"))
+            os.replace(staging, projects_dir)
+            restored_projects = True
+        except BaseException:
+            shutil.rmtree(staging, ignore_errors=True)
+            raise
+    return {"restored_from": backup.name, "pre_restore": pre.name if pre else None, "projects": restored_projects,
+            "alembic_revision": db_revision(db_path), "tables": table_counts(db_path)}

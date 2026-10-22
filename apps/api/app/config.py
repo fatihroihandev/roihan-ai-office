@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     worker_poll_interval_s: float = 1.0
     retry_backoff_base_s: float = 5.0
 
+    backup_enabled: bool = True
+    backup_interval_hours: float = 24.0
+    backup_keep: int = 14
+    backup_include_projects: bool = True
+    backup_max_project_mb: int = 500
+
     openai_enabled: bool = False
     openai_api_key: str = ""
     gemini_enabled: bool = False
@@ -109,6 +115,8 @@ class Settings(BaseSettings):
             raise ValueError("OUTREACH_* dan CONTENT_MAX_PUBLISH_PER_DAY tidak boleh negatif")
         if self.approval_ttl_hours < 1:
             raise ValueError("APPROVAL_TTL_HOURS harus >= 1")
+        if self.backup_interval_hours <= 0 or self.backup_keep < 1 or self.backup_max_project_mb < 1:
+            raise ValueError("backup_interval_hours, backup_keep, backup_max_project_mb harus positif")
         if self.worker_poll_interval_s <= 0 or self.retry_backoff_base_s < 0:
             raise ValueError("WORKER_POLL_INTERVAL_S harus > 0 dan RETRY_BACKOFF_BASE_S >= 0")
         if self.max_upload_mb < 1:
