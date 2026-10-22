@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api", tags=["events"])
 
 def _serialize(e: TaskEvent) -> dict:
     return {
-        "seq": e.seq, "type": e.type, "entity_type": "task", "entity_id": e.task_id, "project_id": e.project_id,
+        "seq": e.seq, "type": e.type, "entity_type": "power" if e.task_id == "power" else "task", "entity_id": e.task_id, "project_id": e.project_id,
         "occurred_at": e.created_at.isoformat(), "payload": {"from": e.from_status, "to": e.to_status,
                                                               "reason": e.reason, **(e.payload or {})},
     }

@@ -3,9 +3,11 @@
 import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { DashboardPanel } from "@/components/office/DashboardPanel";
+import { PowerBanner, PowerControl, PowerPanel, usePowerStatus } from "@/components/office/PowerControl";
 import { ModeControls, OfficeScene, useOfficeMode, useOfficeQuality } from "@/components/office/OfficeView";
+import { agentsForPower } from "@/lib/office/power";
 import { useOfficeData } from "@/lib/office/useOfficeData";
 import type { Nearby } from "@/lib/office/walk";
 import { useLanguage } from "@/i18n/LanguageProvider";
@@ -17,6 +19,9 @@ export default function OfficePage() {
   const params = useSearchParams(); // ?walk=1 langsung masuk mode jalan; ?view=first orang pertama
   const label = (key: string) => t(key as MessageKey);
   const { data, stale, connected, updatedAt } = useOfficeData();
+  const { power, failed: powerFailed, refresh: refreshPower } = usePowerStatus();
+  // Saat PAUSED avatar tidak boleh tampak bekerja; status berasal dari backend (bukan simulasi UI)
+  const sceneData = useMemo(() => (data ? { ...data, agents: agentsForPower(data.agents, power?.state) } : data), [data, power?.state]);
   const { mode, pref, setPref, caps, failed, onFail } = useOfficeMode();
   const [quality, setQuality] = useOfficeQuality();
   const [selected, setSelected] = useState<string | null>(null);
@@ -59,7 +64,7 @@ export default function OfficePage() {
       {data && (
         <div className="stage" data-mode={mode} data-walk={walkOn ? "on" : "off"} data-view={view} ref={stage}>
           <OfficeScene
-            data={data} mode={mode} onFail={onFail} selected={selected} onSelect={setSelected}
+            data={sceneData ?? data} mode={mode} onFail={onFail} selected={selected} onSelect={setSelected}
             walk={{ walking: walkOn, start, view, quality, onSlow: () => setQuality("low"), onNearby: setNearby, onInteract, onToggleView, onExit }}
           />
 
@@ -72,6 +77,7 @@ export default function OfficePage() {
           </div>
 
           <div className="hud hud-tr glass">
+            <PowerControl power={power} failed={powerFailed} refresh={refreshPower} />
             {mode === "3d" && (
               <button type="button" className={walkOn ? "danger" : "primary-btn"} onClick={() => { if (walkOn) onExit(); else { setWalking(true); setPanel(false); } }}>
                 {walkOn ? t("office.walk.exit") : t("office.walk.enter")}
@@ -87,9 +93,12 @@ export default function OfficePage() {
             <button type="button" onClick={toggleFullscreen}>{t("office.fullscreen")}</button>
           </div>
 
+          <PowerBanner power={power} onOpenPanel={() => setPanel(true)} />
+
           {panel && !walkOn && (
             <aside className="hud hud-right glass">
               <DashboardPanel d={data} />
+              {power && power.recovery_items.length > 0 && <section className="card"><PowerPanel power={power} refresh={refreshPower} /></section>}
             </aside>
           )}
 

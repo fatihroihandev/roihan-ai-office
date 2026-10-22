@@ -16,6 +16,13 @@ kebocoran rahasia lewat git/log, serta agent AI yang bertindak di luar wewenangn
 | Kode AI menyerang host | Eksekusi hanya di sandbox WSL terpisah | Phase 5 |
 | Arsip cadangan berbahaya | Verifikasi hash, tolak nama berkas di manifest yang keluar folder, tolak entri tar absolut/`..`/tautan, `filter="data"` | `tests/test_backup.py` |
 
+## Office Power Control (Phase 13)
+
+- Semua rute `/api/power/*` memerlukan token (tercakup tes otentikasi seluruh skema OpenAPI). Perintah OFF/ON dan penyelesaian item dicatat di audit log; hanya CEO (token lokal) yang dapat memerintah, agent tidak punya jalur ke rute ini.
+- Checkpoint dan log tidak memuat prompt maupun rahasia: semua teks disamarkan dengan nilai rahasia yang dikenal (uji menemukan dan memperbaiki teks bebas `last_step` yang belum disamarkan).
+- Tindakan berisiko dan operasi eksternal yang tidak pasti tidak pernah diulang otomatis setelah pause, crash, atau restart.
+- Resume tidak mengubah budget, izin, atau pengaturan provider; panggilan berbayar tetap diblokir (diverifikasi di game day: 0 panggilan berbayar).
+
 ## Hasil audit
 
 - **Dependensi Python**: `pip-audit` terhadap seluruh paket terpasang — tidak ada kerentanan diketahui.

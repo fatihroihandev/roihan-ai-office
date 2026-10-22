@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, approvals, backups, dashboard, engineering, events, health, marketing, products, projects, tasks
+from app.api import ai, approvals, backups, dashboard, engineering, events, health, marketing, power, products, projects, tasks
 from app.config import Settings, get_settings
 from app.db.session import create_db_engine, create_session_factory
 from app.logging_config import correlation_id, new_correlation_id, setup_logging
@@ -17,6 +17,8 @@ from app.providers.registry import build_registry
 from app.routing.router import ModelRouter
 from app.sandbox.base import Sandbox
 from app.sandbox.factory import build_sandbox
+from app.power.checkpoints import CheckpointManager
+from app.power.service import PowerController
 from app.tasks.executors import Executor
 from app.tasks.worker import TaskWorker
 
@@ -51,6 +53,8 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         task = None
+        # Pemulihan setelah proses sebelumnya berhenti tidak normal harus selesai SEBELUM worker mulai mengambil task
+        app.state.power_startup = await asyncio.to_thread(app.state.power.startup_recovery)
         if settings.worker_enabled:
             worker = app.state.worker
             task = asyncio.create_task(worker.run_forever())
@@ -58,6 +62,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
         yield
         if backup_task is not None:
             backup_task.cancel()
+        await app.state.power.shutdown()
         if task is not None:
             app.state.worker.stop()
             task.cancel()
@@ -65,6 +70,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
                 await task
             except asyncio.CancelledError:
                 pass
+        await asyncio.to_thread(app.state.power.mark_shutdown_clean)
 
     app = FastAPI(title="Roihan Software House API", version=health.APP_VERSION, lifespan=lifespan)
     app.state.settings = settings
@@ -75,9 +81,13 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
     app.state.router = ModelRouter(app.state.registry, settings, app.state.session_factory)
     app.state.ws_tickets = {}
     app.state.sandbox = sandbox or build_sandbox(settings)
+    storage = ProjectStorage(settings.projects_dir)
+    app.state.power = PowerController(settings, app.state.session_factory, CheckpointManager(settings, app.state.session_factory, storage))
     if settings.worker_enabled or executors is not None:
         app.state.worker = TaskWorker(settings, app.state.session_factory, app.state.gateway, app.state.router,
-                                      ProjectStorage(settings.projects_dir), executors, app.state.sandbox)
+                                      storage, executors, app.state.sandbox)
+        app.state.worker.set_gate(app.state.power.can_schedule)
+        app.state.power.attach_worker(app.state.worker)
 
     app.add_middleware(
         CORSMiddleware,
@@ -116,6 +126,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
     app.include_router(marketing.router)
     app.include_router(dashboard.router)
     app.include_router(backups.router)
+    app.include_router(power.router)
     return app
 
 

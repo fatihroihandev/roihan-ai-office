@@ -8,7 +8,7 @@ Sumber acuan utama: [`docs/MASTER_DEVELOPMENT.md`](docs/MASTER_DEVELOPMENT.md). 
 
 Phase 0 sampai 7 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst, Reporter, Developer, QA, dan Reviewer dapat bekerja (Developer, QA, dan Reviewer yang menjalankan tes hanya jika sandbox lolos uji isolasi); agent Marketing belum tersedia (task-nya diblokir secara jujur). Tindakan berisiko tinggi atau kritis tidak berjalan sebelum CEO menyetujuinya di Approval Center (`/approvals`). Katalog produk dengan Product Release Gate tersedia di `/products`: Marketing hanya boleh memakai klaim produk yang terverifikasi.
 
-Roadmap lanjutan (Master Development v2.3, belum dikerjakan): **Phase 13** Office Power Control (checkpoint, pause/resume, recovery), **Phase 14** SEO Specialist dan Marketing Analytics, **Phase 15** proyek akhir website company profile Roihan Software House. Spesifikasi: `docs/MASTER_DEVELOPMENT.md` Bagian 29.
+Roadmap lanjutan (Master Development v2.3): **Phase 13** Office Power Control selesai; belum dikerjakan: **Phase 14** SEO Specialist dan Marketing Analytics, **Phase 15** proyek akhir website company profile Roihan Software House. Spesifikasi: `docs/MASTER_DEVELOPMENT.md` Bagian 29.
 
 ## Prasyarat Phase 0
 
@@ -158,6 +158,13 @@ kosong (tanpa secret), batas memori/proses/CPU/waktu, tanpa mount drive Windows,
 - Audit keamanan: `python scripts/audit_security.py --deps`; ringkasan ancaman dan temuan di `docs/SECURITY.md`.
 - Profil 3D: buka `/office?perf=1` untuk melihat FPS dan draw call; efek turun ke "Rendah" otomatis jika perangkat lambat.
 - Tidak ada migrasi database; cukup mulai ulang backend dan frontend.
+
+## Office Power Control (Phase 13)
+
+Di halaman **Kantor** ada tombol **OFF/ON**: OFF menghentikan penjadwalan, menyimpan checkpoint pekerjaan yang berjalan, dan baru menampilkan **DIJEDA** setelah backend memverifikasi; ON memvalidasi lalu memulihkan pekerjaan dari checkpoint.
+Pekerjaan berisiko atau operasi eksternal yang hasilnya tidak pasti tidak diulang otomatis: muncul di panel CEO sebagai **Butuh tindakan manual** untuk Anda putuskan.
+Jika aplikasi atau laptop mati mendadak, pemulihan berjalan otomatis saat backend dinyalakan lagi. Jalankan migrasi `alembic upgrade head` (revisi 0010) lalu mulai ulang backend dan frontend.
+Atur lewat `POWER_*` di `.env`. Uji bencana nyata: `apps/api/.venv/Scripts/python scripts/gameday_power.py` (butuh Ollama).
 
 ## Navigasi layar penuh
 

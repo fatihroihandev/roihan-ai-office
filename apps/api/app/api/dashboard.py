@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.db.base import utcnow
 from app.db.models import Approval, ContentAsset, ModelUsage, OutboundMessage, OutreachRecord, Project, Task, TaskEvent
 from app.marketing import service as marketing
+from app.power import service as power_service
 from app.marketing.policy import Policy
 from app.security import require_token
 from app.tasks.agents import agent_statuses
@@ -80,6 +81,7 @@ def dashboard(request: Request, session: SessionDep):
         "marketing": marketing_block,
         "ai": ai,
         "worker": {"enabled": settings.worker_enabled, "running": worker is not None, "current_task_id": worker.current_task_id if worker else None},
+        "power": power_service.snapshot(session),
         "agents": agent_statuses(session),
     }
 

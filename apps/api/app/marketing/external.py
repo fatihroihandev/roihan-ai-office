@@ -23,6 +23,7 @@ from app.marketing.access import AccessDenied
 from app.marketing.policy import Policy
 from app.marketing.privacy import PolicyError, assert_clean
 from app.marketing.service import MarketingError
+from app.power import external as external_ops
 from app.products import service as products
 from app.products.claims import check_claims
 from app.projects.uploads import FileKind
@@ -263,17 +264,38 @@ def approval_for_task(session: Session, task_id: str) -> Approval:
     raise MarketingError("not_approved", "Tidak ada approval CEO yang sah untuk tindakan ini")
 
 
+def _begin_external(session: Session, kind: str, task_id: str, content_hash_: str):
+    """Catat operasi dengan idempotency key. Pengulangan yang sudah terkonfirmasi mengembalikan pesan lama (tanpa ganda);
+    operasi yang hasilnya tidak pasti ditolak sampai diverifikasi manusia."""
+    op, created = external_ops.begin_operation(session, kind=kind, key=f"{kind}:{task_id}:{content_hash_}", task_id=task_id, payload_sha256=content_hash_)
+    if created:
+        return op, None
+    if op.status == "confirmed":
+        mid = (op.result or {}).get("outbound_message_id")
+        msg = session.get(OutboundMessage, mid) if mid else None
+        if msg is not None:
+            return op, msg
+    if op.status in external_ops.UNCERTAIN | {"unknown"}:
+        raise MarketingError("external_unknown", "Operasi eksternal sebelumnya tidak diketahui hasilnya; verifikasi manual diperlukan")
+    op.status = "started"  # sebelumnya gagal: boleh dicoba lagi
+    return op, None
+
+
 def enqueue_publish(session: Session, policy: Policy, asset: ContentAsset, *, task_id: str, expected_hash: str, actor: str) -> OutboundMessage:
     access.require(actor, "outbound.enqueue")
     approval = approval_for_task(session, task_id)
     if expected_hash != content_hash(asset.title, asset.body):
         raise MarketingError("content_changed", "Isi konten berubah sejak disetujui; ajukan approval baru")
     check_publish_allowed(session, policy, asset)
+    op, existing = _begin_external(session, "publish", task_id, expected_hash)
+    if existing is not None:
+        return existing
     msg = OutboundMessage(kind="content", ref_id=asset.id, channel=asset.channel, subject=asset.title, body=asset.body, body_hash=asset.body_hash,
                           task_id=task_id, approval_id=approval.id)
     asset.status = "queued_for_dispatch"
     session.add(msg)
     session.flush()
+    external_ops.finish_operation(op, "confirmed", {"outbound_message_id": msg.id})
     _audit(session, "outbound.queued", "outbound_message", msg.id, actor, {"kind": "content", "ref_id": asset.id, "approval_id": approval.id})
     return msg
 
@@ -284,11 +306,15 @@ def enqueue_outreach(session: Session, policy: Policy, outreach: OutreachRecord,
     if expected_hash != outreach_hash(outreach):
         raise MarketingError("content_changed", "Isi pesan berubah sejak disetujui; ajukan approval baru")
     check_send_allowed(session, policy, outreach)
+    op, existing = _begin_external(session, "outreach", task_id, expected_hash)
+    if existing is not None:
+        return existing
     msg = OutboundMessage(kind="outreach", ref_id=outreach.id, lead_id=outreach.lead_id, channel=outreach.channel, subject=outreach.subject,
                           body=outreach.body, body_hash=expected_hash, task_id=task_id, approval_id=approval.id)
     outreach.status = "queued_for_dispatch"
     session.add(msg)
     session.flush()
+    external_ops.finish_operation(op, "confirmed", {"outbound_message_id": msg.id})
     _audit(session, "outbound.queued", "outbound_message", msg.id, actor, {"kind": "outreach", "ref_id": outreach.id, "lead_id": outreach.lead_id, "approval_id": approval.id})
     return msg
 

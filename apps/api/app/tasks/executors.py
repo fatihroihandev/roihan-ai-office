@@ -58,6 +58,7 @@ class ExecutionContext:
     settings: Settings
     storage: ProjectStorage
     sandbox: Sandbox | None = None
+    resume_checkpoint: dict | None = None  # ringkasan checkpoint valid terakhir bila task ini dilanjutkan setelah terputus
     provider: str | None = None
     model: str | None = None
     usage: dict = field(default_factory=lambda: {"prompt_tokens": 0, "completion_tokens": 0, "duration_ms": 0, "calls": 0})

@@ -1,3 +1,4 @@
+import type { PowerSnapshot } from "@/lib/powerApi";
 import { apiFetch } from "@/lib/api";
 import type { AgentSnapshot } from "@/lib/office/model";
 
@@ -15,6 +16,7 @@ export type Dashboard = {
   };
   ai: { calls_24h: number; errors_24h: number; blocked_24h: number; paid_calls_24h: number; tokens_24h: number; paid_providers_enabled: boolean };
   worker: { enabled: boolean; running: boolean; current_task_id: string | null };
+  power?: PowerSnapshot;
   agents: AgentSnapshot[];
 };
 

@@ -14,13 +14,13 @@ class GitError(RuntimeError):
     pass
 
 
-def _git(root: Path, *args: str, name: str = "Roihan Agent", email: str = "agent@roihan.local") -> str:
-    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1",
+def _git(root: Path, *args: str, name: str = "Roihan Agent", email: str = "agent@roihan.local", strip: bool = True) -> str:
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1", "GIT_OPTIONAL_LOCKS": "0",
            "GIT_AUTHOR_NAME": name, "GIT_AUTHOR_EMAIL": email, "GIT_COMMITTER_NAME": name, "GIT_COMMITTER_EMAIL": email}
     p = subprocess.run([*_BASE, *args], cwd=root, env=env, capture_output=True, text=True, timeout=30)
     if p.returncode != 0:
         raise GitError(f"git {args[0]} gagal: {(p.stderr or p.stdout).strip()[:300]}")
-    return p.stdout.strip()
+    return p.stdout.strip() if strip else p.stdout
 
 
 def ensure_repo(root: Path) -> None:
@@ -37,6 +37,11 @@ def head(root: Path) -> str | None:
         return _git(root, "rev-parse", "--short", "HEAD")
     except GitError:
         return None
+
+
+def status(root: Path) -> list[str]:
+    """Baris `git status --porcelain` (perubahan yang belum di-commit). Hanya membaca; tidak mengubah apa pun."""
+    return [ln for ln in _git(root, "status", "--porcelain", "-uall", strip=False).splitlines() if ln.strip()]
 
 
 def commit_all(root: Path, message: str, author: str = "Roihan Agent") -> str | None:

@@ -578,6 +578,100 @@ class ClientHandoff(IdMixin, Base):
     created_by: Mapped[str] = mapped_column(default="ceo")
 
 
+class PowerState(Base):
+    """Status operasional global kantor (Addendum v2.3, Bagian 29.A). Satu baris (id = 1); database adalah sumber kebenaran."""
+
+    __tablename__ = "power_state"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    state: Mapped[str] = mapped_column(default="RUNNING")  # RUNNING | PAUSING | PAUSED | RESUMING | RECOVERY_REQUIRED | ERROR
+    shutdown_clean: Mapped[bool] = mapped_column(default=True)  # False selama proses hidup; True hanya setelah shutdown bersih
+    reason: Mapped[str | None] = mapped_column(Text, default=None)
+    active_command_id: Mapped[str | None] = mapped_column(default=None)
+    detail: Mapped[dict | None] = mapped_column(JSON, default=None)  # progres langkah terakhir
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class PowerCommand(IdMixin, Base):
+    """Permintaan OFF/ON dari CEO beserta progres dan hasilnya."""
+
+    __tablename__ = "power_commands"
+
+    action: Mapped[str] = mapped_column()  # off | on
+    requested_by: Mapped[str] = mapped_column(default="ceo")
+    status: Mapped[str] = mapped_column(default="accepted")  # accepted | running | completed | failed
+    params: Mapped[dict | None] = mapped_column(JSON, default=None)
+    progress: Mapped[list] = mapped_column(JSON, default=list)  # [{at, step, status, detail}]
+    result: Mapped[dict | None] = mapped_column(JSON, default=None)
+    error: Mapped[str | None] = mapped_column(Text, default=None)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+
+class TaskCheckpoint(IdMixin, Base):
+    """Checkpoint keadaan kerja task yang dapat diverifikasi. Tanpa rahasia; `payload_sha256` melindungi integritas isi."""
+
+    __tablename__ = "task_checkpoints"
+    __table_args__ = (Index("ix_task_checkpoints_task", "task_id", "created_at"),)
+
+    project_id: Mapped[str] = mapped_column()
+    task_id: Mapped[str] = mapped_column()
+    attempt_id: Mapped[str | None] = mapped_column(default=None)
+    agent_role: Mapped[str] = mapped_column()
+    kind: Mapped[str] = mapped_column()  # start | periodic | pause | end
+    schema_version: Mapped[int] = mapped_column(default=1)
+    task_status: Mapped[str] = mapped_column()
+    last_step: Mapped[str | None] = mapped_column(default=None)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    payload_sha256: Mapped[str] = mapped_column()
+    validation: Mapped[dict | None] = mapped_column(JSON, default=None)  # hasil validasi terakhir {valid, problems, warnings, checked_at}
+
+
+class RecoveryLog(IdMixin, Base):
+    """Riwayat pemulihan: apa yang dilakukan sistem pada tiap task saat resume atau setelah crash."""
+
+    __tablename__ = "recovery_log"
+    __table_args__ = (Index("ix_recovery_log_command", "command_id"),)
+
+    command_id: Mapped[str | None] = mapped_column(default=None)
+    source: Mapped[str] = mapped_column(default="resume")  # resume | startup_crash | pause
+    task_id: Mapped[str | None] = mapped_column(default=None)
+    project_id: Mapped[str | None] = mapped_column(default=None)
+    action: Mapped[str] = mapped_column()  # requeued | kept_completed | kept_waiting | manual_required | checkpoint_invalid | ...
+    checkpoint_id: Mapped[str | None] = mapped_column(default=None)
+    detail: Mapped[dict | None] = mapped_column(JSON, default=None)
+
+
+class RecoveryItem(IdMixin, Base):
+    """Pekerjaan atau operasi yang memerlukan tindakan manusia sebelum sistem kembali RUNNING penuh."""
+
+    __tablename__ = "recovery_items"
+    __table_args__ = (Index("ix_recovery_items_status", "status"),)
+
+    task_id: Mapped[str | None] = mapped_column(default=None)
+    project_id: Mapped[str | None] = mapped_column(default=None)
+    kind: Mapped[str] = mapped_column()  # risky_task_interrupted | external_unknown | files_missing | checkpoint_invalid | no_checkpoint
+    reason: Mapped[str] = mapped_column(Text)
+    detail: Mapped[dict | None] = mapped_column(JSON, default=None)
+    status: Mapped[str] = mapped_column(default="open")  # open | resolved
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    resolved_by: Mapped[str | None] = mapped_column(default=None)
+    resolution: Mapped[str | None] = mapped_column(default=None)  # requeue | cancel | confirmed_done | confirmed_not_done | acknowledged
+
+
+class ExternalOperation(IdMixin, Base):
+    """Operasi ke dunia luar (outreach, publikasi, deployment, pembayaran, pihak ketiga) dengan idempotency key."""
+
+    __tablename__ = "external_operations"
+
+    task_id: Mapped[str | None] = mapped_column(default=None)
+    kind: Mapped[str] = mapped_column()
+    idempotency_key: Mapped[str] = mapped_column(unique=True)
+    status: Mapped[str] = mapped_column(default="planned")  # planned | started | confirmed | failed | unknown
+    payload_sha256: Mapped[str | None] = mapped_column(default=None)
+    result: Mapped[dict | None] = mapped_column(JSON, default=None)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
 class AppendOnlyError(RuntimeError):
     pass
 

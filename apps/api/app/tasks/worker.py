@@ -6,6 +6,7 @@ mendistribusikannya.
 """
 import asyncio
 import logging
+from typing import Callable
 
 from sqlalchemy import select
 
@@ -13,6 +14,7 @@ from app.approvals import service as approvals
 from app.config import Settings
 from app.db.base import utcnow
 from app.db.models import Task, TaskAttempt, TaskDependency
+from app.power.checkpoints import CheckpointManager
 from app.projects.storage import ProjectStorage
 from app.providers.base import GatewayBlocked, ProviderError, ProviderErrorKind
 from app.providers.gateway import ModelGateway
@@ -42,6 +44,16 @@ class TaskWorker:
         self._cancel_requested: set[str] = set()
         self._stop = asyncio.Event()
         self.current_task_id: str | None = None
+        self._gate: Callable[[], bool] = lambda: True          # diatur Office Power Control: False = scheduler berhenti
+        self._interrupt_reasons: dict[str, str] = {}           # task_id -> alasan penghentian terkontrol (mis. "paused")
+        self.checkpoints = CheckpointManager(settings, session_factory, storage)
+
+    def set_gate(self, gate: Callable[[], bool]) -> None:
+        self._gate = gate
+
+    def sync_dependencies(self) -> None:
+        """Sinkronkan status dependen (publik: dipakai Power Control saat resume)."""
+        self._propagate()
 
     # ------------------------------------------------------------------ recovery
 
@@ -141,6 +153,8 @@ class TaskWorker:
     # ------------------------------------------------------------------ eksekusi
 
     async def run_once(self) -> bool:
+        if not self._gate():   # OFF/PAUSED: tidak ada task baru yang diambil atau dimulai
+            return False
         self._propagate()
         claimed = self._claim()
         if claimed is None:
@@ -154,19 +168,26 @@ class TaskWorker:
             snapshot, role = TaskSnapshot.from_task(task), task.role
         ctx = ExecutionContext(snapshot, attempt_id, self._sf, self._gateway, self._router, self._settings, self._storage,
                                sandbox=self._sandbox)
+        ctx.resume_checkpoint = self._resume_context(task_id)
+        self.checkpoints.create(task_id, attempt_id, "start", "attempt_started")
         fut = asyncio.ensure_future(self.executors[role].run(ctx))
         self._current[task_id] = (fut, attempt_id)
         self.current_task_id = task_id
+        ticker = asyncio.ensure_future(self._ticker(task_id, attempt_id)) if self._settings.power_checkpoint_interval_s > 0 else None
         try:
             outcome = await fut
         except asyncio.CancelledError:
-            if task_id in self._cancel_requested:
+            if task_id in self._interrupt_reasons:   # dihentikan terkontrol (OFF); worker tetap hidup
+                self._finish_interrupted(task_id, attempt_id, ctx, reason=self._interrupt_reasons[task_id])
+            elif task_id in self._cancel_requested:
                 self._finish_cancelled(task_id, attempt_id, ctx)
             else:  # server berhenti saat task berjalan
                 self._finish_interrupted(task_id, attempt_id, ctx)
                 raise
         except ProviderError as e:
-            if e.kind == ProviderErrorKind.cancelled and task_id in self._cancel_requested:
+            if e.kind == ProviderErrorKind.cancelled and task_id in self._interrupt_reasons:
+                self._finish_interrupted(task_id, attempt_id, ctx, reason=self._interrupt_reasons[task_id])
+            elif e.kind == ProviderErrorKind.cancelled and task_id in self._cancel_requested:
                 self._finish_cancelled(task_id, attempt_id, ctx)
             else:
                 self._finish_failed(task_id, attempt_id, ctx, e.kind.value, e.message, e.retryable)
@@ -180,15 +201,43 @@ class TaskWorker:
         else:
             self._finish_ok(task_id, attempt_id, ctx, outcome)
         finally:
+            if ticker is not None:
+                ticker.cancel()
             self._current.pop(task_id, None)
             self._cancel_requested.discard(task_id)
+            was_interrupted = self._interrupt_reasons.pop(task_id, None) is not None
             self.current_task_id = None
             self._write_report(task_id)
+            if not was_interrupted:  # checkpoint pause sudah disimpan oleh Power Control sebelum penghentian
+                self.checkpoints.create(task_id, attempt_id, "end", "attempt_finished")
             with self._sf() as s:   # approval sekali pakai: izin tidak menempel pada task setelah percobaan selesai
                 t = s.get(Task, task_id)
                 if t is not None and t.approved:
                     t.approved = False
                     s.commit()
+
+    async def _ticker(self, task_id: str, attempt_id: str) -> None:
+        """Checkpoint berkala selama task berjalan: bahan pemulihan bila proses mati mendadak."""
+        while True:
+            await asyncio.sleep(self._settings.power_checkpoint_interval_s)
+            await asyncio.to_thread(self.checkpoints.create, task_id, attempt_id, "periodic", "running")
+
+    def _resume_context(self, task_id: str) -> dict | None:
+        """Ringkasan checkpoint valid terakhir jika task ini pernah terputus (tersedia bagi executor yang mau memakainya)."""
+        try:
+            with self._sf() as s:
+                t = s.get(Task, task_id)
+                if t is None or t.attempt_count <= 1:
+                    return None
+                cp, _ = self.checkpoints.latest_valid(s, task_id)
+                if cp is None:
+                    return None
+                s.commit()
+                return {"checkpoint_id": cp.id, "kind": cp.kind, "last_step": cp.last_step, "created_at": cp.created_at.isoformat(),
+                        "files": [f["path"] for f in cp.payload.get("files", [])], "git_head": (cp.payload.get("git") or {}).get("head")}
+        except Exception:
+            logger.exception("gagal membaca checkpoint untuk resume", extra={"task_id": task_id})
+            return None
 
     def _write_report(self, task_id: str) -> None:
         """Setiap task yang selesai atau gagal menghasilkan laporan (Bagian 17). Gagal menulis laporan tidak menggagalkan task."""
@@ -251,11 +300,11 @@ class TaskWorker:
             change_status(s, t, "cancelled", reason="cancelled_by_user")
             s.commit()
 
-    def _finish_interrupted(self, task_id, attempt_id, ctx) -> None:
+    def _finish_interrupted(self, task_id, attempt_id, ctx, reason: str = "shutdown") -> None:
         with self._sf() as s:
             t = s.get(Task, task_id)
             self._close_attempt(s, attempt_id, ctx, "interrupted", kind="interrupted", retryable=True)
-            change_status(s, t, "interrupted", reason="shutdown")
+            change_status(s, t, "interrupted", reason=reason)
             s.commit()
 
     # ------------------------------------------------------------------ kontrol
@@ -267,6 +316,18 @@ class TaskWorker:
         fut, attempt_id = entry
         self._cancel_requested.add(task_id)
         await self._gateway.cancel(attempt_id)   # menutup koneksi ke provider bila ada panggilan berjalan
+        if not fut.done():
+            fut.cancel()
+        return True
+
+    async def interrupt_running(self, task_id: str, reason: str) -> bool:
+        """Hentikan task yang sedang berjalan secara terkontrol (bukan pembatalan oleh CEO): berakhir `interrupted` dengan `reason`."""
+        entry = self._current.get(task_id)
+        if entry is None:
+            return False
+        fut, attempt_id = entry
+        self._interrupt_reasons[task_id] = reason
+        await self._gateway.cancel(attempt_id)
         if not fut.done():
             fut.cancel()
         return True
