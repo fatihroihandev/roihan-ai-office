@@ -157,6 +157,12 @@ kosong (tanpa secret), batas memori/proses/CPU/waktu, tanpa mount drive Windows,
 - Profil 3D: buka `/office?perf=1` untuk melihat FPS dan draw call; efek turun ke "Rendah" otomatis jika perangkat lambat.
 - Tidak ada migrasi database; cukup mulai ulang backend dan frontend.
 
+## Evaluasi cloud (Phase 12)
+
+Hasil evaluasi ada di `docs/CLOUD_EVALUATION.md`: rekomendasi **tetap lokal**, pemicu migrasi yang terukur, uji kompatibilitas PostgreSQL, estimasi biaya, dan rencana migrasi.
+Tidak ada perubahan database atau perilaku aplikasi. Alat ulang: `scripts/evaluate_db.py` (benchmark SQLite/PostgreSQL), `scripts/estimate_cloud_cost.py`,
+dan `TEST_POSTGRES_URL=... pytest` untuk menjalankan seluruh tes pada PostgreSQL.
+
 ## Tes
 
 ```

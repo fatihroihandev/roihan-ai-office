@@ -1841,6 +1841,16 @@ Batasan yang diketahui:
 
 **Exit criteria:** migrasi dilakukan hanya jika ada kebutuhan, persetujuan, dan rencana pemulihan yang jelas.
 
+**Status Phase 12: selesai sebagai evaluasi (2026-10-22). Tidak ada migrasi dilakukan; rekomendasi: tetap lokal.** Laporan lengkap: [`docs/CLOUD_EVALUATION.md`](docs/CLOUD_EVALUATION.md).
+
+- **Kebutuhan cloud**: tidak ada pemicu terukur yang terpenuhi (data 0,4 MB, 1 pengguna, 1 worker). Daftar pemicu dengan ambang dan cara ukur, serta tahap bertahap A (cadangan keluar perangkat) -> B (VPS, SQLite) -> C (PostgreSQL).
+- **PostgreSQL (uji nyata, PostgreSQL 17 via Docker sementara, sudah dihapus)**: migrasi Alembic berjalan tanpa perubahan; suite tes **795 lulus** pada PostgreSQL, 20 tidak berlaku karena memang khusus SQLite (modul cadangan berbasis berkas dan tes pragma). `tests/conftest.py` mendukung `TEST_POSTGRES_URL`. Benchmark `scripts/evaluate_db.py`: SQLite lebih cepat untuk jalur nyata (1 penulis 666 tulis/dtk, p95 2 ms) tetapi punya ekor latensi (p99 80-146 ms) pada 4-8 penulis; PostgreSQL stabil (p99 8-14 ms) dan throughput naik. Kueri dashboard pada 200.000 event: p95 100 ms (SQLite) vs 111 ms (PostgreSQL).
+- **Provider berbayar**: hanya untuk kelas tugas yang gagal di model lokal, Batch API untuk latar belakang, anggaran dan approval CEO tetap berlaku. `scripts/estimate_cloud_cost.py` memberi estimasi per skenario (harga adalah asumsi yang wajib diverifikasi).
+- **Integrasi eksternal**: dinilai per jenis (email, publikasi, CRM, kalender, webhook, pembayaran); semuanya tetap melalui outbox + approval; tahap awal tetap manual.
+- **Rencana migrasi** dengan prasyarat, latihan di salinan, hari-H, rencana pemulihan (rollback), kriteria sukses, dan 4 keputusan yang dibutuhkan dari CEO.
+
+Batasan: benchmark dari satu mesin dengan PostgreSQL lokal (tanpa latensi jaringan nyata); harga model dan infrastruktur adalah asumsi; login pengguna belum ada dan merupakan prasyarat cloud multi-pengguna; mekanisme cadangan PostgreSQL belum dibuat (hanya dirancang).
+
 ---
 
 # 22. RISIKO UTAMA DAN MITIGASI
