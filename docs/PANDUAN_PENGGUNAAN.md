@@ -223,6 +223,37 @@ Hasil muncul di daftar **Artefak** (klik **Buka**). Pada audit, pilih proyek lal
 
 ---
 
+### 8.7 Situs yang dipasarkan (portofolio Anda)
+
+Situs portofolio Anda (`fatihroihan.site`) sudah terdaftar. Kode sumbernya **disalin** ke proyek *"Situs: Portofolio Fatih Roihan"* di platform; **folder asli tidak pernah diubah**.
+
+Di `/marketing/seo` ada bagian **Situs yang dipasarkan**:
+| Tombol | Fungsi |
+| --- | --- |
+| **Audit situs** | Agent membaca langsung kode sumber (semua halaman HTML, robots.txt, sitemap.xml) dan membuat laporan per halaman + pemeriksaan tingkat situs (mis. hreflang antar bahasa). Tanpa model, tanpa internet |
+| **Lihat halaman** | Menampilkan halaman yang ditemukan |
+| Pilihan **Situs** pada form kata kunci/brief | Isi situs dipakai sebagai bahan fakta; topik/materi boleh dikosongkan |
+
+**Menerapkan perbaikan ke situs asli**
+1. Buka hasil audit → **Buat task draft** (otomatis di proyek situs itu; kosongkan pilihan proyek).
+2. Buka **Task**, tinjau draft, lalu **Antrekan**. Developer mengubah **salinan** di workspace, QA/Reviewer memeriksa.
+3. Bila hasilnya Anda setujui, bawa ke situs asli dari terminal:
+   ```
+   cd C:\xampp\htdocs\fatih-roihan-portofolio
+   git pull C:\xampp\htdocs\roihan-software-house\data\projects\<id-proyek-situs>\workspace\source-code main
+   ```
+   (id proyek terlihat di halaman Proyek). Lalu `node scripts/check.mjs` dan push/deploy **sendiri** seperti biasa.
+4. Setelah deploy, jalankan **Audit situs** lagi untuk membandingkan, dan catat metrik Search Console di bagian KPI.
+
+**Mendaftarkan situs lain** (dari folder `apps/api`):
+```
+.venv\Scripts\python -m app.marketing.import_site --name "Nama Situs" --url https://situs.com --path C:\folder\situs
+```
+
+> Konten pemasaran tentang situs/jasa Anda tetap melewati aturan yang sama: klaim harus bisa dibuktikan, tanpa jaminan peringkat, dan publikasi lewat approval Anda.
+
+---
+
 ## 9. Sandbox untuk menjalankan kode (opsional tapi disarankan)
 
 Kode buatan AI **tidak pernah dijalankan di Windows Anda**. Tanpa sandbox, task Developer/QA berstatus `blocked (sandbox_disabled)`.

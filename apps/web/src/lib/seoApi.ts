@@ -16,7 +16,7 @@ export type AnalysisData = { kpis: Kpis; observations: string[] };
 export type Artifact = {
   id: string; kind: "audit" | "keywords" | "brief" | "analysis"; title: string; summary: string; task_id: string | null; created_at: string;
   verified_count: number; unverified_count: number; handed_off_to: string | null;
-  data?: AuditData & { items?: KeywordItem[] } & Partial<BriefData> & Partial<AnalysisData>;
+  data?: AuditData & { site_id?: string } & { items?: KeywordItem[] } & Partial<BriefData> & Partial<AnalysisData>;
 };
 
 export type Kpis = {
@@ -27,12 +27,23 @@ export type Kpis = {
   notes: string[];
 };
 
+export type SiteInfo = {
+  id: string; name: string; url: string; project_id: string; language: string; status: string;
+  last_audit: { id: string; created_at: string; counts: Record<Severity, number> | null } | null;
+  pages?: { path: string; url: string; bytes: number }[]; has_robots?: boolean; has_sitemap?: boolean;
+};
+
 export const SEO_METRICS = ["impressions", "clicks", "organic_sessions", "conversions", "position"] as const;
 
 const post = (body?: unknown): RequestInit => ({ method: "POST", headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
 type Queued = { task_id: string; project_id: string; status: string };
 
 export const seoApi = {
+  sites: () => apiFetch<SiteInfo[]>("/api/marketing/seo/sites"),
+  site: (id: string) => apiFetch<SiteInfo>(`/api/marketing/seo/sites/${id}`),
+  siteAudit: (id: string) => apiFetch<Queued>(`/api/marketing/seo/sites/${id}/tasks/audit`, post()),
+  siteKeywords: (id: string, d: { topic?: string; material?: string }) => apiFetch<Queued>(`/api/marketing/seo/sites/${id}/tasks/keywords`, post(d)),
+  siteBrief: (id: string, d: { topic?: string; material?: string }) => apiFetch<Queued>(`/api/marketing/seo/sites/${id}/tasks/brief`, post(d)),
   kpis: () => apiFetch<Kpis>("/api/marketing/seo/kpis"),
   artifacts: () => apiFetch<Artifact[]>("/api/marketing/seo/artifacts"),
   artifact: (id: string) => apiFetch<Artifact>(`/api/marketing/seo/artifacts/${id}`),
@@ -41,5 +52,5 @@ export const seoApi = {
   brief: (d: { topic: string; keyword?: string; material?: string; product_id?: string }) => apiFetch<Queued>("/api/marketing/seo/tasks/brief", post(d)),
   analysis: () => apiFetch<Queued>("/api/marketing/seo/tasks/analysis", post()),
   metric: (d: { metric: string; value: number; period: string; page?: string }) => apiFetch<{ id: string }>("/api/marketing/seo/metrics", post(d)),
-  handoff: (id: string, project_id: string) => apiFetch<{ task_id: string }>(`/api/marketing/seo/artifacts/${id}/handoff`, post({ project_id })),
+  handoff: (id: string, project_id?: string) => apiFetch<{ task_id: string }>(`/api/marketing/seo/artifacts/${id}/handoff`, post({ project_id: project_id || null })),
 };

@@ -689,6 +689,19 @@ class MarketingArtifact(IdMixin, Base):
     handed_off_task_id: Mapped[str | None] = mapped_column(default=None)
 
 
+class Site(IdMixin, Base):
+    """Situs web yang dipasarkan Marketing/SEO. Kode sumbernya disalin ke workspace proyek terkait (folder asli tidak diubah)."""
+
+    __tablename__ = "sites"
+
+    name: Mapped[str] = mapped_column()
+    url: Mapped[str] = mapped_column()
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="RESTRICT"))
+    language: Mapped[str] = mapped_column(default="id")
+    source_origin: Mapped[str | None] = mapped_column(default=None)  # lokasi asli kode sumber (hanya catatan)
+    status: Mapped[str] = mapped_column(default="active")
+
+
 class SeoMetric(IdMixin, Base):
     """Metrik pencarian organik yang dicatat manusia (mis. dari Search Console). Tidak ada angka yang dikarang sistem."""
 

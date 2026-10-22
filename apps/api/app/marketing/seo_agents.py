@@ -3,8 +3,8 @@ tidak mengubah kode produksi, tidak memublikasikan, dan tidak mengirim apa pun (
 """
 from pydantic import BaseModel, Field, ValidationError
 
-from app.db.models import MarketingArtifact
-from app.marketing import access, seo
+from app.db.models import MarketingArtifact, Site
+from app.marketing import access, seo, sites
 from app.marketing.agents import _EMAIL_IN_TEXT, MAX_MATERIAL, _brief, _params
 from app.marketing.privacy import PolicyError, assert_clean
 from app.products.claims import check_claims
@@ -88,6 +88,10 @@ class SeoSpecialistExecutor:
         topic, material = (p.get("topic") or ctx.task.title).strip(), (p.get("material") or "").strip()
         if len(material) > MAX_MATERIAL:
             raise ExecutorError("invalid_material", f"Materi maks. {MAX_MATERIAL} karakter", retryable=False)
+        if p.get("site_id"):  # fakta situs diambil dari kode sumbernya sendiri (bukan karangan model)
+            site, bundle = self._site(ctx, p["site_id"])
+            topic = (p.get("topic") or f"Situs {site.name}").strip()
+            material = (sites.site_summary(bundle) + "\n" + material).strip()
         if action == "keyword_research" and not material:
             raise ExecutorError("invalid_material", "Materi riset kata kunci wajib diisi (data/pengetahuan yang Anda miliki)", retryable=False)
         if _EMAIL_IN_TEXT.search(material):
@@ -131,7 +135,25 @@ class SeoSpecialistExecutor:
         aid = _store(ctx, "brief", f"Brief: {topic}", out.search_intent, {**out.model_dump(), "claims_check": claims}, 1, 0)
         return ExecutorOutcome(output=text, verified=True, verification={"method": "claim_lint", "passed": True}, result={"output": text, "artifact_id": aid})
 
+    def _site(self, ctx: ExecutionContext, site_id: str):
+        with ctx.session_factory() as s:
+            site = s.get(Site, site_id)
+            if site is None:
+                raise ExecutorError("site_not_found", "Situs tidak ditemukan", retryable=False)
+            s.expunge(site)
+        return site, sites.collect_pages(sites.site_root(ctx.storage, site), site.url)
+
     def _audit(self, ctx: ExecutionContext, p: dict) -> ExecutorOutcome:
+        if p.get("site_id"):
+            site, bundle = self._site(ctx, p["site_id"])
+            report = sites.audit_site(site.url, bundle)
+            report["site_id"] = site.id
+            c = report["counts"]
+            text = (f"Audit SEO situs {site.name} ({len(report['pages'])} halaman): {c['critical']} kritis, {c['warning']} peringatan, "
+                    f"{c['info']} info. Tidak diperiksa: {', '.join(report['not_checked'])}.")
+            aid = _store(ctx, "audit", f"Audit situs: {site.name}", text, report, len(report["findings"]), 0)
+            return ExecutorOutcome(output=text, verified=True, verification={"method": "deterministic_site_audit", "passed": True, **c},
+                                   result={"output": text, "artifact_id": aid})
         html = (p.get("html") or "")
         if not html.strip() or len(html) > seo.MAX_HTML:
             raise ExecutorError("invalid_html", f"HTML halaman wajib diisi (maks. {seo.MAX_HTML} karakter)", retryable=False)

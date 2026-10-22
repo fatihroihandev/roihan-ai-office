@@ -18,6 +18,7 @@ from app.db.models import CampaignMetric, Lead, LeadSource, SeoMetric
 from app.marketing import service
 
 MAX_HTML = 200_000
+NOT_CHECKED = ["tautan rusak (butuh jaringan)", "kecepatan dan Core Web Vitals (butuh pengukuran nyata)", "peringkat pencarian (butuh data Search Console)"]
 SEO_METRICS = ("impressions", "clicks", "organic_sessions", "conversions", "position")
 
 # Klaim yang tidak boleh dibuat SEO: tidak ada yang dapat menjamin peringkat atau pendapatan.
@@ -165,7 +166,7 @@ def audit_html(url: str, html: str, robots_txt: str = "", sitemap_xml: str = "")
         findings.append(_f("sitemap_not_provided", "info", "Sitemap tidak diberikan; tidak diperiksa.", ""))
     if not robots_txt.strip():
         findings.append(_f("robots_not_provided", "info", "robots.txt tidak diberikan; tidak diperiksa.", ""))
-    not_checked = ["tautan rusak (butuh jaringan)", "kecepatan dan Core Web Vitals (butuh pengukuran nyata)", "peringkat pencarian (butuh data Search Console)"]
+    not_checked = NOT_CHECKED
     counts = {s: sum(1 for f in findings if f["severity"] == s) for s in ("critical", "warning", "info")}
     return {"url": url, "page": {"title": title, "description": desc, "h1": p.h1, "h2": p.h2, "images": p.imgs, "internal_links": internal,
                                  "external_links": len(p.links) - internal, "jsonld_blocks": len(p.jsonld), "sitemap_urls": sitemap_urls},

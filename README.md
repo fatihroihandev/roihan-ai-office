@@ -170,6 +170,10 @@ Atur lewat `POWER_*` di `.env`. Uji bencana nyata: `apps/api/.venv/Scripts/pytho
 
 Menu **Marketing -> SEO & Digital Marketing** (`/marketing/seo`): audit SEO teknis dari HTML yang ditempel, riset kata kunci dan brief konten (volume hanya dari materi Anda), laporan analitik, serta pencatatan metrik pencarian manual. Data yang belum ada tampil "belum ada data", bukan nol. Hasil hanya usulan; rekomendasi teknis dapat dijadikan task draft Engineering. Jalankan `alembic upgrade head` (revisi 0011), lalu mulai ulang backend dan frontend. Uji langsung: `apps/api/.venv/Scripts/python scripts/live_seo.py`.
 
+## Situs yang dipasarkan (portofolio CEO)
+
+Situs pribadi (`fatihroihan.site`, kode di `C:\xampp\htdocs\fatih-roihan-portofolio`) sudah terdaftar: kode sumbernya **disalin** ke proyek "Situs: Portofolio Fatih Roihan" (folder asli tidak diubah). Menu **Marketing -> SEO & Digital Marketing -> Situs yang dipasarkan** untuk audit situs, riset kata kunci, dan brief konten berdasarkan isi situs. Mendaftarkan situs lain: `cd apps/api && .venv\Scripts\python -m app.marketing.import_site --name "Nama" --url https://situs.com --path C:\folder\situs`. Jalankan `alembic upgrade head` (revisi 0012) setelah memperbarui kode.
+
 ## Navigasi layar penuh
 
 Tidak ada bilah navigasi: gunakan **tombol menu melayang** (klik, atau tekan `M`; `Esc` menutup). Tombol dapat diseret ke tepi kiri/kanan dan posisinya diingat di peramban.

@@ -1919,6 +1919,8 @@ Yang dibangun (`app/marketing/seo.py`, `seo_agents.py`, `app/api/seo.py`, migras
 
 **Bukti verifikasi:** backend `pytest` 878 lulus (tes baru `tests/test_seo.py` + penyesuaian jumlah role pada tes lama); Vitest 86 lulus; lint/tsc/build bersih; **uji langsung** `scripts/live_seo.py` (uvicorn + Ollama `qwen2.5-coder:7b`): audit, kata kunci, brief, dan analitik selesai, tidak ada angka karangan (semua volume `null` atau persis dari materi), 0 panggilan berbayar. Halaman `/marketing/seo` dilihat lewat Edge headless.
 
+**Situs yang dipasarkan (2026-10-22):** tabel `sites` (migrasi `0012`), `app/marketing/sites.py`, CLI `python -m app.marketing.import_site --name --url --path`. Kode sumber situs **disalin** (klon Git lokal dengan riwayat) ke `workspace/source-code` proyek baru; folder asli tidak pernah diubah (diuji). SEO Specialist dapat: mengaudit seluruh situs langsung dari kode sumbernya (tiap halaman HTML sampai 20, robots.txt, sitemap.xml; temuan per halaman + tingkat situs seperti hreflang), memakai isi situs sebagai bahan fakta untuk riset kata kunci dan brief, dan menyerahkan rekomendasi ke Engineering sebagai task draft di proyek situs itu (default). Perubahan dikerjakan di salinan; CEO membawanya ke situs asli sendiri (`git pull` dari salinan) dan mendeploy sendiri. API `GET /api/marketing/seo/sites[/id]`, `POST .../sites/{id}/tasks/audit|keywords|brief`; UI di bagian "Situs yang dipasarkan" pada `/marketing/seo`. Portofolio CEO terdaftar dengan audit nyata: 2 halaman (EN/ID), 0 kritis, 0 peringatan, 2 info (situs satu halaman tanpa tautan internal).
+
 **Batasan yang diketahui:**
 - Pemeriksaan keyword sangat ketat: model 7B sering mengubah frasa kata kunci sehingga kutipan bukti tidak cocok; pada uji langsung semua volume menjadi `null`. Ini lebih aman daripada angka karangan, tetapi berarti data volume hanya muncul bila model menyalin frasa persis dari materi.
 - Audit hanya memeriksa HTML yang ditempel; belum ada crawler dan integrasi Search Console/Analytics (metrik dimasukkan manual). Akses alat SEO berbayar tidak diasumsikan.
@@ -2064,6 +2066,7 @@ Keputusan berikut menjadi baseline sampai ada perubahan yang disetujui CEO:
 23. (v2.3) SEO Specialist adalah peran resmi on-demand (bukan model terpisah) pada tahap awal; SEO tidak menjamin peringkat atau pendapatan.
 24. (v2.3) Website company profile Roihan Software House adalah **proyek akhir** setelah platform inti dan Office Power Control lolos gate; terpisah dari website portofolio pribadi CEO.
 25. (v2.3) Website publik tidak boleh bergantung pada kantor 3D yang sedang berjalan; deployment publik hanya setelah approval CEO.
+26. (2026-10-22, keputusan CEO) Website portofolio pribadi CEO (`fatihroihan.site`) didaftarkan sebagai **situs yang dipasarkan** oleh Marketing/SEO. Ini menggantikan pemisahan total pada keputusan 24 untuk keperluan pemasaran dan SEO: situs tetap milik CEO, kode aslinya tidak diubah, dan semua klaim/konten tentangnya tunduk pada aturan yang sama (klaim terverifikasi, tanpa jaminan peringkat, publikasi lewat approval).
 
 ---
 

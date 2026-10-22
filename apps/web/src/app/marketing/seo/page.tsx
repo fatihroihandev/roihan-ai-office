@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loading, PageHero } from "@/components/ui/PageHero";
 import { ApiError, api, type Project } from "@/lib/api";
 import { productsApi, type Product } from "@/lib/productsApi";
-import { SEO_METRICS, seoApi, type Artifact, type Kpis } from "@/lib/seoApi";
+import { SEO_METRICS, seoApi, type Artifact, type Kpis, type SiteInfo } from "@/lib/seoApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
 
@@ -19,6 +19,9 @@ export default function SeoPage() {
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [items, setItems] = useState<Artifact[] | null>(null);
   const [open, setOpen] = useState<Artifact | null>(null);
+  const [siteList, setSiteList] = useState<SiteInfo[]>([]);
+  const [siteId, setSiteId] = useState("");
+  const [siteDetail, setSiteDetail] = useState<SiteInfo | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +43,7 @@ export default function SeoPage() {
   const load = useCallback(() => {
     seoApi.kpis().then(setKpis, (e: Error) => setError(e.message));
     seoApi.artifacts().then(setItems, (e: Error) => setError(e.message));
+    seoApi.sites().then(setSiteList, () => undefined);
   }, []);
 
   useEffect(() => {
@@ -85,6 +89,34 @@ export default function SeoPage() {
       {error && <p className="bad" role="alert">{error}</p>}
       {notice && <p className="ok" role="status">{notice}</p>}
 
+      {siteList.length > 0 && (
+        <section className="card">
+          <h3>{t("seo.sites.title")}</h3>
+          <p className="small muted">{t("seo.sites.hint")}</p>
+          <ul className="list">
+            {siteList.map((s) => (
+              <li key={s.id} className="card">
+                <div>
+                  <strong>{s.name}</strong> <a href={s.url} target="_blank" rel="noopener noreferrer">{s.url}</a>
+                  <p className="small muted">
+                    {s.last_audit?.counts
+                      ? t("seo.counts").replace("{c}", String(s.last_audit.counts.critical)).replace("{w}", String(s.last_audit.counts.warning)).replace("{i}", String(s.last_audit.counts.info))
+                      : t("seo.sites.noaudit")}
+                  </p>
+                  {siteDetail?.id === s.id && siteDetail.pages && (
+                    <p className="small muted">{siteDetail.pages.map((p) => p.path).join(" · ")}{siteDetail.has_robots ? " · robots.txt" : ""}{siteDetail.has_sitemap ? " · sitemap.xml" : ""}</p>
+                  )}
+                </div>
+                <div className="actions">
+                  <button type="button" disabled={busy} onClick={() => void run(() => seoApi.siteAudit(s.id), t("seo.queued"))}>{t("seo.sites.audit")}</button>
+                  <button type="button" onClick={() => void seoApi.site(s.id).then(setSiteDetail, (e: Error) => setError(e.message))}>{t("seo.sites.pages")}</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="card">
         <h3>{t("seo.kpi.title")}</h3>
         {!k ? <Loading /> : (
@@ -127,13 +159,17 @@ export default function SeoPage() {
         <form className="card" onSubmit={(e) => e.preventDefault()}>
           <h3>{t("seo.kw.title")}</h3>
           <p className="small muted">{t("seo.kw.hint")}</p>
-          <label>{t("seo.topic")}<input value={topic} onChange={(e) => setTopic(e.target.value)} required minLength={2} /></label>
+          <label>{t("seo.topic")}<input value={topic} onChange={(e) => setTopic(e.target.value)} minLength={2} /></label>
           <label>{t("seo.material")}<textarea rows={5} value={material} onChange={(e) => setMaterial(e.target.value)} /></label>
+          {siteList.length > 0 && (
+            <label>{t("seo.sites.pick")}<select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
+              <option value="">-</option>{siteList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+          )}
           <label>{t("seo.product")}<select value={productId} onChange={(e) => setProductId(e.target.value)}>
             <option value="">-</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
           <div className="actions">
-            <button type="button" disabled={busy || topic.length < 2 || !material.trim()} onClick={() => void run(() => seoApi.keywords({ topic, material, product_id: productId || undefined }), t("seo.queued"))}>{t("seo.kw.run")}</button>
-            <button type="button" disabled={busy || topic.length < 2} onClick={() => void run(() => seoApi.brief({ topic, material, product_id: productId || undefined }), t("seo.queued"))}>{t("seo.brief.run")}</button>
+            <button type="button" disabled={busy || (!siteId && (topic.length < 2 || !material.trim()))} onClick={() => void run(() => siteId ? seoApi.siteKeywords(siteId, { topic: topic || undefined, material }) : seoApi.keywords({ topic, material, product_id: productId || undefined }), t("seo.queued"))}>{t("seo.kw.run")}</button>
+            <button type="button" disabled={busy || (!siteId && topic.length < 2)} onClick={() => void run(() => siteId ? seoApi.siteBrief(siteId, { topic: topic || undefined, material }) : seoApi.brief({ topic, material, product_id: productId || undefined }), t("seo.queued"))}>{t("seo.brief.run")}</button>
           </div>
         </form>
       </div>
@@ -161,12 +197,12 @@ export default function SeoPage() {
           {open.kind === "audit" && (
             <>
               <p className="small">{t("seo.counts").replace("{c}", String(open.data.counts.critical)).replace("{w}", String(open.data.counts.warning)).replace("{i}", String(open.data.counts.info))}</p>
-              <ul>{open.data.findings.map((f) => <li key={f.id}><span className="badge" data-risk={f.severity === "critical" ? "high" : f.severity === "warning" ? "medium" : undefined}>{label(`seo.sev.${f.severity}`)}</span> {f.message}{f.recommendation ? <span className="small muted"> → {f.recommendation}</span> : null}</li>)}</ul>
+              <ul>{open.data.findings.map((f) => <li key={f.id}><span className="badge" data-risk={f.severity === "critical" ? "high" : f.severity === "warning" ? "medium" : undefined}>{label(`seo.sev.${f.severity}`)}</span> {(f as { page?: string }).page ? <code>{(f as { page?: string }).page}</code> : null} {f.message}{f.recommendation ? <span className="small muted"> → {f.recommendation}</span> : null}</li>)}</ul>
               <p className="small muted">{t("seo.notchecked")}: {open.data.not_checked.join("; ")}</p>
               {open.handed_off_to ? <p className="small ok">{t("seo.handed")}: <Link href={`/tasks/${open.handed_off_to}`}>{open.handed_off_to.slice(0, 8)}</Link></p> : (
                 <div className="row">
-                  <label>{t("seo.handoff.project")}<select value={handoffProject} onChange={(e) => setHandoffProject(e.target.value)}><option value="">-</option>{projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-                  <button type="button" disabled={busy || !handoffProject} onClick={() => void run(() => seoApi.handoff(open.id, handoffProject), t("seo.handoff.done"))}>{t("seo.handoff.run")}</button>
+                  <label>{open.data.site_id ? t("seo.handoff.siteproject") : t("seo.handoff.project")}<select value={handoffProject} onChange={(e) => setHandoffProject(e.target.value)}><option value="">-</option>{projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+                  <button type="button" disabled={busy || (!handoffProject && !open.data?.site_id)} onClick={() => void run(() => seoApi.handoff(open.id, handoffProject), t("seo.handoff.done"))}>{t("seo.handoff.run")}</button>
                 </div>
               )}
             </>
