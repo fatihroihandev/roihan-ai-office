@@ -1927,7 +1927,7 @@ Yang dibangun (`app/marketing/seo.py`, `seo_agents.py`, `app/api/seo.py`, migras
 
 ## Phase 15 — Proyek Akhir: Website Company Profile Roihan Software House
 
-**Status: direncanakan; hanya boleh dimulai setelah gate Bagian 29.E terpenuhi (Phase 13 lulus).** Spesifikasi normatif: Bagian 29.C.
+**Status: DITUNDA/DILEWATI atas keputusan CEO (2026-10-22); tidak dikerjakan.** Spesifikasi tetap tersimpan untuk dikerjakan kelak. Semula: hanya boleh dimulai setelah gate Bagian 29.E terpenuhi (Phase 13 lulus). Spesifikasi normatif: Bagian 29.C.
 
 - Proyek nyata untuk menguji seluruh siklus platform: brief -> analisis -> pembangunan -> SEO -> QA -> review -> laporan -> persetujuan CEO -> deployment -> verifikasi pascarilis.
 - Repositori Git tersendiri; website publik tidak bergantung pada kantor 3D atau platform internal; website portofolio pribadi CEO tetap terpisah.
