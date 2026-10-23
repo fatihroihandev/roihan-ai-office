@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loading, PageHero } from "@/components/ui/PageHero";
 import { ApiError, api, type Project } from "@/lib/api";
 import { productsApi, type Product } from "@/lib/productsApi";
-import { SEO_METRICS, seoApi, type Artifact, type Kpis, type SiteInfo } from "@/lib/seoApi";
+import { SEO_METRICS, seoApi, type Artifact, type Kpis, type SeoCampaign, type SiteInfo } from "@/lib/seoApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
 
@@ -20,6 +20,7 @@ export default function SeoPage() {
   const [items, setItems] = useState<Artifact[] | null>(null);
   const [open, setOpen] = useState<Artifact | null>(null);
   const [siteList, setSiteList] = useState<SiteInfo[]>([]);
+  const [campaigns, setCampaigns] = useState<SeoCampaign[] | null>(null);
   const [siteId, setSiteId] = useState("");
   const [siteDetail, setSiteDetail] = useState<SiteInfo | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -39,11 +40,30 @@ export default function SeoPage() {
   const [value, setValue] = useState("");
   const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
   const [handoffProject, setHandoffProject] = useState("");
+  const [campaignName, setCampaignName] = useState("");
+  const [campaignUrl, setCampaignUrl] = useState("");
+  const [campaignSiteId, setCampaignSiteId] = useState("");
+  const [campaignKeywords, setCampaignKeywords] = useState("");
+  const [campaignObjective, setCampaignObjective] = useState<SeoCampaign["objective"]>("organic_traffic");
+  const [campaignBudget, setCampaignBudget] = useState("0");
+  const [campaignExternalBudget, setCampaignExternalBudget] = useState("0");
+  const [campaignTarget, setCampaignTarget] = useState("");
+  const [campaignBaseline, setCampaignBaseline] = useState("");
+  const [campaignBaselineSource, setCampaignBaselineSource] = useState("");
+  const [campaignCountry, setCampaignCountry] = useState("");
+  const [campaignLanguage, setCampaignLanguage] = useState("");
+  const [campaignLocation, setCampaignLocation] = useState("");
+  const [campaignStart, setCampaignStart] = useState("");
+  const [campaignReview, setCampaignReview] = useState("");
+  const [campaignKeywordDraft, setCampaignKeywordDraft] = useState("");
+  const [campaignMaterial, setCampaignMaterial] = useState("");
+  const [selectedCampaignKeywords, setSelectedCampaignKeywords] = useState<Record<string, string[]>>({});
 
   const load = useCallback(() => {
     seoApi.kpis().then(setKpis, (e: Error) => setError(e.message));
     seoApi.artifacts().then(setItems, (e: Error) => setError(e.message));
     seoApi.sites().then(setSiteList, () => undefined);
+    seoApi.campaigns().then(setCampaigns, (e: Error) => setError(e.message));
   }, []);
 
   useEffect(() => {
@@ -70,6 +90,15 @@ export default function SeoPage() {
   }
 
   const k = kpis;
+  async function refreshCampaign(id?: string) {
+    const rows = await seoApi.campaigns();
+    setCampaigns(rows);
+    if (id) {
+      const updated = await seoApi.campaign(id);
+      setCampaigns((prev) => (prev ?? rows).map((c) => c.id === id ? updated : c));
+    }
+  }
+  const campaignStatusLabel = (status: SeoCampaign["status"]) => label(`seo.campaign.status.${status}`);
   const kpiCell = (name: string, v: string | number | null) => (
     <div className="kpi" key={name}><strong className={v === null ? "kpi-null" : undefined}>{v === null ? unknown : v}</strong><span>{name}</span></div>
   );
@@ -88,6 +117,108 @@ export default function SeoPage() {
       />
       {error && <p className="bad" role="alert">{error}</p>}
       {notice && <p className="ok" role="status">{notice}</p>}
+
+      <section className="card">
+        <h3>{t("seo.campaign.title")}</h3>
+        <p className="small muted">{t("seo.campaign.hint")}</p>
+        <form className="grid2" onSubmit={(e) => { e.preventDefault(); void run(async () => {
+          const created = await seoApi.createCampaign({ name: campaignName, website_url: campaignUrl, site_id: campaignSiteId || undefined,
+            primary_keywords: campaignKeywords.split(/[\n,]/).map((x) => x.trim()).filter(Boolean), objective: campaignObjective,
+            target_country: campaignCountry || undefined, target_language: campaignLanguage || undefined, target_location: campaignLocation || undefined,
+            target_value: campaignTarget === "" ? undefined : Number(campaignTarget), baseline: campaignBaseline === "" ? {} : { [campaignObjective]: Number(campaignBaseline) },
+            baseline_source: campaignBaseline === "" ? "not_provided" : campaignBaselineSource.trim() || "user_entered_source_unspecified",
+            starts_on: campaignStart ? new Date(`${campaignStart}T00:00:00Z`).toISOString() : undefined,
+            review_on: campaignReview ? new Date(`${campaignReview}T00:00:00Z`).toISOString() : undefined,
+            api_budget_idr: Number(campaignBudget) || 0, external_budget_idr: Number(campaignExternalBudget) || 0, autonomy: "read_only" });
+          setCampaignName(""); setCampaignUrl(""); setCampaignKeywords(""); setCampaignBudget("0"); setCampaignTarget(""); setCampaignBaseline(""); setCampaignBaselineSource(""); setCampaignExternalBudget("0"); await refreshCampaign(created.id);
+        }, t("seo.campaign.created")); }}>
+          <label>{t("seo.campaign.name")}<input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} required maxLength={160} /></label>
+          <label>{t("seo.campaign.website")}<input type="url" value={campaignUrl} onChange={(e) => setCampaignUrl(e.target.value)} placeholder="https://example.com" required /></label>
+          <label>{t("seo.campaign.site")}
+            <select value={campaignSiteId} onChange={(e) => { const next = e.target.value; setCampaignSiteId(next); const site = siteList.find((s) => s.id === next); if (site) setCampaignUrl(site.url); }}>
+              <option value="">{t("seo.campaign.externalSite")}</option>{siteList.map((s) => <option key={s.id} value={s.id}>{s.name} · {s.url}</option>)}
+            </select>
+          </label>
+          <label>{t("seo.campaign.objective")}<select value={campaignObjective} onChange={(e) => setCampaignObjective(e.target.value as SeoCampaign["objective"])}>
+            {(["keyword_rank", "organic_traffic", "clicks", "leads", "conversions"] as const).map((x) => <option key={x} value={x}>{t(`seo.campaign.objective.${x}` as MessageKey)}</option>)}
+          </select></label>
+          <label>{t("seo.campaign.targetCountry")}<input value={campaignCountry} onChange={(e) => setCampaignCountry(e.target.value)} maxLength={80} /></label>
+          <label>{t("seo.campaign.targetLanguage")}<input value={campaignLanguage} onChange={(e) => setCampaignLanguage(e.target.value)} maxLength={40} /></label>
+          <label>{t("seo.campaign.targetLocation")}<input value={campaignLocation} onChange={(e) => setCampaignLocation(e.target.value)} maxLength={160} /></label>
+          <label>{t("seo.campaign.targetValue")}<input type="number" min={0} step="any" value={campaignTarget} onChange={(e) => setCampaignTarget(e.target.value)} /></label>
+          <label>{t("seo.campaign.baseline")}<input type="number" min={0} step="any" value={campaignBaseline} onChange={(e) => setCampaignBaseline(e.target.value)} /></label>
+          <label>{t("seo.campaign.baselineSource")}<input value={campaignBaselineSource} onChange={(e) => setCampaignBaselineSource(e.target.value)} maxLength={500} placeholder={t("seo.campaign.baselineSourceHint")} /></label>
+          <label>{t("seo.campaign.startDate")}<input type="date" value={campaignStart} onChange={(e) => setCampaignStart(e.target.value)} /></label>
+          <label>{t("seo.campaign.reviewDate")}<input type="date" value={campaignReview} onChange={(e) => setCampaignReview(e.target.value)} /></label>
+          <label>{t("seo.campaign.keywords")}<textarea rows={2} value={campaignKeywords} onChange={(e) => setCampaignKeywords(e.target.value)} placeholder={t("seo.campaign.keywordsPlaceholder")} /></label>
+          <label>{t("seo.campaign.apiBudget")}<input type="number" min={0} step={1000} value={campaignBudget} onChange={(e) => setCampaignBudget(e.target.value)} /></label>
+          <label>{t("seo.campaign.externalBudget")}<input type="number" min={0} step={1000} value={campaignExternalBudget} onChange={(e) => setCampaignExternalBudget(e.target.value)} /></label>
+          <p className="small muted">{t("seo.campaign.readOnlyDefault")}</p>
+          <button type="submit" disabled={busy || !campaignName.trim() || !campaignUrl.trim()}>{t("seo.campaign.create")}</button>
+        </form>
+        {!campaigns ? <Loading /> : campaigns.length === 0 ? <p className="small muted">{t("seo.campaign.empty")}</p> : (
+          <ul className="list">
+            {campaigns.map((c) => (
+              <li key={c.id} className="card">
+                <div>
+                  <strong>{c.name}</strong> <span className="badge">{campaignStatusLabel(c.status)}</span>
+                  <p><a href={c.website_url} target="_blank" rel="noopener noreferrer">{c.website_url}</a> · {t(`seo.campaign.objective.${c.objective}` as MessageKey)}</p>
+                  <p className="small muted">{t("seo.campaign.baseline")}: {Object.entries(c.baseline).map(([key, val]) => `${key}=${val ?? unknown}`).join(", ") || unknown} · {t("seo.campaign.baselineSource")}: {c.baseline_source}</p>
+                  <p className="small muted">{t("seo.campaign.allowedDomain")}: {c.allowed_domains.join(", ")} · {t("seo.campaign.integrationsNotConnected")}</p>
+                  <div className="row">
+                    {c.status === "draft" && <button type="button" disabled={busy} onClick={() => void run(async () => { await seoApi.updateCampaignStatus(c.id, "planning"); await refreshCampaign(c.id); }, t("seo.campaign.updated"))}>{t("seo.campaign.plan")}</button>}
+                    {c.status === "auditing" && <button type="button" disabled={busy} onClick={() => void run(async () => { await seoApi.updateCampaignStatus(c.id, "planning"); await refreshCampaign(c.id); }, t("seo.campaign.updated"))}>{t("seo.campaign.auditReviewed")}</button>}
+                    {c.status === "planning" && <button type="button" disabled={busy} onClick={() => void run(async () => { await seoApi.updateCampaignStatus(c.id, "active"); await refreshCampaign(c.id); }, t("seo.campaign.updated"))}>{t("seo.campaign.start")}</button>}
+                    {c.status === "active" && <button type="button" disabled={busy} onClick={() => void run(async () => { await seoApi.updateCampaignStatus(c.id, "paused"); await refreshCampaign(c.id); }, t("seo.campaign.updated"))}>{t("seo.campaign.pause")}</button>}
+                    {c.status === "paused" && <button type="button" disabled={busy} onClick={() => void run(async () => { await seoApi.updateCampaignStatus(c.id, "active"); await refreshCampaign(c.id); }, t("seo.campaign.updated"))}>{t("seo.campaign.resume")}</button>}
+                    {!(["completed", "archived"].includes(c.status)) && <button type="button" className="danger" disabled={busy} onClick={() => void run(async () => { await seoApi.updateCampaignStatus(c.id, "archived"); await refreshCampaign(c.id); }, t("seo.campaign.updated"))}>{t("seo.campaign.archive")}</button>}
+                    <button type="button" disabled={busy} onClick={() => void run(async () => { const report = await seoApi.campaignReport(c.id); const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" }); const href = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = href; a.download = `seo-campaign-${c.id}.json`; a.click(); URL.revokeObjectURL(href); }, t("seo.campaign.reportDownloaded"))}>{t("seo.campaign.exportReport")}</button>
+                    {["draft", "planning", "paused"].includes(c.status) && <button type="button" disabled={busy} onClick={() => void run(async () => { await seoApi.campaignAudit(c.id); await refreshCampaign(c.id); }, t("seo.queued"))}>{t("seo.campaign.runAudit")}</button>}
+                  </div>
+                </div>
+                <section>
+                  <form className="row" onSubmit={(e) => { e.preventDefault(); void run(async () => { await seoApi.addCampaignKeyword(c.id, { keyword: campaignKeywordDraft, intent: "mixed" }); setCampaignKeywordDraft(""); await refreshCampaign(c.id); }, t("seo.campaign.keywordAdded")); }}>
+                    <label>{t("seo.campaign.addKeyword")}<input value={campaignKeywordDraft} onChange={(e) => setCampaignKeywordDraft(e.target.value)} maxLength={240} /></label>
+                    <button type="submit" disabled={busy || campaignKeywordDraft.trim().length < 2}>{t("seo.campaign.add")}</button>
+                  </form>
+                  <label>{t("seo.campaign.sourceMaterial")}<textarea rows={2} value={campaignMaterial} onChange={(e) => setCampaignMaterial(e.target.value)} /></label>
+                  <div className="actions">
+                    <button type="button" disabled={busy || (!c.site_id && !campaignMaterial.trim())} onClick={() => void run(async () => { await seoApi.suggestCampaignKeywords(c.id, { material: campaignMaterial }); await refreshCampaign(c.id); }, t("seo.campaign.suggestionQueued"))}>{t("seo.campaign.suggest")}</button>
+                    <button type="button" disabled={busy || (!c.site_id && !campaignMaterial.trim())} onClick={() => void run(async () => { await seoApi.suggestCampaignKeywords(c.id, { material: campaignMaterial }); await refreshCampaign(c.id); }, t("seo.campaign.suggestionQueued"))}>{t("seo.campaign.refreshSuggestions")}</button>
+                    <button type="button" disabled={busy || !(selectedCampaignKeywords[c.id]?.length)} onClick={() => void run(async () => { await seoApi.decideCampaignKeywords(c.id, selectedCampaignKeywords[c.id], "approved"); setSelectedCampaignKeywords((prev) => ({ ...prev, [c.id]: [] })); await refreshCampaign(c.id); }, t("seo.campaign.keywordApproved"))}>{t("seo.campaign.approveSelected")}</button>
+                  </div>
+                  <ul className="small">
+                    {(c.keywords ?? []).map((kw) => <li key={kw.id}>
+                      {kw.approval_status === "pending" && <input aria-label={t("seo.campaign.selectKeyword")} type="checkbox" checked={selectedCampaignKeywords[c.id]?.includes(kw.id) ?? false} onChange={(e) => setSelectedCampaignKeywords((prev) => ({ ...prev, [c.id]: e.target.checked ? [...(prev[c.id] ?? []), kw.id] : (prev[c.id] ?? []).filter((id) => id !== kw.id) }))} />}{" "}
+                      <strong>{kw.keyword}</strong> · {kw.intent} · {t(`seo.campaign.keyword.${kw.approval_status}` as MessageKey)} · {t("seo.campaign.keywordSource")} {kw.source}
+                      <span className="muted"> · volume: {kw.volume ?? unknown}, competition: {kw.competition ?? unknown} · {kw.rationale || t("seo.campaign.noRationale")}</span>
+                      {kw.approval_status !== "approved" && <button type="button" disabled={busy} onClick={() => void run(async () => { await seoApi.decideCampaignKeyword(c.id, kw.id, "approved"); await refreshCampaign(c.id); }, t("seo.campaign.keywordApproved"))}>{t("seo.campaign.approveKeyword")}</button>}
+                      {kw.approval_status !== "rejected" && <button type="button" disabled={busy} onClick={() => void run(async () => { await seoApi.decideCampaignKeyword(c.id, kw.id, "rejected"); await refreshCampaign(c.id); }, t("seo.campaign.keywordRejected"))}>{t("seo.campaign.rejectKeyword")}</button>}
+                      {kw.approval_status === "approved" && <button type="button" disabled={busy} onClick={() => void run(() => seoApi.campaignContentPlan(c.id, { keyword_id: kw.id, material: campaignMaterial }), t("seo.campaign.contentPlanQueued"))}>{t("seo.campaign.generateContentPlan")}</button>}
+                      <button type="button" className="danger" disabled={busy} onClick={() => void run(async () => { await seoApi.deleteCampaignKeyword(c.id, kw.id); await refreshCampaign(c.id); }, t("seo.campaign.keywordDeleted"))}>{t("seo.campaign.deleteKeyword")}</button>
+                    </li>)}
+                  </ul>
+                  <h4>{t("seo.campaign.backlog")}</h4>
+                  {(c.recommendations ?? []).length === 0 ? <p className="small muted">{t("seo.campaign.noRecommendations")}</p> : <ol className="small">
+                    {c.recommendations?.map((r) => <li key={r.id}>
+                      <span className="badge" data-risk={r.severity === "critical" ? "high" : r.severity === "warning" ? "medium" : undefined}>{label(`seo.sev.${r.severity}`)}</span> <strong>{r.title}</strong>
+                      <p>{r.recommendation}</p>
+                      <p className="muted">{t("seo.campaign.evidence")}: {String(r.evidence.page ?? "-")} · {String(r.evidence.detail ?? "-")} · {t("seo.campaign.impact")}: {r.impact_basis} · {t("seo.campaign.effort")}: {r.effort} · {t("seo.campaign.risk")}: {r.risk}</p>
+                      <p className="muted">{t("seo.campaign.verify")}: {r.verification_method}</p>
+                      {r.status === "proposed" && <div className="actions">
+                        <button type="button" disabled={busy} onClick={() => void run(async () => { await seoApi.decideCampaignRecommendation(c.id, r.id, "approved"); await refreshCampaign(c.id); }, t("seo.campaign.recommendationApproved"))}>{t("seo.campaign.approveRecommendation")}</button>
+                        <button type="button" disabled={busy} onClick={() => void run(async () => { await seoApi.decideCampaignRecommendation(c.id, r.id, "rejected"); await refreshCampaign(c.id); }, t("seo.campaign.recommendationRejected"))}>{t("seo.campaign.rejectRecommendation")}</button>
+                      </div>}
+                      <span className="badge">{t(`seo.campaign.recommendation.${r.status}` as MessageKey)}</span>
+                    </li>)}
+                  </ol>}
+                  {c.history && <details><summary>{t("seo.campaign.history")}</summary><ul className="small">{c.history.slice(0, 8).map((h) => <li key={h.id}>{new Date(h.created_at).toLocaleString()} · {h.kind}</li>)}</ul></details>}
+                </section>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {siteList.length > 0 && (
         <section className="card">
@@ -197,7 +328,7 @@ export default function SeoPage() {
           {open.kind === "audit" && (
             <>
               <p className="small">{t("seo.counts").replace("{c}", String(open.data.counts.critical)).replace("{w}", String(open.data.counts.warning)).replace("{i}", String(open.data.counts.info))}</p>
-              <ul>{open.data.findings.map((f) => <li key={f.id}><span className="badge" data-risk={f.severity === "critical" ? "high" : f.severity === "warning" ? "medium" : undefined}>{label(`seo.sev.${f.severity}`)}</span> {(f as { page?: string }).page ? <code>{(f as { page?: string }).page}</code> : null} {f.message}{f.recommendation ? <span className="small muted"> → {f.recommendation}</span> : null}</li>)}</ul>
+              <ul>{open.data.findings.map((f, index) => <li key={`${f.id}:${f.page ?? ""}:${index}`}><span className="badge" data-risk={f.severity === "critical" ? "high" : f.severity === "warning" ? "medium" : undefined}>{label(`seo.sev.${f.severity}`)}</span> {f.page ? <code>{f.page}</code> : null} {f.message}{f.recommendation ? <span className="small muted"> → {f.recommendation}</span> : null}</li>)}</ul>
               <p className="small muted">{t("seo.notchecked")}: {open.data.not_checked.join("; ")}</p>
               {open.handed_off_to ? <p className="small ok">{t("seo.handed")}: <Link href={`/tasks/${open.handed_off_to}`}>{open.handed_off_to.slice(0, 8)}</Link></p> : (
                 <div className="row">

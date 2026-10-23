@@ -8,7 +8,7 @@ import re
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 
-from app.db.models import Company, ContentAsset, Lead, MarketResearch, OutreachRecord, Product, ProductVersion, Project
+from app.db.models import Company, ContentAsset, Lead, MarketResearch, OutreachRecord, Product, ProductVersion, Project, Task
 from app.marketing import external, service
 from app.marketing.external import OPT_OUT_FOOTER
 from app.marketing.access import AccessDenied
@@ -16,6 +16,7 @@ from app.marketing.policy import Policy, validate_source_type, validate_url
 from app.marketing.privacy import PolicyError, assert_clean, normalize_domain
 from app.products import service as products
 from app.products.claims import check_claims
+from app.tasks import service as task_service
 from app.tasks.executors import ExecutionContext, ExecutorError, ExecutorOutcome, extract_json
 
 MARKETING_PROJECT_NAME = "Marketing"
@@ -276,7 +277,7 @@ class LeadIntakeExecutor:
         if parsed is None:
             raise ExecutorError("invalid_intake_output", f"Keluaran ekstraksi tidak valid: {error}")
 
-        created, skipped, source_id, dropped_fields = [], [], None, {}
+        created, draft_task_ids, skipped, source_id, dropped_fields = [], [], [], None, {}
         with ctx.session_factory() as s:
             for c in parsed.candidates:
                 label = c.company_name[:80]
@@ -308,13 +309,24 @@ class LeadIntakeExecutor:
                     created.append(lead.id)
                     if dropped:
                         dropped_fields[lead.id] = dropped
+                    if p.get("product_id"):
+                        draft_task = task_service.create_task(
+                            s, project_id=ctx.task.project_id, parent_task_id=ctx.task.id,
+                            title=f"Siapkan promosi untuk {c.company_name[:80]}",
+                            role="sales_client_relations", action_type="draft_outreach", max_retries=1,
+                            created_by="lead_generation",
+                            params={"lead_id": lead.id, "product_id": p["product_id"], "channel": "email", "auto_prospecting": True},
+                        )
+                        task_service.queue_task(s, draft_task, actor="ceo")
+                        draft_task_ids.append(draft_task.id)
                 except (PolicyError, service.MarketingError, AccessDenied) as e:
                     skipped.append({"company": label, "code": getattr(e, "code", "denied"), "reason": str(e)[:200]})
             s.commit()
         text = f"{len(created)} prospek dibuat, {len(skipped)} dilewati"
         return ExecutorOutcome(output=text, verified=True,
                                verification={"method": "source_text_grounding", "passed": True, "created": len(created), "skipped": len(skipped)},
-                               result={"output": text, "created_lead_ids": created, "skipped": skipped, "ungrounded_fields_dropped": dropped_fields})
+                               result={"output": text, "created_lead_ids": created, "draft_task_ids": draft_task_ids,
+                                       "skipped": skipped, "ungrounded_fields_dropped": dropped_fields})
 
 
 # ------------------------------------------------------------------ Sales & Client Relations (draf outreach)
@@ -343,7 +355,16 @@ class SalesOutreachExecutor:
                 raise ExecutorError("lead_not_found", "Prospek tidak ditemukan", retryable=False)
             try:
                 service._lead_open(lead)
-                if lead.forwarded_at is None or lead.owner != actor:
+                parent = s.get(Task, ctx.task.parent_task_id) if ctx.task.parent_task_id else None
+                auto_prospecting = bool(
+                    p.get("auto_prospecting") is True
+                    and ctx.task.created_by == "lead_generation"
+                    and parent is not None
+                    and parent.role == "lead_generation"
+                    and parent.action_type == "lead_intake"
+                    and p.get("product_id") == lead.product_id
+                )
+                if not auto_prospecting and (lead.forwarded_at is None or lead.owner != actor):
                     raise service.MarketingError("not_forwarded", "Prospek belum diteruskan ke Sales")
                 if lead.contact_email and service.is_suppressed(s, email=lead.contact_email):
                     raise service.MarketingError("suppressed", "Kontak ada di daftar jangan-hubungi")

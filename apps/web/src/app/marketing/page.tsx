@@ -3,6 +3,7 @@
 import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { WebFinder } from "@/components/WebFinder";
 import { Loading, PageHero } from "@/components/ui/PageHero";
 import {
   marketingApi, PIPELINE, SOURCE_TYPES, type Analytics, type Lead, type Opportunity, type Outreach, type Policy, type Research, type Retention,
@@ -109,6 +110,7 @@ export default function MarketingPage() {
       <p className="actions"><Link className="button" href="/marketing/content">{t("mkt.nav.content")}</Link> <Link className="button" href="/marketing/seo">{t("mkt.nav.seo")}</Link></p>
       {error && <p className="bad" role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
+      <WebFinder onQueued={() => void reload()} />
 
       <div className="duo">
       {policy && (
@@ -180,7 +182,10 @@ export default function MarketingPage() {
           </label>
           <label>{t("mkt.sourceUrl")}<input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://" /></label>
         </div>
-        <button type="submit" disabled={busy || !company.trim()}>{t("mkt.create")}</button>
+        <div className="actions">
+          <button type="submit" disabled={busy || !company.trim()}>{t("mkt.create")}</button>
+          <button type="button" disabled={busy} onClick={() => { setCompany(""); setIndustry(""); setSize("unknown"); setCName(""); setCTitle(""); setCEmail(""); setCPhone(""); setSourceType("manual"); setSourceUrl(""); }}>{t("webfinder.clearInputs")}</button>
+        </div>
       </form>
 
       <section className="card">
@@ -203,7 +208,10 @@ export default function MarketingPage() {
                       {l.anonymized && <span className="badge">{t("mkt.lead.anonymized")}</span>}
                       <div className="small muted">{l.contact.name ?? "-"} · {l.contact.email ?? "-"}</div>
                     </div>
-                    <Link className="button" href={`/marketing/leads/${l.id}`}>{t("mkt.open")}</Link>
+                    <div className="actions">
+                      <Link className="button" href={`/marketing/leads/${l.id}`}>{t("mkt.open")}</Link>
+                      <button type="button" disabled={busy} onClick={() => window.confirm(t("mkt.lead.deleteConfirm")) && void run(() => marketingApi.deleteLead(l.id), t("mkt.lead.deleted"))}>{t("mkt.lead.delete")}</button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -243,12 +251,10 @@ export default function MarketingPage() {
                 {d.claim_check && !d.claim_check.ok && (
                   <ul className="small bad">{d.claim_check.findings.map((f, i) => <li key={i}>{f.detail}{f.match ? ` — “${f.match}”` : ""}</li>)}</ul>
                 )}
-                <Link className="small" href={`/marketing/leads/${d.lead_id}`}>{t("mkt.open")}</Link>
+                <Link className="button" href={`/marketing/leads/${d.lead_id}`}>{t("mkt.openToSend")}</Link>
               </div>
               {d.status === "ready_for_review" && (
                 <div className="actions">
-                  <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.requestSend(d.id), t("ext.requested"))}>{t("ext.requestSend")}</button>
-                  <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.markSent(d.id))}>{t("mkt.outreach.markSent")}</button>
                   <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.cancelOutreach(d.id))}>{t("mkt.outreach.cancel")}</button>
                 </div>
               )}
@@ -263,7 +269,7 @@ export default function MarketingPage() {
           e.preventDefault();
           void run(async () => {
             await marketingApi.runIntake({ source_type: intakeSource, url: intakeUrl }, rawText);
-            setRawText("");
+            setRawText(""); setIntakeUrl("");
           }, t("mkt.taskQueued"));
         }}
       >
@@ -279,7 +285,10 @@ export default function MarketingPage() {
           <label>{t("mkt.sourceUrl")}<input value={intakeUrl} onChange={(e) => setIntakeUrl(e.target.value)} placeholder="https://" /></label>
         </div>
         <label>{t("mkt.rawText")}<textarea rows={5} maxLength={8000} value={rawText} onChange={(e) => setRawText(e.target.value)} required /></label>
-        <button type="submit" disabled={busy || !rawText.trim()}>{t("mkt.runIntake")}</button>
+        <div className="actions">
+          <button type="submit" disabled={busy || !rawText.trim()}>{t("mkt.runIntake")}</button>
+          <button type="button" disabled={busy} onClick={() => { setRawText(""); setIntakeUrl(""); setIntakeSource("event"); }}>{t("webfinder.clearInputs")}</button>
+        </div>
       </form>
 
       <form
@@ -288,7 +297,7 @@ export default function MarketingPage() {
           e.preventDefault();
           void run(async () => {
             await marketingApi.runResearch(topic, material);
-            setMaterial("");
+            setMaterial(""); setTopic("");
           }, t("mkt.taskQueued"));
         }}
       >
@@ -296,7 +305,10 @@ export default function MarketingPage() {
         <p className="muted small">{t("mkt.research.hint")}</p>
         <label>{t("mkt.topic")}<input value={topic} maxLength={200} onChange={(e) => setTopic(e.target.value)} required minLength={3} /></label>
         <label>{t("mkt.material")}<textarea rows={5} maxLength={8000} value={material} onChange={(e) => setMaterial(e.target.value)} required /></label>
-        <button type="submit" disabled={busy || topic.trim().length < 3 || !material.trim()}>{t("mkt.runResearch")}</button>
+        <div className="actions">
+          <button type="submit" disabled={busy || topic.trim().length < 3 || !material.trim()}>{t("mkt.runResearch")}</button>
+          <button type="button" disabled={busy} onClick={() => { setTopic(""); setMaterial(""); }}>{t("webfinder.clearInputs")}</button>
+        </div>
       </form>
 
       {research.length > 0 && (

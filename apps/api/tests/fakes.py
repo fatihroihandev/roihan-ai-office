@@ -8,7 +8,7 @@ from app.providers.base import (
 
 class FakeProvider(ModelProvider):
     def __init__(self, name="ollama", is_paid=False, error: ProviderError | None = None, delay: float = 0, reply=None,
-                 truncated: bool = False):
+                 truncated: bool | list[bool] = False):
         self.name, self.is_paid, self.is_local = name, is_paid, not is_paid
         self.error, self.delay, self.reply, self.truncated = error, delay, reply, truncated
         self.errors: list = []  # antrean error: dipakai satu per panggilan sebelum kembali normal
@@ -44,7 +44,8 @@ class FakeProvider(ModelProvider):
                 text = self.reply
             else:
                 text = f"jawaban:{request.prompt}"
-            return GenerateResult(text, model, Usage(5, 7, 12), truncated=self.truncated)
+            truncated = self.truncated.pop(0) if isinstance(self.truncated, list) else self.truncated
+            return GenerateResult(text, model, Usage(5, 7, 12), truncated=truncated)
         finally:
             self.active -= 1
 

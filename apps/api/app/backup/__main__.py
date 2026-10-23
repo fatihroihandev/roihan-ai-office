@@ -14,9 +14,13 @@ from app.api.health import APP_VERSION
 def _paths():
     s = get_settings()
     url = make_url(s.database_url)
-    if url.get_backend_name() != "sqlite" or not url.database:
-        raise svc.BackupError("Cadangan hanya mendukung database SQLite.")
-    return s, Path(url.database), s.data_dir / "backups"
+    if url.get_backend_name() == "sqlite" and url.database:
+        database = Path(url.database)
+    elif url.get_backend_name() == "postgresql":
+        database = s.database_url
+    else:
+        raise svc.BackupError("Jenis database ini belum didukung untuk cadangan.")
+    return s, database, s.data_dir / "backups"
 
 
 def _resolve(backups: Path, name: str) -> Path:

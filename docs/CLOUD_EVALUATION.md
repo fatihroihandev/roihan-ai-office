@@ -39,7 +39,7 @@ Dijalankan PostgreSQL 17 (Docker, sementara) dengan migrasi dan seluruh suite te
 - **Suite tes pada PostgreSQL**: **795 lulus**, 1 dilewati, **20 tidak berlaku**: seluruhnya sengaja khusus SQLite — modul cadangan berbasis berkas
   (`test_backup.py`, 2 tes di `test_recovery.py`) dan `test_sqlite_pragmas`. Tidak ada kegagalan logika aplikasi (antrean, approval, marketing, dashboard, dsb).
   Fixture `tests/conftest.py` kini mendukung `TEST_POSTGRES_URL` (database per tes dikloning dari templat) agar uji ini dapat diulang.
-- **Yang perlu diganti saat migrasi**: (1) cadangan/pemulihan (`pg_dump`/`pg_restore` + PITR penyedia, menggantikan API backup SQLite), (2) tes pragma,
+- **Yang perlu diganti saat evaluasi awal**: (1) cadangan/pemulihan PostgreSQL, (2) tes pragma,
   (3) `sqlite_autoincrement` pada `task_events` (diabaikan PostgreSQL; `seq` tetap monoton lewat identity), (4) pengelolaan kata sandi/URL koneksi di `.env`,
   (5) ukuran pool koneksi (bawaan 15; lihat catatan benchmark), (6) bila worker dijadikan banyak proses: klaim task dengan `SELECT ... FOR UPDATE SKIP LOCKED`
   (sekarang worker satu proses dalam satu pemroses).
@@ -112,6 +112,10 @@ Setiap konektor wajib: uji dengan layanan palsu, penanganan galat dan retry terb
 5. **Rencana pemulihan (rollback):** `DATABASE_URL` dikembalikan ke SQLite dan cadangan pra-migrasi dipulihkan (`app.backup restore`); simpan SQLite lama minimal 30 hari. Data yang ditulis di PostgreSQL
    setelah migrasi tidak ikut kembali — karena itu rollback hanya dalam 24 jam pertama dan jendela tulis dibatasi.
 6. **Kriteria sukses:** seluruh tes hijau pada PostgreSQL, p95 kueri dashboard < 1 detik, tidak ada galat kunci, restore uji berhasil dari cadangan PostgreSQL.
+
+### Pembaruan 2026-10-22
+
+Backup aplikasi kini mendukung PostgreSQL: snapshot konsisten JSONL gzip, verifikasi hash dan jumlah baris, serta pemulihan CLI dengan perlindungan `pre-restore`. Arsip folder proyek tetap opsional. Backup dan verifikasi nyata berhasil pada PostgreSQL lokal; restore belum diuji pada database terisolasi.
 
 Estimasi usaha (kasar): persiapan + penggantian cadangan + latihan = beberapa hari kerja pengembang; tanpa login pengguna, migrasi basis data saja tidak cukup untuk cloud multi-pengguna.
 

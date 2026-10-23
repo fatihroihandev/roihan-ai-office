@@ -3,7 +3,7 @@ import asyncio
 
 import pytest
 
-from app.db.models import CampaignMetric, MarketingArtifact, SeoMetric, Task
+from app.db.models import CampaignMetric, MarketingArtifact, ModelCapability, SeoCampaign, SeoKeyword, SeoMetric, SeoRecommendation, Task
 from app.marketing import access, seo
 from app.marketing.seo_agents import MarketingAnalyticsExecutor, SeoSpecialistExecutor
 from app.tasks.catalog import ACTION_RISK, ROLES
@@ -176,6 +176,36 @@ def test_audit_requires_html(migrated_db, tmp_path):
     assert get(env, tid).status == "failed" and get(env, tid).last_error_kind == "invalid_html"
 
 
+def test_campaign_external_audit_crawls_only_allowlisted_domain(migrated_db, tmp_path):
+    env = build_env(migrated_db, tmp_path)
+    pid = make_project(env)
+    with env.sf() as s:
+        campaign = SeoCampaign(name="Situs uji", website_url="https://contoh.id/", allowed_domains=["contoh.id"],
+                               project_id=None, status="auditing")
+        s.add(campaign)
+        s.commit()
+        campaign_id = campaign.id
+
+    class FakeWeb:
+        def __init__(self): self.requested = []
+        async def fetch(self, url, **kwargs):
+            self.requested.append(url)
+            return {"url": url, "status": 200, "bytes": 100, "title": "Halaman uji", "description": "Deskripsi",
+                    "links": ["https://contoh.id/kontak", "https://evil.example/"],
+                    "seo": {"lang": "id", "robots": "", "canonical": url, "h1": 1, "h2": 0,
+                            "images": 0, "images_no_alt": 0, "viewport": True, "og_tags": [], "jsonld_validity": []},
+                    "text": "teks rahasia yang tidak disimpan"}
+
+    fake_web = FakeWeb()
+    env.worker._web_access = fake_web
+    tid = run_task(env, pid, "seo_specialist", "seo_audit", {"campaign_id": campaign_id})
+    assert get(env, tid).status == "completed"
+    assert fake_web.requested == ["https://contoh.id/", "https://contoh.id/kontak"]
+    [artifact] = [a for a in artifacts(env) if a.kind == "audit"]
+    assert len(artifact.data["pages"]) == 2
+    assert "teks rahasia yang tidak disimpan" not in str(artifact.data)
+
+
 KW_JSON = ('{"summary":"ringkas","items":[{"keyword":"jasa website","intent":"transactional","priority":"high","rationale":"relevan layanan",'
            '"volume":500,"competition":"sedang","evidence_quote":"jasa website 500 per bulan sedang"},'
            '{"keyword":"seo lokal","intent":"informational","priority":"low","rationale":"pasti naik peringkat 1","volume":900,"competition":"","evidence_quote":""}]}')
@@ -274,3 +304,103 @@ def test_handoff_creates_draft_engineering_task_once(client, auth, settings):
     assert t["role"] == "developer" and t["action_type"] == "code_change" and "noindex" in t["description"]
     assert client.post(f"/api/marketing/seo/artifacts/{aid}/handoff", json={"project_id": pid}, headers=auth).status_code == 409
     assert client.get("/api/marketing/seo/artifacts/tidak-ada", headers=auth).status_code == 404
+
+
+def test_seo_campaign_lifecycle_and_keyword_approval(client, auth, settings):
+    assert client.get("/api/marketing/seo/campaigns").status_code == 401
+    payload = {"name": "SEO Bandung", "website_url": "https://example.com/", "target_country": "ID", "target_language": "id",
+               "primary_keywords": ["jasa website bandung"], "objective": "organic_traffic", "api_budget_idr": 25000,
+               "external_budget_idr": 0, "autonomy": "read_only"}
+    assert client.post("/api/marketing/seo/campaigns", json={**payload, "website_url": "http://127.0.0.1/"}, headers=auth).status_code == 422
+    created = client.post("/api/marketing/seo/campaigns", json=payload, headers=auth)
+    assert created.status_code == 201
+    campaign = created.json()
+    assert campaign["status"] == "draft" and campaign["allowed_domains"] == ["example.com"]
+    assert campaign["external_integrations"] == {"search_console": "not_connected", "analytics": "not_connected"}
+    cid = campaign["id"]
+    from app.db.session import create_db_engine, create_session_factory
+    sf = create_session_factory(create_db_engine(settings.database_url))
+    with sf() as s:
+        artifact = MarketingArtifact(kind="audit", title="Audit test", summary="observed", data={"campaign_id": cid})
+        s.add(artifact)
+        s.flush()
+        recommendation = SeoRecommendation(campaign_id=cid, artifact_id=artifact.id, finding_id="title_missing", category="title_missing",
+            title="Title missing", severity="critical", evidence={"page": "/"}, recommendation="Add an accurate title",
+            impact_basis="unknown", confidence="observed", effort="unknown", risk="unknown", dependencies=[],
+            acceptance_criteria=["Repeat audit"], verification_method="Repeat audit", priority_order=1)
+        s.add(recommendation)
+        s.commit()
+        rid = recommendation.id
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/tasks/audit", headers=auth).status_code == 422
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/tasks/keywords", json={}, headers=auth).status_code == 422
+    queued = client.post(f"/api/marketing/seo/campaigns/{cid}/tasks/keywords", json={"material": "Kami menawarkan layanan pembuatan website untuk klinik."}, headers=auth)
+    assert queued.status_code == 201 and client.get(f"/api/tasks/{queued.json()['task_id']}", headers=auth).json()["action_type"] == "keyword_research"
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/tasks/keywords", json={"material": "Materi yang sama"}, headers=auth).status_code == 409
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/status", json={"status": "active"}, headers=auth).status_code == 409
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/status", json={"status": "planning"}, headers=auth).status_code == 200
+    added = client.post(f"/api/marketing/seo/campaigns/{cid}/keywords", json={"keyword": "  jasa   website bandung  ", "intent": "commercial"}, headers=auth)
+    assert added.status_code == 201 and added.json()["keyword"] == "jasa website bandung"
+    assert added.json()["volume"] is None and added.json()["competition"] is None and added.json()["approval_status"] == "pending"
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/keywords", json={"keyword": "jasa website bandung"}, headers=auth).status_code == 409
+    kid = added.json()["id"]
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/tasks/content-plan", json={"keyword_id": kid}, headers=auth).status_code == 409
+    approved = client.post(f"/api/marketing/seo/campaigns/{cid}/keywords/{kid}/decision", json={"status": "approved"}, headers=auth)
+    assert approved.status_code == 200 and approved.json()["approved_at"]
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/keywords/decisions", json={"keyword_ids": [kid], "status": "rejected"}, headers=auth).status_code == 200
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/keywords/{kid}/decision", json={"status": "approved"}, headers=auth).status_code == 200
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/tasks/content-plan", json={"keyword_id": kid}, headers=auth).status_code == 422
+    assert client.get(f"/api/marketing/seo/campaigns/{cid}", headers=auth).json()["keywords"][0]["approval_status"] == "approved"
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/recommendations/{rid}/decision", json={"status": "completed"}, headers=auth).status_code == 409
+    assert client.post(f"/api/marketing/seo/campaigns/{cid}/recommendations/{rid}/decision", json={"status": "approved"}, headers=auth).status_code == 200
+    exported = client.get(f"/api/marketing/seo/campaigns/{cid}/report", headers=auth)
+    assert exported.status_code == 200 and exported.headers["content-disposition"].endswith(f"seo-campaign-{cid}.json\"")
+    assert exported.json()["data_quality"]["gsc"] == "not_connected"
+    assert exported.json()["campaign"]["recommendations"][0]["impact_basis"] == "unknown"
+
+
+def test_campaign_keyword_suggestions_persist_with_unavailable_metrics(migrated_db, tmp_path):
+    env = build_env(migrated_db, tmp_path, provider=FakeProvider(reply=KW_JSON))
+    pid = make_project(env)
+    with env.sf() as s:
+        campaign = SeoCampaign(name="uji", website_url="https://example.test", allowed_domains=["example.test"], primary_keywords=[],
+                               objective="organic_traffic", baseline={}, api_budget_idr=0, external_budget_idr=0,
+                               autonomy="read_only", approval_policy={}, status="draft")
+        s.add(campaign)
+        s.commit()
+        cid = campaign.id
+    tid = run_task(env, pid, "seo_specialist", "keyword_research", {"campaign_id": cid, "topic": "jasa website", "material": "Data: jasa website 500 per bulan sedang."})
+    assert get(env, tid).status == "completed"
+    with env.sf() as s:
+        rows = list(s.query(SeoKeyword).filter_by(campaign_id=cid).all())
+        assert len(rows) == 2 and all(k.approval_status == "pending" and k.source == "ai" for k in rows)
+        assert rows[0].volume is None or rows[0].volume == 500
+        assert rows[1].volume is None and rows[1].competition is None
+
+
+def test_campaign_budget_blocks_paid_generation_when_estimate_exceeds_limit(migrated_db, tmp_path):
+    from types import SimpleNamespace
+    from app.tasks.executors import ExecutionContext, ExecutorBlocked
+    env = build_env(migrated_db, tmp_path)
+    with env.sf() as s:
+        campaign = SeoCampaign(name="budget", website_url="https://example.test", allowed_domains=["example.test"], primary_keywords=[],
+            objective="organic_traffic", baseline={}, api_budget_idr=1, external_budget_idr=0, autonomy="read_only", approval_policy={}, status="draft")
+        s.add(campaign)
+        s.add(ModelCapability(provider="paid", model_id="priced-model", available=True, is_paid=True,
+                              cost_estimate_idr_per_1k=1000, validation_status="unvalidated"))
+        s.commit()
+        cid = campaign.id
+
+    class Router:
+        async def choose(self, *_args):
+            return SimpleNamespace(provider="paid", model="priced-model", num_ctx=4096)
+
+    class Gateway:
+        async def generate(self, *_args, **_kwargs):
+            raise AssertionError("paid model should be blocked before generation")
+
+    ctx = ExecutionContext(task=SimpleNamespace(role="seo_specialist", params={"campaign_id": cid}), attempt_id="attempt",
+                           session_factory=env.sf, gateway=Gateway(), router=Router(), settings=None, storage=None)
+    async def generate():
+        with pytest.raises(ExecutorBlocked, match="estimasi biaya melewati"):
+            await ctx.generate("system", "prompt", max_tokens=10)
+    asyncio.run(generate())

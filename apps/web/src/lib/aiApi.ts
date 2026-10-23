@@ -8,6 +8,8 @@ export type Provider = {
   is_paid: boolean;
   enabled: boolean;
   implemented: boolean;
+  base_url?: string | null;
+  api_key_configured?: boolean | null;
   health: ProviderHealth | null;
 };
 
@@ -71,11 +73,17 @@ export type GenerateResult = {
 
 export const aiApi = {
   providers: () => apiFetch<Provider[]>("/api/providers"),
+  updateProvider: (name: string, data: { enabled: boolean; base_url?: string; api_key?: string; clear_api_key?: boolean }) =>
+    apiFetch<Provider>(`/api/providers/${encodeURIComponent(name)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
   models: () => apiFetch<ModelRow[]>("/api/models"),
-  syncModels: () => apiFetch<ModelRow[]>("/api/models/sync", { method: "POST" }),
+  syncModels: (provider?: string) => apiFetch<ModelRow[]>(`/api/models/sync${provider ? `?provider=${encodeURIComponent(provider)}` : ""}`, { method: "POST" }),
   budgets: () => apiFetch<Budget>("/api/budgets"),
   usage: (limit = 20) => apiFetch<UsageResponse>(`/api/usage?limit=${limit}`),
-  generate: (data: { prompt: string; max_tokens: number; request_id: string }) =>
+  generate: (data: { prompt: string; max_tokens: number; request_id: string; provider?: string; model?: string }) =>
     apiFetch<GenerateResult>("/api/ai/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

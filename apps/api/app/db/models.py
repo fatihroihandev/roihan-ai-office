@@ -702,6 +702,20 @@ class Site(IdMixin, Base):
     status: Mapped[str] = mapped_column(default="active")
 
 
+class WebRequest(IdMixin, Base):
+    """Catatan setiap permintaan web agent (pencarian atau ambil halaman): dasar batas harian dan audit."""
+
+    __tablename__ = "web_requests"
+    __table_args__ = (Index("ix_web_requests_created", "created_at"),)
+
+    kind: Mapped[str] = mapped_column()  # search | fetch
+    target: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(default="started")  # started | ok | error
+    bytes: Mapped[int] = mapped_column(default=0)
+    detail: Mapped[str | None] = mapped_column(default=None)
+    task_id: Mapped[str | None] = mapped_column(default=None)
+
+
 class SeoMetric(IdMixin, Base):
     """Metrik pencarian organik yang dicatat manusia (mis. dari Search Console). Tidak ada angka yang dikarang sistem."""
 
@@ -715,6 +729,96 @@ class SeoMetric(IdMixin, Base):
     recorded_by: Mapped[str] = mapped_column()
 
 
+class SeoCampaign(IdMixin, Base):
+    """SEO campaign configuration and lifecycle; separate from global task status."""
+
+    __tablename__ = "seo_campaigns"
+    __table_args__ = (Index("ix_seo_campaigns_status", "status", "created_at"),)
+
+    name: Mapped[str] = mapped_column(String(160))
+    website_url: Mapped[str] = mapped_column(String(1000))
+    allowed_domains: Mapped[list] = mapped_column(JSON, default=list)
+    site_id: Mapped[str | None] = mapped_column(ForeignKey("sites.id", ondelete="RESTRICT"), default=None)
+    project_id: Mapped[str | None] = mapped_column(ForeignKey("projects.id", ondelete="RESTRICT"), default=None)
+    target_country: Mapped[str | None] = mapped_column(String(80), default=None)
+    target_language: Mapped[str | None] = mapped_column(String(40), default=None)
+    target_location: Mapped[str | None] = mapped_column(String(160), default=None)
+    primary_keywords: Mapped[list] = mapped_column(JSON, default=list)
+    objective: Mapped[str] = mapped_column(Text, default="organic_traffic")
+    target_value: Mapped[float | None] = mapped_column(Float, default=None)
+    baseline: Mapped[dict] = mapped_column(JSON, default=dict)
+    baseline_source: Mapped[str] = mapped_column(Text, default="not_provided")
+    starts_on: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    review_on: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    api_budget_idr: Mapped[int] = mapped_column(Integer, default=0)
+    external_budget_idr: Mapped[int] = mapped_column(Integer, default=0)
+    autonomy: Mapped[str] = mapped_column(default="read_only")
+    approval_policy: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(default="draft")
+    created_by: Mapped[str] = mapped_column(default="ceo")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class SeoKeyword(IdMixin, Base):
+    """Campaign keywords; volume and competition stay null unless a source proves them."""
+
+    __tablename__ = "seo_keywords"
+    __table_args__ = (UniqueConstraint("campaign_id", "keyword", name="uq_seo_keyword_campaign_text"),
+                      Index("ix_seo_keywords_campaign", "campaign_id", "approval_status"))
+
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("seo_campaigns.id", ondelete="CASCADE"))
+    keyword: Mapped[str] = mapped_column(String(240))
+    intent: Mapped[str] = mapped_column(default="mixed")
+    source: Mapped[str] = mapped_column(default="manual")
+    rationale: Mapped[str] = mapped_column(Text, default="")
+    target_page: Mapped[str | None] = mapped_column(String(1000), default=None)
+    volume: Mapped[int | None] = mapped_column(Integer, default=None)
+    competition: Mapped[str | None] = mapped_column(String(80), default=None)
+    evidence_quote: Mapped[str] = mapped_column(Text, default="")
+    approval_status: Mapped[str] = mapped_column(default="pending")
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class SeoCampaignEvent(IdMixin, Base):
+    """Append-only history of campaign edits, decisions, and task handoffs."""
+
+    __tablename__ = "seo_campaign_events"
+    __table_args__ = (Index("ix_seo_campaign_events_campaign", "campaign_id", "created_at"),)
+
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("seo_campaigns.id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(String(80))
+    actor: Mapped[str] = mapped_column(default="ceo")
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class SeoRecommendation(IdMixin, Base):
+    """Evidence-backed, human-reviewable work items created from campaign audits."""
+
+    __tablename__ = "seo_recommendations"
+    __table_args__ = (UniqueConstraint("campaign_id", "artifact_id", "finding_id", name="uq_seo_recommendation_finding"),
+                      Index("ix_seo_recommendations_campaign", "campaign_id", "status", "priority_order"))
+
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("seo_campaigns.id", ondelete="CASCADE"))
+    artifact_id: Mapped[str] = mapped_column(ForeignKey("marketing_artifacts.id", ondelete="RESTRICT"))
+    finding_id: Mapped[str] = mapped_column(String(100))
+    category: Mapped[str] = mapped_column(String(80))
+    title: Mapped[str] = mapped_column(String(500))
+    severity: Mapped[str] = mapped_column(String(30))
+    evidence: Mapped[dict] = mapped_column(JSON, default=dict)
+    recommendation: Mapped[str] = mapped_column(Text, default="")
+    impact_basis: Mapped[str] = mapped_column(default="unknown")
+    confidence: Mapped[str] = mapped_column(default="observed")
+    effort: Mapped[str] = mapped_column(default="unknown")
+    risk: Mapped[str] = mapped_column(default="unknown")
+    dependencies: Mapped[list] = mapped_column(JSON, default=list)
+    acceptance_criteria: Mapped[list] = mapped_column(JSON, default=list)
+    verification_method: Mapped[str] = mapped_column(Text, default="")
+    priority_order: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(default="proposed")
+    decision_note: Mapped[str | None] = mapped_column(Text, default=None)
+
+
 class AppendOnlyError(RuntimeError):
     pass
 
@@ -722,5 +826,5 @@ class AppendOnlyError(RuntimeError):
 @event.listens_for(Session, "before_flush")
 def _enforce_append_only(session, _ctx, _instances):
     for obj in list(session.dirty) + list(session.deleted):
-        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult, CodeReview, ProductReleaseCheck, MarketResearch)) and (obj in session.deleted or session.is_modified(obj)):
+        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult, CodeReview, ProductReleaseCheck, MarketResearch, SeoCampaignEvent)) and (obj in session.deleted or session.is_modified(obj)):
             raise AppendOnlyError(f"{obj.__tablename__} bersifat append-only")

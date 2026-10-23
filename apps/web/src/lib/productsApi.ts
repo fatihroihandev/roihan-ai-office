@@ -84,6 +84,7 @@ export const productsApi = {
   get: (id: string) => apiFetch<Product>(`/api/products/${id}`),
   create: (data: { name: string; line: Line; description?: string; target_customers?: string; pricing_model?: string; project_id?: string }) =>
     apiFetch<Product>("/api/products", body("POST", data)),
+  delete: (id: string) => apiFetch<void>(`/api/products/${id}`, body("DELETE")),
   update: (id: string, data: Partial<Pick<Product, "description" | "target_customers" | "pricing_model">>) =>
     apiFetch<Product>(`/api/products/${id}`, body("PATCH", data)),
   approvePricing: (id: string) => apiFetch<Product>(`/api/products/${id}/approve-pricing`, body("POST", {})),

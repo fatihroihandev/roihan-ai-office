@@ -65,7 +65,7 @@ def migrated_db(tmp_path, _template_db, _pg_template):
 def settings(migrated_db, tmp_path):
     return Settings(
         _env_file=None, app_local_token=TOKEN, database_url=migrated_db, ollama_enabled=False,
-        data_dir=tmp_path / "data", max_upload_mb=1, worker_enabled=False, backup_enabled=False,
+        data_dir=tmp_path / "data", max_upload_mb=1, worker_enabled=False,
     )
 
 

@@ -161,6 +161,7 @@ export type TaskDetail = Task & {
     output?: string;
     artifact?: string;
     created_task_ids?: string[];
+    draft_task_ids?: string[];
     files?: { path: string; bytes: number; new: boolean }[];
     commit?: string | null;
   } | null;

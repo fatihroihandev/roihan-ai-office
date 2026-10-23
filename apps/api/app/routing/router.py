@@ -1,5 +1,6 @@
 """Model Router (Bagian 9.4): memilih model berdasarkan kemampuan, konteks, risiko, dan anggaran."""
 import asyncio
+import re
 from dataclasses import dataclass, field
 
 from sqlalchemy import select
@@ -120,12 +121,23 @@ class ModelRouter:
                 else "Registri model kosong")
 
         heavy = task.difficulty_category in {"heavy", "critical"}
+        light = task.difficulty_category == "light"
         default_model = self._settings.ollama_default_model
+
+        def parameter_size(model) -> float | None:
+            details = model.details or {}
+            raw = details.get("parameter_size") or model.model_id
+            match = re.search(r"(?<![\d.])(\d+(?:\.\d+)?)\s*[bB](?:\b|$)", str(raw))
+            return float(match.group(1)) if match else None
 
         def rank(item):
             m, _ = item
+            size = parameter_size(m)
+            # Task ringan menghemat memori/waktu dengan model kecil; task berat memakai model terbesar.
+            size_rank = (size if light else -size if heavy else 0) if size is not None else 0
             return (m.model_id != task.preferred_model,                      # preferensi eksplisit
-                    m.validation_status != "benchmarked",                    # utamakan yang sudah divalidasi
+                    size_rank,
+                    m.validation_status != "benchmarked",                    # hasil benchmark untuk tugas setara
                     -(m.context_limit or 0) if heavy else 0,                 # task berat: konteks terbesar
                     m.model_id != default_model, m.model_id)
         chosen, cap = sorted(eligible, key=rank)[0]

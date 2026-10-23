@@ -1,14 +1,18 @@
 """Executor SEO Specialist dan Marketing Analytics (Phase 14). Keduanya hanya MENGHASILKAN artefak untuk ditinjau:
 tidak mengubah kode produksi, tidak memublikasikan, dan tidak mengirim apa pun (publikasi tetap lewat Content & Promotion + approval).
 """
-from pydantic import BaseModel, Field, ValidationError
+import asyncio
 
-from app.db.models import MarketingArtifact, Site
+from pydantic import BaseModel, Field, ValidationError
+from urllib.parse import urljoin, urlsplit, urlunsplit
+
+from app.db.models import MarketingArtifact, SeoCampaignEvent, SeoKeyword, SeoRecommendation, Site
 from app.marketing import access, seo, sites
 from app.marketing.agents import _EMAIL_IN_TEXT, MAX_MATERIAL, _brief, _params
 from app.marketing.privacy import PolicyError, assert_clean
 from app.products.claims import check_claims
 from app.tasks.executors import ExecutionContext, ExecutorError, ExecutorOutcome, extract_json
+from app.web.guard import WebError
 
 KEYWORD_SCHEMA = {
     "type": "object",
@@ -82,7 +86,7 @@ class SeoSpecialistExecutor:
         action = ctx.task.action_type
         p = _params(ctx)
         if action == "seo_audit":
-            return self._audit(ctx, p)
+            return await self._audit(ctx, p)
         if action not in {"keyword_research", "content_brief"}:
             raise ExecutorError("unsupported_action", "SEO Specialist hanya mengerjakan seo_audit, keyword_research, content_brief", retryable=False)
         topic, material = (p.get("topic") or ctx.task.title).strip(), (p.get("material") or "").strip()
@@ -119,8 +123,23 @@ class SeoSpecialistExecutor:
                 raise ExecutorError("no_keywords", "Tidak ada kata kunci valid pada keluaran model")
             with_data = sum(1 for i in items if i["data_available"])
             flagged = sum(1 for i in items if i["flagged_claims"])
+            campaign_id = p.get("campaign_id")
             text = f"Riset kata kunci '{topic}': {len(items)} kata kunci, {with_data} dengan data volume/persaingan dari materi, {len(items) - with_data} tanpa data (tidak diisi)."
-            aid = _store(ctx, "keywords", f"Kata kunci: {topic}", out.summary, {"items": items, "flagged_items": flagged}, with_data, len(items) - with_data)
+            aid = _store(ctx, "keywords", f"Kata kunci: {topic}", out.summary, {"items": items, "flagged_items": flagged, "campaign_id": campaign_id}, with_data, len(items) - with_data)
+            if campaign_id:
+                with ctx.session_factory() as s:
+                    for item in items:
+                        keyword = " ".join(item["keyword"].split())
+                        exists = s.query(SeoKeyword.id).filter(SeoKeyword.campaign_id == campaign_id, SeoKeyword.keyword == keyword).first()
+                        if exists:
+                            continue
+                        s.add(SeoKeyword(campaign_id=campaign_id, keyword=keyword, intent=item["intent"], source="ai",
+                                         rationale=item.get("rationale", ""), volume=item.get("volume"),
+                                         competition=item.get("competition") or None, evidence_quote=item.get("evidence_quote", ""),
+                                         approval_status="pending"))
+                    s.add(SeoCampaignEvent(campaign_id=campaign_id, kind="keyword_suggestions_generated", actor="seo_specialist",
+                                           details={"artifact_id": aid, "suggestion_count": len(items)}))
+                    s.commit()
             return ExecutorOutcome(output=text, verified=True, verification={"method": "keyword_data_grounding", "passed": True, "with_data": with_data, "without_data": len(items) - with_data},
                                    result={"output": text, "artifact_id": aid})
         prompt = "\n\n".join(base + [f"Susun content brief untuk topik/kata kunci '{p.get('keyword') or topic}': opsi judul, niat pencarian, kerangka bagian, FAQ, saran tautan internal, "
@@ -132,7 +151,7 @@ class SeoSpecialistExecutor:
         if flagged or (claims is not None and not claims["ok"]):
             raise ExecutorError("claims_blocked", f"Brief memuat klaim terlarang: jaminan peringkat={flagged}; klaim produk={[f.get('message') for f in (claims or {}).get('findings', [])][:3]}", retryable=False)
         text = f"Content brief '{topic}': {len(out.outline)} bagian, {len(out.faq)} FAQ."
-        aid = _store(ctx, "brief", f"Brief: {topic}", out.search_intent, {**out.model_dump(), "claims_check": claims}, 1, 0)
+        aid = _store(ctx, "brief", f"Brief: {topic}", out.search_intent, {**out.model_dump(), "claims_check": claims, "campaign_id": p.get("campaign_id")}, 1, 0)
         return ExecutorOutcome(output=text, verified=True, verification={"method": "claim_lint", "passed": True}, result={"output": text, "artifact_id": aid})
 
     def _site(self, ctx: ExecutionContext, site_id: str):
@@ -143,17 +162,40 @@ class SeoSpecialistExecutor:
             s.expunge(site)
         return site, sites.collect_pages(sites.site_root(ctx.storage, site), site.url)
 
-    def _audit(self, ctx: ExecutionContext, p: dict) -> ExecutorOutcome:
+    async def _audit(self, ctx: ExecutionContext, p: dict) -> ExecutorOutcome:
         if p.get("site_id"):
             site, bundle = self._site(ctx, p["site_id"])
             report = sites.audit_site(site.url, bundle)
             report["site_id"] = site.id
+            if p.get("campaign_id"):
+                report["campaign_id"] = p["campaign_id"]
             c = report["counts"]
             text = (f"Audit SEO situs {site.name} ({len(report['pages'])} halaman): {c['critical']} kritis, {c['warning']} peringatan, "
                     f"{c['info']} info. Tidak diperiksa: {', '.join(report['not_checked'])}.")
             aid = _store(ctx, "audit", f"Audit situs: {site.name}", text, report, len(report["findings"]), 0)
+            recommendations = 0
+            if p.get("campaign_id"):
+                with ctx.session_factory() as s:
+                    order = {"critical": 0, "warning": 1, "info": 2}
+                    findings = sorted(report["findings"], key=lambda f: (order.get(f.get("severity"), 3), f.get("id", "")))
+                    for index, finding in enumerate(findings, start=1):
+                        s.add(SeoRecommendation(campaign_id=p["campaign_id"], artifact_id=aid, finding_id=finding["id"],
+                            category=finding["id"], title=finding["message"][:500], severity=finding["severity"],
+                            evidence={"page": finding.get("page"), "detail": finding.get("evidence"), "observed_by": "deterministic_site_audit"},
+                            recommendation=finding.get("recommendation", ""), impact_basis="unknown: no connected performance data",
+                            confidence="observed", effort="unknown", risk="unknown", dependencies=[],
+                            acceptance_criteria=["Address the documented finding without degrading content accuracy or usability",
+                                                 "Re-run this SEO audit and review the resulting evidence"],
+                            verification_method="Re-run the deterministic site audit and compare the finding evidence", priority_order=index))
+                        recommendations += 1
+                    s.add(SeoCampaignEvent(campaign_id=p["campaign_id"], kind="audit_completed", actor="seo_specialist",
+                                           details={"artifact_id": aid, "counts": c, "page_count": len(report["pages"]),
+                                                    "recommendations": recommendations}))
+                    s.commit()
             return ExecutorOutcome(output=text, verified=True, verification={"method": "deterministic_site_audit", "passed": True, **c},
                                    result={"output": text, "artifact_id": aid})
+        if p.get("campaign_id"):
+            return await self._audit_campaign_website(ctx, p["campaign_id"])
         html = (p.get("html") or "")
         if not html.strip() or len(html) > seo.MAX_HTML:
             raise ExecutorError("invalid_html", f"HTML halaman wajib diisi (maks. {seo.MAX_HTML} karakter)", retryable=False)
@@ -162,6 +204,96 @@ class SeoSpecialistExecutor:
         text = f"Audit SEO {report['url'] or '(tanpa URL)'}: {c['critical']} kritis, {c['warning']} peringatan, {c['info']} info. Tidak diperiksa: {', '.join(report['not_checked'])}."
         aid = _store(ctx, "audit", f"Audit: {report['url'] or 'halaman'}", text, report, len(report["findings"]), 0)
         return ExecutorOutcome(output=text, verified=True, verification={"method": "deterministic_html_audit", "passed": True, **c}, result={"output": text, "artifact_id": aid})
+
+    async def _audit_campaign_website(self, ctx: ExecutionContext, campaign_id: str) -> ExecutorOutcome:
+        if ctx.web is None:
+            raise ExecutorError("web_unavailable", "Layanan akses web tidak tersedia untuk audit situs", retryable=False)
+        with ctx.session_factory() as s:
+            from app.db.models import SeoCampaign
+            campaign = s.get(SeoCampaign, campaign_id)
+            if campaign is None:
+                raise ExecutorError("campaign_not_found", "Kampanye SEO tidak ditemukan", retryable=False)
+            root, name = campaign.website_url, campaign.name
+            allowed_hosts = {str(host).lower().rstrip(".") for host in (campaign.allowed_domains or [])}
+        root_host = (urlsplit(root).hostname or "").lower().rstrip(".")
+        if root_host not in allowed_hosts:
+            raise ExecutorError("campaign_domain_invalid", "Domain URL kampanye tidak cocok dengan allowlist", retryable=False)
+
+        def canonical(raw: str) -> str | None:
+            try:
+                parts = urlsplit(urljoin(root, raw))
+                host = (parts.hostname or "").lower().rstrip(".")
+                if parts.scheme not in {"http", "https"} or host not in allowed_hosts or parts.username or parts.password or parts.port not in {None, 80, 443}:
+                    return None
+                path = parts.path or "/"
+                if len(path) > 1500:
+                    return None
+                return urlunsplit((parts.scheme, parts.netloc, path, "", ""))
+            except ValueError:
+                return None
+
+        first = canonical(root)
+        if not first:
+            raise ExecutorError("campaign_url_invalid", "URL kampanye tidak valid", retryable=False)
+        queue, seen, pages, findings, failures = [(first, 0)], set(), [], [], []
+        total_bytes = 0
+        while queue and len(pages) < 10 and total_bytes < 2_000_000:
+            url, depth = queue.pop(0)
+            if url in seen:
+                continue
+            seen.add(url)
+            try:
+                fetched = await ctx.web.fetch(url, task_id=ctx.task.id, max_bytes=200_000, max_chars=3000,
+                                              allowed_hosts=allowed_hosts)
+            except WebError as exc:
+                failures.append({"url": url, "reason": exc.code})
+                if exc.code in {"disabled", "quota"} and not pages:
+                    raise ExecutorError("web_" + exc.code, exc.message, retryable=False)
+                continue
+            final_url = canonical(fetched.get("url", ""))
+            if not final_url:
+                failures.append({"url": url, "reason": "redirect_outside_allowlist"})
+                continue
+            total_bytes += int(fetched.get("bytes") or 0)
+            metadata = fetched.get("seo") or {}
+            page_report = seo.audit_extracted_page(final_url, fetched.get("title", ""), fetched.get("description", ""),
+                                                   fetched.get("links") or [], metadata)
+            pages.append({"url": final_url, "status": fetched.get("status"), "bytes": fetched.get("bytes"),
+                          "title": fetched.get("title", ""), "description": fetched.get("description", ""),
+                          "metadata": metadata, "findings": page_report["findings"], "counts": page_report["counts"]})
+            findings.extend(page_report["findings"])
+            if queue:
+                await asyncio.sleep(0.25)
+            if depth < 2:
+                for link in fetched.get("links") or []:
+                    target = canonical(link)
+                    if target and target not in seen and len(queue) < 100:
+                        queue.append((target, depth + 1))
+        if not pages:
+            raise ExecutorError("website_unavailable", "Tidak ada halaman kampanye yang dapat diaudit; periksa akses web, robots.txt, dan URL publik", retryable=False)
+        counts = {sev: sum(1 for f in findings if f.get("severity") == sev) for sev in ("critical", "warning", "info")}
+        report = {"campaign_id": campaign_id, "website_url": first, "pages": pages, "findings": findings, "counts": counts,
+                  "crawl": {"max_pages": 10, "max_depth": 2, "bytes_fetched": total_bytes, "failed_pages": failures},
+                  "not_checked": ["Broken-link destination status was not fetched", "robots.txt and sitemap discovery are not audited",
+                                  "Google indexation and Search Console metrics unavailable", "Core Web Vitals and JavaScript rendering unavailable",
+                                  "Thin content is not inferred from bounded text snapshots"]}
+        text = f"Audit SEO read-only {first} ({len(pages)} halaman): {counts['critical']} kritis, {counts['warning']} peringatan, {counts['info']} info. Halaman gagal: {len(failures)}."
+        aid = _store(ctx, "audit", f"Audit SEO: {name}", text, report, len(findings), 0)
+        order = {"critical": 0, "warning": 1, "info": 2}
+        with ctx.session_factory() as s:
+            for index, finding in enumerate(sorted(findings, key=lambda f: (order.get(f.get("severity"), 3), f.get("id", ""))), start=1):
+                s.add(SeoRecommendation(campaign_id=campaign_id, artifact_id=aid, finding_id=finding["id"], category=finding["id"],
+                    title=finding["message"][:500], severity=finding["severity"],
+                    evidence={"page": finding.get("page"), "detail": finding.get("evidence"), "observed_by": "safe_external_crawler"},
+                    recommendation=finding.get("recommendation", ""), impact_basis="unknown: no connected performance data",
+                    confidence="observed", effort="unknown", risk="unknown", dependencies=[],
+                    acceptance_criteria=["Address documented evidence without degrading accuracy or usability", "Re-run the read-only SEO audit"],
+                    verification_method="Re-run the deterministic audit and compare evidence", priority_order=index))
+            s.add(SeoCampaignEvent(campaign_id=campaign_id, kind="audit_completed", actor="seo_specialist",
+                                   details={"artifact_id": aid, "counts": counts, "page_count": len(pages), "failed_pages": len(failures)}))
+            s.commit()
+        return ExecutorOutcome(output=text, verified=True, verification={"method": "safe_external_deterministic_audit", "passed": True, **counts},
+                               result={"output": text, "artifact_id": aid})
 
 
 class MarketingAnalyticsExecutor:

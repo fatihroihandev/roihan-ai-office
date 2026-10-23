@@ -24,16 +24,16 @@ def client(settings, fake):
 
 
 def test_endpoints_require_token(client):
-    for method, path in [("get", "/api/providers"), ("get", "/api/models"), ("post", "/api/models/sync"),
+    for method, path in [("get", "/api/providers"), ("patch", "/api/providers/ollama"), ("get", "/api/models"), ("post", "/api/models/sync"),
                          ("post", "/api/ai/generate"), ("get", "/api/usage"), ("get", "/api/budgets")]:
         assert getattr(client, method)(path).status_code == 401, path
 
 
-def test_providers_list_shows_cloud_as_disabled_and_not_implemented(client, auth):
+def test_providers_list_shows_cloud_as_disabled_without_key(client, auth):
     by = {p["name"]: p for p in client.get("/api/providers", headers=auth).json()}
     assert by["ollama"]["health"]["status"] == "up" and by["ollama"]["is_paid"] is False
     for n in ("openai", "gemini", "anthropic"):
-        assert (by[n]["enabled"], by[n]["implemented"], by[n]["is_paid"], by[n]["health"]) == (False, False, True, None)
+        assert (by[n]["enabled"], by[n]["implemented"], by[n]["is_paid"], by[n]["health"], by[n]["api_key_configured"]) == (False, True, True, None, False)
 
 
 def test_sync_populates_registry_with_unknowns_left_null(client, auth):
@@ -66,6 +66,23 @@ def test_sync_for_cloud_provider_is_refused(client, auth):
     assert client.post("/api/models/sync?provider=tidak-ada", headers=auth).status_code == 404
 
 
+def test_ollama_settings_update_runtime_and_persist(client, auth, settings):
+    r = client.patch("/api/providers/ollama", json={"enabled": True, "base_url": "http://127.0.0.1:11435"}, headers=auth)
+    assert r.status_code == 200, r.text
+    assert r.json()["enabled"] is True and r.json()["base_url"] == "http://127.0.0.1:11435"
+    saved = json.loads((settings.data_dir / "ai-provider-settings.json").read_text(encoding="utf-8"))
+    assert saved["ollama"] == {"enabled": True, "base_url": "http://127.0.0.1:11435"}
+
+    invalid = client.patch("/api/providers/ollama", json={"enabled": True, "base_url": "javascript:alert(1)"}, headers=auth)
+    assert invalid.status_code == 422
+
+
+def test_provider_settings_reject_enabling_cloud_without_key(client, auth):
+    r = client.patch("/api/providers/openai", json={"enabled": True}, headers=auth)
+    assert r.status_code == 422
+    assert client.patch("/api/providers/tidak-ada", json={"enabled": True}, headers=auth).status_code == 404
+
+
 def test_generate_success_and_usage_log(client, auth, fake):
     r = client.post("/api/ai/generate", json={"prompt": "hai", "request_id": "abcd-1234"}, headers=auth)
     assert r.status_code == 200, r.text
@@ -78,6 +95,14 @@ def test_generate_success_and_usage_log(client, auth, fake):
     assert u["summary"]["total"] == 1 and u["summary"]["ok"] == 1 and u["summary"]["total_cost_idr"] == 0
     assert u["summary"]["prompt_tokens"] == 5 and u["summary"]["completion_tokens"] == 7
     assert "prompt" not in u["items"][0] and u["items"][0]["status"] == "ok"
+
+
+def test_generate_can_use_selected_detected_model(client, auth):
+    r = client.post("/api/ai/generate", json={
+        "provider": "ollama", "model": "qwen2.5:3b", "prompt": "uji model kedua",
+    }, headers=auth)
+    assert r.status_code == 200, r.text
+    assert r.json()["model"] == "qwen2.5:3b"
 
 
 def test_generate_validation_and_limits(client, auth):

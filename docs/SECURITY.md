@@ -23,6 +23,13 @@ kebocoran rahasia lewat git/log, serta agent AI yang bertindak di luar wewenangn
 - Tindakan berisiko dan operasi eksternal yang tidak pasti tidak pernah diulang otomatis setelah pause, crash, atau restart.
 - Resume tidak mengubah budget, izin, atau pengaturan provider; panggilan berbayar tetap diblokir (diverifikasi di game day: 0 panggilan berbayar).
 
+## Akses web agent (2026-10-23)
+
+- Model tidak punya akses jaringan; backend mengambil halaman lewat SSRF-guard (alamat privat/loopback/metadata cloud ditolak setelah DNS dan pada tiap redirect, hanya port 80/443), patuh robots.txt, batas ukuran/waktu/tipe, saklar mati bawaan, batas harian, dan log `web_requests`.
+- Konten web adalah masukan TIDAK tepercaya: diberi penanda, kontak pribadi disamarkan untuk riset, frasa prompt-injection ditandai, dan keluaran agent tetap diperiksa terhadap teks sumber (fakta yang tidak tertulis dibuang) serta approval CEO untuk tindakan keluar.
+- Kunci Brave dan Tavily disimpan di `data/web-access.json` (lokal), masuk daftar rahasia log, dan tidak pernah dikembalikan API.
+- Celah diketahui: DNS rebinding antara pemeriksaan dan koneksi; deteksi injection berbasis pola.
+
 ## Hasil audit
 
 - **Dependensi Python**: `pip-audit` terhadap seluruh paket terpasang — tidak ada kerentanan diketahui.

@@ -31,6 +31,9 @@ async def sync_provider_models(session_factory, entry: ProviderEntry, data_dir: 
     infos = await entry.provider.list_models()
     detailed = []
     for info in infos:
+        if getattr(entry.provider, "bulk_listing", False):  # provider cloud: daftar sudah lengkap, jangan panggil API sekali per model
+            detailed.append(info)
+            continue
         try:
             detailed.append(await entry.provider.get_capabilities(info.model_id))
         except Exception:

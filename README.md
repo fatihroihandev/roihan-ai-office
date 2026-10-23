@@ -6,9 +6,9 @@ Sumber acuan utama: [`docs/MASTER_DEVELOPMENT.md`](docs/MASTER_DEVELOPMENT.md). 
 
 ## Status
 
-Phase 0 sampai 7 selesai: backend FastAPI + SQLite + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst, Reporter, Developer, QA, dan Reviewer dapat bekerja (Developer, QA, dan Reviewer yang menjalankan tes hanya jika sandbox lolos uji isolasi); agent Marketing belum tersedia (task-nya diblokir secara jujur). Tindakan berisiko tinggi atau kritis tidak berjalan sebelum CEO menyetujuinya di Approval Center (`/approvals`). Katalog produk dengan Product Release Gate tersedia di `/products`: Marketing hanya boleh memakai klaim produk yang terverifikasi.
+Phase 0 sampai 7 selesai: backend FastAPI + PostgreSQL + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst, Reporter, Developer, QA, dan Reviewer dapat bekerja (Developer, QA, dan Reviewer yang menjalankan tes hanya jika sandbox lolos uji isolasi); agent Marketing belum tersedia (task-nya diblokir secara jujur). Tindakan berisiko tinggi atau kritis tidak berjalan sebelum CEO menyetujuinya di Approval Center (`/approvals`). Katalog produk dengan Product Release Gate tersedia di `/products`: Marketing hanya boleh memakai klaim produk yang terverifikasi.
 
-Roadmap lanjutan (Master Development v2.3): **Phase 13** Office Power Control dan **Phase 14** SEO Specialist selesai; belum dikerjakan: **Phase 15** proyek akhir website company profile Roihan Software House. Phase 15 ditunda atas keputusan CEO. Spesifikasi: `docs/MASTER_DEVELOPMENT.md` Bagian 29. **Cara penggunaan: `docs/PANDUAN_PENGGUNAAN.md`.**
+Roadmap lanjutan (Master Development v2.3): **Phase 13** Office Power Control dan **Phase 14** SEO Specialist selesai. **Phase 15** aktif kembali atas instruksi CEO; kandidat MVP dan bukti QA ada di workspace proyek terisolasi. Belum siap rilis: penerima/SMTP kontak dan domain/hosting belum dikonfigurasi, Reviewer memberi `changes_requested`, dan belum ada persetujuan rilis publik. Spesifikasi: `docs/MASTER_DEVELOPMENT.md` Bagian 29. **Cara penggunaan: `docs/PANDUAN_PENGGUNAAN.md`.**
 
 ## Prasyarat Phase 0
 
@@ -36,6 +36,8 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
 Secret tidak boleh di-commit. Backend dan frontend sama-sama membaca `.env` di root repository.
+
+Backend memakai PostgreSQL. Siapkan database `roihan` dan user, lalu sesuaikan `DATABASE_URL` di `.env` dengan kredensial lokal Anda. Untuk cutover dari SQLite: hentikan backend dan simpan salinan `data/database/roihan.db`; dari `apps/api`, naikkan skema sumber ke head dengan `python -m alembic -x url=<sqlite-url> upgrade head`, lalu naikkan skema PostgreSQL dengan `python -m alembic upgrade head` saat `DATABASE_URL` menunjuk ke PostgreSQL. Dari root repo, salin data dengan `apps/api/.venv/Scripts/python scripts/migrate_sqlite_to_postgres.py <sqlite-url> <postgres-url>`. Tujuan harus database kosong yang sudah dimigrasikan. Setelah salinan berhasil, mulai backend. Backup otomatis mencakup snapshot PostgreSQL terkompresi dan arsip folder proyek; pemulihan PostgreSQL dijalankan lewat CLI saat backend berhenti.
 
 ## Menjalankan
 
@@ -174,14 +176,17 @@ Menu **Marketing -> SEO & Digital Marketing** (`/marketing/seo`): audit SEO tekn
 
 Situs pribadi (`fatihroihan.site`, kode di `C:\xampp\htdocs\fatih-roihan-portofolio`) sudah terdaftar: kode sumbernya **disalin** ke proyek "Situs: Portofolio Fatih Roihan" (folder asli tidak diubah). Menu **Marketing -> SEO & Digital Marketing -> Situs yang dipasarkan** untuk audit situs, riset kata kunci, dan brief konten berdasarkan isi situs. Mendaftarkan situs lain: `cd apps/api && .venv\Scripts\python -m app.marketing.import_site --name "Nama" --url https://situs.com --path C:\folder\situs`. Jalankan `alembic upgrade head` (revisi 0012) setelah memperbarui kode.
 
+## Akses web untuk agent
+
+Di **AI Control Center -> Akses web agent**: nyalakan saklar, isi API key Brave Search (gratis di brave.com/search/api), atur batas harian, lalu **Uji pencarian**. Setelah itu di **Marketing -> Cari dari web** Anda bisa meminta agent mencari prospek atau riset pasar. Model tidak terhubung ke internet; backend yang mengambil halaman (patuh robots.txt, alamat lokal diblokir, semua tercatat). Jalankan `alembic upgrade head` (revisi 0013) sebelum memakainya.
+
 ## Navigasi layar penuh
 
 Tidak ada bilah navigasi: gunakan **tombol menu melayang** (klik, atau tekan `M`; `Esc` menutup). Tombol dapat diseret ke tepi kiri/kanan dan posisinya diingat di peramban.
 
 ## Evaluasi cloud (Phase 12)
 
-Hasil evaluasi ada di `docs/CLOUD_EVALUATION.md`: rekomendasi **tetap lokal**, pemicu migrasi yang terukur, uji kompatibilitas PostgreSQL, estimasi biaya, dan rencana migrasi.
-Tidak ada perubahan database atau perilaku aplikasi. Alat ulang: `scripts/evaluate_db.py` (benchmark SQLite/PostgreSQL), `scripts/estimate_cloud_cost.py`,
+Hasil evaluasi awal ada di `docs/CLOUD_EVALUATION.md`. Alat evaluasi: `scripts/evaluate_db.py` (benchmark SQLite/PostgreSQL), `scripts/estimate_cloud_cost.py`,
 dan `TEST_POSTGRES_URL=... pytest` untuk menjalankan seluruh tes pada PostgreSQL.
 
 ## Tes
@@ -190,3 +195,11 @@ dan `TEST_POSTGRES_URL=... pytest` untuk menjalankan seluruh tes pada PostgreSQL
 cd apps/api && .venv/Scripts/python -m pytest
 cd apps/web && npm test && npm run lint && npm run typecheck
 ```
+
+## License
+
+This project is proprietary software. The source code is publicly available for viewing and evaluation only.
+
+No license is granted for reuse, modification, redistribution, or commercial use without prior written permission from the copyright holder, except where permitted by applicable law.
+
+See [LICENSE](./LICENSE) for details. Third-party components remain subject to their respective licenses.

@@ -67,6 +67,25 @@ def test_router_picks_model_and_persists_decision(migrated_db, tmp_path):
         assert any(r.startswith("difficulty=") for r in row.reasons)
 
 
+def test_manager_uses_small_models_for_light_and_large_models_for_heavy_tasks(migrated_db, tmp_path):
+    env = build_env(migrated_db, tmp_path)
+    tid = seed_task(env)
+    with env.sf() as s:
+        s.query(ModelCapability).filter_by(provider="ollama", model_id="fake-model:1b").update({"available": False})
+        s.add_all([
+            ModelCapability(provider="ollama", model_id="qwen2.5:3b", available=True, context_limit=8192,
+                            supports_tools=True, validation_status="unvalidated", details={"parameter_size": "3.1B"}),
+            ModelCapability(provider="ollama", model_id="qwen2.5-coder:7b", available=True, context_limit=8192,
+                            supports_tools=True, validation_status="benchmarked", details={"parameter_size": "7.6B"}),
+        ])
+        s.commit()
+
+    light = choose(env, tid, snap={"difficulty_category": "light", "difficulty_score": 20})
+    heavy = choose(env, tid, snap={"difficulty_category": "heavy", "difficulty_score": 70})
+    assert light.model == "qwen2.5:3b"
+    assert heavy.model == "qwen2.5-coder:7b"
+
+
 def test_router_grows_context_window_when_needed(migrated_db, tmp_path):
     env = build_env(migrated_db, tmp_path)
     tid = seed_task(env)

@@ -65,6 +65,12 @@ export default function LeadDetailPage() {
 </PageTransition>;
 
   const closed = lead.anonymized || lead.do_not_contact;
+  const localWaNumber = (lead.contact.phone ?? "").replace(/\D/g, "");
+  const waNumber = localWaNumber.startsWith("0")
+    ? `62${localWaNumber.slice(1)}`
+    : localWaNumber.startsWith("62") || localWaNumber.length < 9 || localWaNumber.length > 12
+      ? localWaNumber
+      : `62${localWaNumber}`;
   const nexts = NEXT_LEAD[lead.status] ?? [];
   const canForward = ["qualified", "contacted", "meeting"].includes(lead.status) && !closed;
 
@@ -266,7 +272,8 @@ export default function LeadDetailPage() {
               )}
               {d.status === "ready_for_review" && (
                 <div className="actions">
-                  <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.requestSend(d.id), t("ext.requested"))}>{t("ext.requestSend")}</button>
+                  {!closed && !lead.contact.masked && d.claim_check?.ok && lead.contact.email && <a className="button" href={`mailto:${encodeURIComponent(lead.contact.email)}?subject=${encodeURIComponent(d.subject)}&body=${encodeURIComponent(d.body)}`}>{t("mkt.sendEmail")}</a>}
+                  {!closed && !lead.contact.masked && d.claim_check?.ok && waNumber.length >= 8 && waNumber.length <= 15 && <a className="button" href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`${d.body.replace(/\n\n--\n[\s\S]*$/, "")}\n\n${t("mkt.whatsappOptOut")}`)}`} target="_blank" rel="noopener noreferrer">{t("mkt.sendWhatsApp")}</a>}
                   <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.markSent(d.id))}>{t("mkt.outreach.markSent")}</button>
                   <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.cancelOutreach(d.id))}>{t("mkt.outreach.cancel")}</button>
                 </div>

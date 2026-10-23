@@ -21,6 +21,14 @@ export default function ProjectDetailPage() {
   const [workspace, setWorkspace] = useState<WorkspaceOverview | null>(null);
   const [viewing, setViewing] = useState<{ path: string; content: string } | null>(null);
   const [projectReport, setProjectReport] = useState<string | null>(null);
+  const [websiteUrl, setWebsiteUrl] = useState(() => {
+    try {
+      return window.localStorage.getItem(`rsh.project.website.${id}`) || "http://localhost:3100";
+    } catch {
+      return "http://localhost:3100"; // penyimpanan browser tidak tersedia; pratinjau tetap bisa dipakai
+    }
+  });
+  const [websiteError, setWebsiteError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -38,6 +46,29 @@ export default function ProjectDetailPage() {
       cancelled = true;
     };
   }, [id]);
+
+  const onPreviewWebsite = () => {
+    let parsed: URL;
+    try {
+      parsed = new URL(websiteUrl);
+    } catch {
+      setWebsiteError(t("website.invalidUrl"));
+      return;
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      setWebsiteError(t("website.invalidUrl"));
+      return;
+    }
+    const normalized = parsed.toString();
+    setWebsiteError(null);
+    setWebsiteUrl(normalized);
+    try {
+      window.localStorage.setItem(`rsh.project.website.${id}`, normalized);
+    } catch {
+      // URL tetap dibuka meski penyimpanan browser tidak tersedia.
+    }
+    window.open(normalized, "_blank", "noopener,noreferrer");
+  };
 
   const run = useCallback(async (action: () => Promise<void>) => {
     setBusy(true);
@@ -211,6 +242,25 @@ export default function ProjectDetailPage() {
                 )}
               </>
             )}
+          </section>
+
+          <section className="card">
+            <h3>{t("website.previewTitle")}</h3>
+            <p className="muted small">{t("website.previewHint")}</p>
+            <label>
+              {t("website.urlLabel")}
+              <input
+                type="url"
+                value={websiteUrl}
+                onChange={(e) => setWebsiteUrl(e.target.value)}
+                placeholder="http://localhost:3100"
+                autoComplete="url"
+              />
+            </label>
+            <div className="actions">
+              <button type="button" onClick={onPreviewWebsite}>{t("website.openNewTab")}</button>
+            </div>
+            {websiteError && <p className="bad" role="alert">{websiteError}</p>}
           </section>
         </>
       )}

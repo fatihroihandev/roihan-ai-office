@@ -5,10 +5,10 @@ from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
 from pydantic import BaseModel, Field, ValidationError, field_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.config import Settings
-from app.db.models import ProjectFile, Task, TaskDependency
+from app.db.models import ModelCapability, ModelUsage, ProjectFile, SeoCampaign, Task, TaskDependency
 from app.projects.storage import ProjectStorage
 from app.sandbox.base import Sandbox
 from app.workspace import git as workspace_git
@@ -22,6 +22,8 @@ from app.tasks.service import create_task
 MASTER_EXCERPT_CHARS = 3000
 DEP_OUTPUT_CHARS = 1500
 DEP_TOTAL_CHARS = 3000
+TEXT_OUTPUT_PARTS = 4  # satu jawaban awal dan paling banyak tiga lanjutan bila model mencapai batasnya
+TEXT_OUTPUT_TOKENS = 2048
 
 
 class ExecutorError(Exception):
@@ -58,6 +60,7 @@ class ExecutionContext:
     settings: Settings
     storage: ProjectStorage
     sandbox: Sandbox | None = None
+    web: object | None = None
     resume_checkpoint: dict | None = None  # ringkasan checkpoint valid terakhir bila task ini dilanjutkan setelah terputus
     provider: str | None = None
     model: str | None = None
@@ -67,10 +70,28 @@ class ExecutionContext:
                        json_schema: dict | None = None) -> GenerateResult:
         est = (len(system) + len(prompt)) // 3 + 50  # perkiraan konservatif token (campuran Indonesia/Inggris)
         decision = await self.router.choose(self.task, self.attempt_id, est, max_tokens)
+        params = self.task.params or {}
+        campaign_id = params.get("campaign_id")
+        purpose = f"task:{self.task.role}"
+        if campaign_id:
+            purpose = f"{purpose}:campaign:{campaign_id}"
+            with self.session_factory() as s:
+                campaign = s.get(SeoCampaign, campaign_id)
+                if campaign is None:
+                    raise ExecutorBlocked("seo_campaign_missing", "Kampanye SEO untuk task ini tidak ditemukan")
+                model = s.scalar(select(ModelCapability).where(ModelCapability.provider == decision.provider,
+                                                                 ModelCapability.model_id == decision.model))
+                spent = s.scalar(select(func.coalesce(func.sum(ModelUsage.cost_idr), 0.0)).where(ModelUsage.purpose == purpose)) or 0.0
+                if model and model.is_paid:
+                    if model.cost_estimate_idr_per_1k is None:
+                        raise ExecutorBlocked("seo_campaign_cost_unknown", "Task diblokir: biaya model belum diketahui untuk kampanye dengan batas anggaran")
+                    estimated_cost = (est + max_tokens) * model.cost_estimate_idr_per_1k / 1000
+                    if spent + estimated_cost > campaign.api_budget_idr:
+                        raise ExecutorBlocked("seo_campaign_budget_exceeded", "Task diblokir: estimasi biaya melewati sisa anggaran API kampanye")
         self.provider, self.model = decision.provider, decision.model
         req = GenerateRequest(prompt=prompt, system=system, max_tokens=max_tokens, temperature=temperature,
                               num_ctx=decision.num_ctx, request_id=self.attempt_id, json_schema=json_schema)
-        res = await self.gateway.generate(decision.provider, decision.model, req, purpose=f"task:{self.task.role}")
+        res = await self.gateway.generate(decision.provider, decision.model, req, purpose=purpose)
         self.usage["calls"] += 1
         for k in ("prompt_tokens", "completion_tokens", "duration_ms"):
             self.usage[k] += getattr(res.usage, k) or 0
@@ -305,13 +326,37 @@ class LLMTextExecutor:
         if deps:
             parts.append(f"HASIL TASK SEBELUMNYA:\n{deps}")
         parts.append("Jawab dalam bahasa Indonesia kecuali diminta lain. Tulis dalam format Markdown.")
-        res = await ctx.generate(ROLE_SYSTEM[t.role], "\n\n".join(parts), max_tokens=768)
-
+        prompt = "\n\n".join(parts)
+        max_tokens = min(ctx.settings.ai_max_tokens_cap, TEXT_OUTPUT_TOKENS)
+        res = await ctx.generate(ROLE_SYSTEM[t.role], prompt, max_tokens=max_tokens)
         text = res.text.strip()
         if not text:
             raise ExecutorError("empty_output", "Model menghasilkan jawaban kosong")
+
+        # Jawaban yang menyentuh batas token dilanjutkan dari potongan akhirnya. Anggaran keluaran
+        # utama mengikuti konfigurasi (maks. 2048 token); permintaan lanjutan hanya dibuat bila perlu.
+        for _ in range(TEXT_OUTPUT_PARTS - 1):
+            if not res.truncated:
+                break
+            tail = text[-2500:]
+            continuation = (
+                f"TASK: {t.title}\nDESKRIPSI: {(t.description or '')[:2000]}\n"
+                f"KRITERIA: {'; '.join(t.acceptance_criteria or [])[:1200]}\n\n"
+                "Jawaban sebelumnya mencapai batas keluaran. Lanjutkan tepat setelah bagian akhir di bawah; "
+                "jangan mengulang atau merangkum bagian sebelumnya. Selesaikan sisa jawaban dan seluruh kriteria.\n\n"
+                f"BAGIAN AKHIR JAWABAN SEBELUMNYA:\n{tail}"
+            )
+            res = await ctx.generate(ROLE_SYSTEM[t.role], continuation, max_tokens=max_tokens)
+            piece = res.text.strip()
+            if not piece:
+                raise ExecutorError("empty_continuation", "Model tidak mengirim lanjutan untuk jawaban yang terpotong.", retryable=False)
+            text = f"{text.rstrip()}\n\n{piece}"
         if res.truncated:
-            raise ExecutorError("output_truncated", "Jawaban terpotong oleh batas token; perkecil lingkup task", retryable=False)
+            raise ExecutorError(
+                "output_truncated",
+                f"Model belum menuntaskan jawaban setelah {TEXT_OUTPUT_PARTS - 1} kali melanjutkan; task belum ditandai selesai.",
+                retryable=False,
+            )
         artifact = ctx.storage.write_artifact(t.project_id, t.id, text)
         return ExecutorOutcome(
             output=text, verified=True,

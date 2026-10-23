@@ -250,3 +250,32 @@ main > p > a:only-child:hover { padding-left: 0.2rem; color: #05060f; background
 
 /* indikator tanpa data: teks kecil, bukan angka besar */
 .kpi strong.kpi-null { font-size: 0.85rem; font-weight: 600; background: none; color: var(--muted); -webkit-text-fill-color: var(--muted); padding: 0.55rem 0; }
+
+/* ================================================================== Halaman AI Control Center: kartu provider dan katalog model */
+.prov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.prov-card { display: flex; flex-direction: column; gap: 0.55rem; padding: 1.1rem 1.2rem; border: 1px solid rgba(121, 148, 255, 0.22); border-left: 3px solid var(--blue);
+  background: linear-gradient(160deg, rgba(15, 21, 50, 0.96), rgba(8, 12, 30, 0.96)); clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); }
+.prov-card[data-state="up"] { border-left-color: #39ff88; }
+.prov-card[data-state="down"] { border-left-color: var(--bad); }
+.prov-card[data-state="off"] { border-left-color: #4a5380; }
+.prov-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.prov-name { font-size: 1.05rem; text-transform: capitalize; letter-spacing: 0.02em; }
+.prov-dot { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.prov-dot::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #4a5380; }
+.prov-dot[data-state="up"] { color: #39ff88; } .prov-dot[data-state="up"]::before { background: #39ff88; box-shadow: 0 0 8px #39ff88; }
+.prov-dot[data-state="down"] { color: var(--bad); } .prov-dot[data-state="down"]::before { background: var(--bad); }
+.prov-hint { min-height: 2.4em; margin: 0; }
+.prov-card label { margin: 0; }
+.prov-keystate { margin-left: 0.4rem; font-size: 0.62rem; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+.prov-keystate[data-set="1"] { color: #39ff88; }
+.prov-switches { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; }
+.prov-card .actions { margin-top: auto; }
+.prov-note { margin: 0; padding: 0.5rem 0.65rem; border-left: 2px solid currentColor; background: rgba(255, 255, 255, 0.03); overflow-wrap: anywhere; }
+.model-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem; }
+.model-tools input[type="search"] { flex: 1 1 200px; }
+.model-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; max-height: 440px; overflow: auto; }
+.model-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.8rem; padding: 0.65rem 0.8rem; border: 1px solid rgba(121, 148, 255, 0.16); border-left: 2px solid var(--violet); background: rgba(4, 7, 20, 0.5); overflow-wrap: anywhere; }
+.model-row[data-available="false"] { opacity: 0.55; }
+.playground-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(120px, 0.6fr); gap: 0.9rem; }
+.ai-page .ai-overview-grid { grid-template-columns: minmax(0, 1.75fr) minmax(250px, 0.85fr); }
+@media (max-width: 900px) { .ai-page .ai-overview-grid, .playground-grid { grid-template-columns: 1fr; } }

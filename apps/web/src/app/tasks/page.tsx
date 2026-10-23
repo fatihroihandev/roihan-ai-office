@@ -234,6 +234,16 @@ export default function TasksPage() {
                     {x.attempt_count > 1 && <span className="badge">#{x.attempt_count}</span>}
                   </div>
                   {x.blocked_reason && <div className="muted small">{tOr(`block.${x.blocked_reason}`, x.blocked_reason)}</div>}
+                  {x.status === "queued" && (
+                    <button
+                      type="button"
+                      className="danger"
+                      disabled={busy}
+                      onClick={() => window.confirm(t("task.confirmCancel")) && act(() => tasksApi.cancel(x.id))}
+                    >
+                      {t("task.cancel")}
+                    </button>
+                  )}
                   {x.status === "draft" && (
                     <button type="button" disabled={busy} onClick={() => act(() => tasksApi.queue(x.id))}>{t("task.queue")}</button>
                   )}

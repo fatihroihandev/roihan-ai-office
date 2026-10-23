@@ -89,6 +89,7 @@ export const marketingApi = {
   analytics: () => apiFetch<Analytics>("/api/marketing/analytics"),
   leads: () => apiFetch<Lead[]>("/api/marketing/leads"),
   lead: (id: string, reveal = false) => apiFetch<Lead>(`/api/marketing/leads/${id}${reveal ? "?reveal=true" : ""}`),
+  deleteLead: (id: string) => apiFetch<void>(`/api/marketing/leads/${id}`, body("DELETE")),
   createLead: (data: LeadInput) =>
     apiFetch<Lead>("/api/marketing/leads", body("POST", { ...data, company: clean(data.company), contact: data.contact ? clean(data.contact) : undefined, source: clean(data.source) })),
   setStatus: (id: string, status: string, reason?: string, override_reason?: string) =>

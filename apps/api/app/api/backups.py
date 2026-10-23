@@ -13,15 +13,17 @@ router = APIRouter(prefix="/api/backups", tags=["backups"], dependencies=[Depend
 _NAME = re.compile(r"^[0-9]{8}T[0-9]{6}-[a-z-]+(-[0-9]+)?$")
 
 
-def backup_paths(settings) -> tuple[Path, Path]:
+def backup_paths(settings) -> tuple[Path | str, Path]:
     url = make_url(settings.database_url)
-    if url.get_backend_name() != "sqlite" or not url.database:
-        raise svc.BackupError("Cadangan hanya mendukung database SQLite.")
-    return Path(url.database), settings.data_dir / "backups"
+    if url.get_backend_name() == "sqlite" and url.database:
+        return Path(url.database), settings.data_dir / "backups"
+    if url.get_backend_name() == "postgresql":
+        return settings.database_url, settings.data_dir / "backups"
+    raise svc.BackupError("Jenis database ini belum didukung untuk cadangan.")
 
 
 def run_backup(settings, label: str) -> Path:
-    """Dipakai endpoint dan penjadwal: buat cadangan lalu pangkas yang lama."""
+    """Dipakai endpoint manual: buat cadangan lalu pangkas yang lama."""
     db, backups = backup_paths(settings)
     d = svc.create_backup(db, backups, settings.projects_dir, include_projects=settings.backup_include_projects,
                           max_project_bytes=settings.backup_max_project_mb * 1024 * 1024, label=label, app_version=APP_VERSION)

@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,7 +18,7 @@ class Settings(BaseSettings):
     app_local_token: str = ""
     app_default_language: str = "id"
 
-    database_url: str = f"sqlite:///{(REPO_ROOT / 'data' / 'database' / 'roihan.db').as_posix()}"
+    database_url: str = "postgresql+psycopg://roihan:roihan@127.0.0.1:5432/roihan"
 
     ollama_enabled: bool = True
     ollama_base_url: str = "http://127.0.0.1:11434"
@@ -57,8 +58,15 @@ class Settings(BaseSettings):
     power_checkpoint_interval_s: float = 20.0  # jeda checkpoint berkala selama task berjalan (0 = nonaktif)
     power_checkpoint_keep: int = 5             # jumlah checkpoint terbaru per task yang disimpan
 
-    backup_enabled: bool = True
-    backup_interval_hours: float = 24.0
+    web_access_enabled: bool = False       # akses web agent: mati secara bawaan, dinyalakan CEO di AI Control Center
+    web_daily_limit: int = 100             # maks. permintaan web (cari + ambil halaman) per hari
+    web_search_provider: Literal["brave", "tavily"] = "brave"
+    brave_api_key: str = ""
+    tavily_api_key: str = ""
+    web_timeout_s: float = 15.0
+    web_max_bytes: int = 500_000
+    web_max_page_chars: int = 6000
+
     backup_keep: int = 14
     backup_include_projects: bool = True
     backup_max_project_mb: int = 500
@@ -122,8 +130,10 @@ class Settings(BaseSettings):
             raise ValueError("APPROVAL_TTL_HOURS harus >= 1")
         if self.power_pause_grace_s < 0 or self.power_interrupt_wait_s <= 0 or self.power_checkpoint_interval_s < 0 or self.power_checkpoint_keep < 1:
             raise ValueError("POWER_* tidak valid")
-        if self.backup_interval_hours <= 0 or self.backup_keep < 1 or self.backup_max_project_mb < 1:
-            raise ValueError("backup_interval_hours, backup_keep, backup_max_project_mb harus positif")
+        if not 1 <= self.web_daily_limit <= 5000 or self.web_timeout_s <= 0 or self.web_max_bytes < 1000 or self.web_max_page_chars < 500:
+            raise ValueError("WEB_* tidak valid")
+        if self.backup_keep < 1 or self.backup_max_project_mb < 1:
+            raise ValueError("backup_keep dan backup_max_project_mb harus positif")
         if self.worker_poll_interval_s <= 0 or self.retry_backoff_base_s < 0:
             raise ValueError("WORKER_POLL_INTERVAL_S harus > 0 dan RETRY_BACKOFF_BASE_S >= 0")
         if self.max_upload_mb < 1:
@@ -140,7 +150,8 @@ class Settings(BaseSettings):
 
     @property
     def secret_values(self) -> list[str]:
-        values = [self.app_local_token, self.openai_api_key, self.gemini_api_key, self.anthropic_api_key]
+        values = [self.app_local_token, self.openai_api_key, self.gemini_api_key, self.anthropic_api_key,
+                  self.brave_api_key, self.tavily_api_key]
         return [v for v in values if v]
 
 

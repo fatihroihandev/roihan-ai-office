@@ -32,13 +32,15 @@ UNRESOLVED_DEPS = ("failed", "cancelled", "interrupted", "blocked")
 
 class TaskWorker:
     def __init__(self, settings: Settings, session_factory, gateway: ModelGateway, router: ModelRouter,
-                 storage: ProjectStorage, executors: dict[str, Executor] | None = None, sandbox: Sandbox | None = None):
+                 storage: ProjectStorage, executors: dict[str, Executor] | None = None, sandbox: Sandbox | None = None,
+                 web_access=None):
         self._settings = settings
         self._sf = session_factory
         self._gateway = gateway
         self._router = router
         self._storage = storage
         self._sandbox = sandbox or DisabledSandbox()
+        self._web_access = web_access
         self.executors = executors if executors is not None else default_executors()
         self._current: dict[str, tuple[asyncio.Future, str]] = {}   # task_id -> (future executor, attempt_id)
         self._cancel_requested: set[str] = set()
@@ -167,7 +169,7 @@ class TaskWorker:
             task = s.get(Task, task_id)
             snapshot, role = TaskSnapshot.from_task(task), task.role
         ctx = ExecutionContext(snapshot, attempt_id, self._sf, self._gateway, self._router, self._settings, self._storage,
-                               sandbox=self._sandbox)
+                               sandbox=self._sandbox, web=self._web_access)
         ctx.resume_checkpoint = self._resume_context(task_id)
         self.checkpoints.create(task_id, attempt_id, "start", "attempt_started")
         fut = asyncio.ensure_future(self.executors[role].run(ctx))

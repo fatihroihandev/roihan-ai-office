@@ -1,0 +1,42 @@
+[
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 33,
+  "EndLine": 33,
+  "StartColumn": 7,
+  "EndColumn": 34,
+  "Match": "API_KEY = 'abcd1234efgh5678'",
+  "Secret": "abcd1234efgh5678",
+  "File": "apps/api/tests/test_reviewer.py",
+  "SymlinkFile": "",
+  "Commit": "3af2dd07e73a8866e55afda542594a757279587d",
+  "Entropy": 4,
+  "Author": "Fatih Roihan",
+  "Email": "roihandev99@gmail.com",
+  "Date": "2026-10-20T07:39:13Z",
+  "Message": "Phase 6: Approval Center, Reviewer berbasis bukti, dan laporan task\n\n- Approval Center: terikat isi tindakan (sidik jari SHA-256), sekali pakai, kedaluwarsa, hanya manusia yang dapat\n  memutuskan, tercatat di audit_logs; ditegakkan saat antre, saat klaim worker, dan di router\n- Kebijakan risiko: tindakan berisiko tidak diulang atau dipulihkan otomatis; retry manual meminta approval baru\n- Reviewer: bukti deterministik (diff Git, pemindaian keamanan statis, tes dijalankan ulang di sandbox);\n  verdict dihitung deterministik; klaim tanpa bukti nyata ditolak; hasil di code_reviews\n- Laporan 15 bagian dari fakta database untuk setiap task selesai/gagal; agent Reporter dengan ringkasan\n  model yang angkanya divalidasi; endpoint laporan task dan proyek\n- UI: /approvals, hasil review, approval, dan laporan di detail task, laporan proyek\n- Tes: 520 pytest, 7 Vitest; 16 dari 16 mutasi tertangkap; uji langsung dengan model dan sandbox asli\n\nCo-Authored-By: Claude Sonnet 5.5 \u003cnoreply@anthropic.com\u003e",
+  "Tags": [],
+  "Fingerprint": "3af2dd07e73a8866e55afda542594a757279587d:apps/api/tests/test_reviewer.py:generic-api-key:33"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 53,
+  "EndLine": 53,
+  "StartColumn": 43,
+  "EndColumn": 68,
+  "Match": "token = 'abcdefgh12345678'",
+  "Secret": "abcdefgh12345678",
+  "File": "apps/api/tests/test_reviewer.py",
+  "SymlinkFile": "",
+  "Commit": "3af2dd07e73a8866e55afda542594a757279587d",
+  "Entropy": 4,
+  "Author": "Fatih Roihan",
+  "Email": "roihandev99@gmail.com",
+  "Date": "2026-10-20T07:39:13Z",
+  "Message": "Phase 6: Approval Center, Reviewer berbasis bukti, dan laporan task\n\n- Approval Center: terikat isi tindakan (sidik jari SHA-256), sekali pakai, kedaluwarsa, hanya manusia yang dapat\n  memutuskan, tercatat di audit_logs; ditegakkan saat antre, saat klaim worker, dan di router\n- Kebijakan risiko: tindakan berisiko tidak diulang atau dipulihkan otomatis; retry manual meminta approval baru\n- Reviewer: bukti deterministik (diff Git, pemindaian keamanan statis, tes dijalankan ulang di sandbox);\n  verdict dihitung deterministik; klaim tanpa bukti nyata ditolak; hasil di code_reviews\n- Laporan 15 bagian dari fakta database untuk setiap task selesai/gagal; agent Reporter dengan ringkasan\n  model yang angkanya divalidasi; endpoint laporan task dan proyek\n- UI: /approvals, hasil review, approval, dan laporan di detail task, laporan proyek\n- Tes: 520 pytest, 7 Vitest; 16 dari 16 mutasi tertangkap; uji langsung dengan model dan sandbox asli\n\nCo-Authored-By: Claude Sonnet 5.5 \u003cnoreply@anthropic.com\u003e",
+  "Tags": [],
+  "Fingerprint": "3af2dd07e73a8866e55afda542594a757279587d:apps/api/tests/test_reviewer.py:generic-api-key:53"
+ }
+]

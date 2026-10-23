@@ -16,6 +16,7 @@ export default function ProductsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [line, setLine] = useState<Line>("owned_product");
   const [description, setDescription] = useState("");
@@ -47,6 +48,20 @@ export default function ProductsPage() {
       setError((err as Error).message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onDelete(product: Product) {
+    if (!window.confirm(t("products.confirmDelete").replace("{name}", product.name))) return;
+    setDeletingId(product.id);
+    setError(null);
+    try {
+      await productsApi.delete(product.id);
+      setProducts((prev) => (prev ?? []).filter((p) => p.id !== product.id));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -101,8 +116,14 @@ export default function ProductsPage() {
                 <span className="badge" data-task={p.effective_permission === "not_allowed" ? "failed" : "completed"}>{label(`perm.${p.effective_permission}`)}</span>
               </div>
               {p.description && <p className="muted">{p.description}</p>}
+              {p.effective_permission === "not_allowed" && <p className="small muted">{t("products.promotionSetup")}</p>}
             </div>
-            <Link className="button" href={`/products/${p.id}`}>{t("products.open")}</Link>
+            <div className="row">
+              <Link className="button" href={`/products/${p.id}`}>{p.effective_permission === "not_allowed" ? t("products.preparePromotion") : t("products.open")}</Link>
+              <button type="button" className="danger" disabled={deletingId !== null} onClick={() => onDelete(p)}>
+                {deletingId === p.id ? t("common.loading") : t("products.delete")}
+              </button>
+            </div>
           </li>
         ))}
       </ul>

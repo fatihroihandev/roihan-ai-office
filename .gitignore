@@ -8,6 +8,8 @@ data/projects/
 data/database/
 data/logs/
 data/backups/
+data/ai-provider-settings.json
+data/web-access.json
 *.db
 *.sqlite
 *.sqlite3
@@ -30,3 +32,8 @@ coverage/
 Thumbs.db
 .idea/
 .vscode/
+
+# Code graph dan AI tools
+.claude/
+.benchmark-tmp/
+.codegraph/

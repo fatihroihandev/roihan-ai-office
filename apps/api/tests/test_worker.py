@@ -151,6 +151,23 @@ def test_truncated_output_fails_and_is_not_marked_complete(migrated_db, tmp_path
     drain(env)
     t = get(env, tid)
     assert (t.status, t.last_error_kind, t.attempt_count, t.result) == ("failed", "output_truncated", 1, None)
+    assert len(env.provider.calls) == 4  # satu jawaban utama dan tiga kelanjutan; tidak ditandai selesai
+    assert "perkecil lingkup task" not in t.last_error
+
+
+def test_truncated_text_output_continues_and_completes(migrated_db, tmp_path):
+    provider = FakeProvider(reply=["awal jawaban yang terpotong", "lanjutan lengkap"], truncated=[True, False])
+    env = build_env(migrated_db, tmp_path, provider=provider)
+    pid = make_project(env)
+    tid = add_task(env, pid, title="Tulis analisis", description="Analisis singkat")
+
+    drain(env)
+
+    task = get(env, tid)
+    assert task.status == "completed"
+    assert task.result["output"] == "awal jawaban yang terpotong\n\nlanjutan lengkap"
+    assert len(provider.calls) == 2
+    assert all(call[1].max_tokens == env.settings.ai_max_tokens_cap for call in provider.calls)
 
 
 def test_empty_output_is_not_complete(migrated_db, tmp_path):

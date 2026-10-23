@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -136,6 +136,17 @@ async def create_lead(body: LeadCreate, request: Request, session: SessionDep):
     if isinstance(out, JSONResponse) and out.status_code >= 400:
         session.rollback()
     return out
+
+
+@router.delete("/leads/{lead_id}", status_code=204)
+async def delete_lead(lead_id: str, session: SessionDep):
+    lead = _lead(session, lead_id)
+    out = await _guard(lambda: service.delete_lead(session, lead, actor=ACTOR))
+    if isinstance(out, JSONResponse):
+        session.rollback()
+        return out
+    session.commit()
+    return Response(status_code=204)
 
 
 @router.get("/leads/{lead_id}")

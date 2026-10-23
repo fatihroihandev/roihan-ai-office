@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, approvals, backups, dashboard, engineering, events, health, marketing, power, products, seo, projects, tasks
+from app.api import ai, approvals, backups, dashboard, engineering, events, health, marketing, power, products, seo, web, projects, tasks
 from app.config import Settings, get_settings
 from app.db.session import create_db_engine, create_session_factory
 from app.logging_config import correlation_id, new_correlation_id, setup_logging
@@ -14,6 +14,8 @@ from app.providers.base import ModelProvider
 from app.providers.gateway import ModelGateway
 from app.projects.storage import ProjectStorage
 from app.providers.registry import build_registry
+from app.providers.runtime_settings import load_provider_settings
+from app.web.service import WebAccess, load_web_settings
 from app.routing.router import ModelRouter
 from app.sandbox.base import Sandbox
 from app.sandbox.factory import build_sandbox
@@ -31,23 +33,11 @@ SECURITY_HEADERS = {
 }
 
 
-async def _backup_loop(app: FastAPI) -> None:
-    """Cadangan terjadwal: satu segera bila belum ada yang cukup baru, lalu tiap `backup_interval_hours`. Kegagalan hanya dicatat."""
-    from app.api.backups import run_backup
-
-    settings = app.state.settings
-    interval = settings.backup_interval_hours * 3600
-    while True:
-        try:
-            await asyncio.to_thread(run_backup, settings, "auto")
-        except Exception:
-            logger.exception("backup terjadwal gagal")
-        await asyncio.sleep(interval)
-
-
 def create_app(settings: Settings | None = None, providers: dict[str, ModelProvider] | None = None,
                executors: dict[str, Executor] | None = None, sandbox: Sandbox | None = None) -> FastAPI:
     settings = settings or get_settings()
+    load_provider_settings(settings)
+    load_web_settings(settings)
     setup_logging(settings.secret_values, settings.redact_secrets_in_logs)
 
     @asynccontextmanager
@@ -58,10 +48,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
         if settings.worker_enabled:
             worker = app.state.worker
             task = asyncio.create_task(worker.run_forever())
-        backup_task = asyncio.create_task(_backup_loop(app)) if settings.backup_enabled else None
         yield
-        if backup_task is not None:
-            backup_task.cancel()
         await app.state.power.shutdown()
         if task is not None:
             app.state.worker.stop()
@@ -80,12 +67,13 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
     app.state.gateway = ModelGateway(app.state.registry, settings, app.state.session_factory)
     app.state.router = ModelRouter(app.state.registry, settings, app.state.session_factory)
     app.state.ws_tickets = {}
+    app.state.web = WebAccess(settings, app.state.session_factory)
     app.state.sandbox = sandbox or build_sandbox(settings)
     storage = ProjectStorage(settings.projects_dir)
     app.state.power = PowerController(settings, app.state.session_factory, CheckpointManager(settings, app.state.session_factory, storage))
     if settings.worker_enabled or executors is not None:
         app.state.worker = TaskWorker(settings, app.state.session_factory, app.state.gateway, app.state.router,
-                                      storage, executors, app.state.sandbox)
+                                      storage, executors, app.state.sandbox, app.state.web)
         app.state.worker.set_gate(app.state.power.can_schedule)
         app.state.power.attach_worker(app.state.worker)
 
@@ -128,6 +116,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
     app.include_router(backups.router)
     app.include_router(power.router)
     app.include_router(seo.router)
+    app.include_router(web.router)
     return app
 
 

@@ -254,6 +254,19 @@ Di `/marketing/seo` ada bagian **Situs yang dipasarkan**:
 
 ---
 
+### 8.8 Mencari klien langsung dari web
+
+1. Buka **AI Control Center -> Akses web agent**. Pilih **Tavily** untuk paket gratis tanpa kartu kredit (1.000 kredit per bulan), daftar di tautan yang tersedia, lalu masukkan API key. Centang **Izinkan agent memakai web**, simpan, dan coba **Uji pencarian**. Brave Search tetap tersedia sebagai pilihan lain. Atur batas permintaan per hari bila perlu.
+2. Buka **Marketing -> Cari dari web**. Isi jenis usaha, kota, dan tanda peluang (mis. *klinik gigi*, *Bandung*, *belum punya booking online*), pilih produk yang diizinkan untuk promosi dan jumlah halaman, lalu klik **Cari prospek**.
+3. Agent mencari situs publik, mengekstrak perusahaan/kontak yang tertulis, lalu otomatis membuat draf promosi untuk tiap prospek yang lolos. Daftar diperbarui saat task selesai. Buka prospek untuk meninjau draf.
+4. Pada draf yang lolos pemeriksaan klaim, klik **Buka email untuk kirim** atau **Buka WhatsApp untuk kirim**. Aplikasi membuka pesan siap tinjau; Anda menekan tombol kirim di layanan tersebut. Setelah mengirim, kembali ke prospek dan catat **Sudah saya kirim**.
+5. Tombol **Hapus prospek** menghapus prospek dan draf yang belum terkirim. Catatan interaksi, peluang, atau pesan terkirim melindungi riwayat dari penghapusan. **Hapus input** mengosongkan kriteria pencarian.
+4. Pencarian dan pengambilan halaman tercatat; lihat "Permintaan web terakhir" di kartu akses web. Matikan saklar kapan saja untuk menghentikan akses web.
+
+Catatan: pencarian memakai situs publik melalui provider web yang Anda atur. Google Maps tidak diakses langsung. Agent hanya mengekstrak yang tertulis di halaman; halaman yang butuh JavaScript untuk tampil tidak terbaca; halaman yang melarang lewat robots.txt dilewati.
+
+---
+
 ## 9. Sandbox untuk menjalankan kode (opsional tapi disarankan)
 
 Kode buatan AI **tidak pernah dijalankan di Windows Anda**. Tanpa sandbox, task Developer/QA berstatus `blocked (sandbox_disabled)`.

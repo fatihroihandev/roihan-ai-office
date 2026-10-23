@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import re
+from html import escape
 from html.parser import HTMLParser
 from urllib.parse import urlparse
 from xml.etree import ElementTree
@@ -171,6 +172,35 @@ def audit_html(url: str, html: str, robots_txt: str = "", sitemap_xml: str = "")
     return {"url": url, "page": {"title": title, "description": desc, "h1": p.h1, "h2": p.h2, "images": p.imgs, "internal_links": internal,
                                  "external_links": len(p.links) - internal, "jsonld_blocks": len(p.jsonld), "sitemap_urls": sitemap_urls},
             "findings": findings, "counts": counts, "not_checked": not_checked}
+
+
+def audit_extracted_page(url: str, title: str, description: str, links: list[str], snapshot: dict) -> dict:
+    """Run the same deterministic on-page checks on the safe fetcher's bounded metadata snapshot."""
+    esc = lambda value: escape(str(value or ""), quote=True)
+    parts = [f'<html lang="{esc(snapshot.get("lang"))}"><head><title>{esc(title)}</title>']
+    if description:
+        parts.append(f'<meta name="description" content="{esc(description)}">')
+    if snapshot.get("robots"):
+        parts.append(f'<meta name="robots" content="{esc(snapshot["robots"])}">')
+    if snapshot.get("viewport"):
+        parts.append('<meta name="viewport" content="width=device-width">')
+    if snapshot.get("canonical"):
+        parts.append(f'<link rel="canonical" href="{esc(snapshot["canonical"])}">')
+    for tag in snapshot.get("og_tags", []):
+        if str(tag).startswith("og:"):
+            parts.append(f'<meta property="{esc(tag)}" content="present">')
+    validity = snapshot.get("jsonld_validity", [])
+    parts.extend('<script type="application/ld+json">{}</script>' if valid else '<script type="application/ld+json">{invalid</script>' for valid in validity[:20])
+    parts.append("</head><body>")
+    parts.extend("<h1>heading</h1>" for _ in range(min(50, max(0, int(snapshot.get("h1") or 0)))))
+    parts.extend("<h2>heading</h2>" for _ in range(min(100, max(0, int(snapshot.get("h2") or 0)))))
+    image_count = min(500, max(0, int(snapshot.get("images") or 0)))
+    no_alt = min(image_count, max(0, int(snapshot.get("images_no_alt") or 0)))
+    parts.extend('<img src="image">' for _ in range(no_alt))
+    parts.extend('<img src="image" alt="present">' for _ in range(image_count - no_alt))
+    parts.extend(f'<a href="{esc(link)}">link</a>' for link in links[:100])
+    parts.append("</body></html>")
+    return audit_html(url, "".join(parts))
 
 
 # ------------------------------------------------------------------ pemeriksaan keyword

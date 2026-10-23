@@ -4,7 +4,6 @@ import json
 import sqlite3
 import tarfile
 import threading
-import time
 from pathlib import Path
 
 import pytest
@@ -236,16 +235,6 @@ def test_api_requires_token_and_roundtrip(settings, auth):
     assert c.post(f"/api/backups/{name}/verify", headers=auth).json()["ok"] is True
     assert c.post("/api/backups/..%2F..%2Fx/verify", headers=auth).status_code == 404
     assert c.post("/api/backups/20200101T000000-nihil/verify", headers=auth).status_code == 404
-
-
-def test_scheduler_creates_backup_on_start(settings):
-    s = settings.model_copy(update={"backup_enabled": True})
-    with TestClient(create_app(s)):
-        for _ in range(50):
-            if (s.data_dir / "backups").exists() and any((s.data_dir / "backups").iterdir()):
-                break
-            time.sleep(0.1)
-    assert any(p.name.endswith("-auto") for p in (s.data_dir / "backups").iterdir())
 
 
 def test_cli_create_verify_restore(settings, monkeypatch, capsys):

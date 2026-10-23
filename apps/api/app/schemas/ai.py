@@ -2,6 +2,46 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.providers.runtime_settings import valid_base_url
+
+
+class ProviderSettingsUpdate(BaseModel):
+    enabled: bool | None = None
+    base_url: str | None = Field(default=None, min_length=8, max_length=500)
+    api_key: str | None = Field(default=None, repr=False)
+    clear_api_key: bool = False
+
+    @field_validator("base_url")
+    @classmethod
+    def _valid_base_url(cls, value: str | None) -> str | None:
+        if value is not None and not valid_base_url(value):
+            raise ValueError("Alamat provider harus berupa URL HTTP/HTTPS tanpa kredensial, query, atau fragment")
+        return value.strip().rstrip("/") if value is not None else None
+
+    @field_validator("api_key")
+    @classmethod
+    def _trim_api_key(cls, value: str | None) -> str | None:
+        value = value.strip() if value is not None else None
+        return value or None
+
+
+class ProviderHealthOut(BaseModel):
+    status: str
+    latency_ms: int | None = None
+    version: str | None = None
+    error_kind: str | None = None
+
+
+class ProviderOut(BaseModel):
+    name: str
+    kind: str
+    is_paid: bool
+    enabled: bool
+    implemented: bool
+    base_url: str | None = None
+    api_key_configured: bool | None = None
+    health: ProviderHealthOut | None = None
+
 
 class GenerateBody(BaseModel):
     provider: str = "ollama"

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.db.base import utcnow
 from app.db.models import (
     AuditLog, ClientRequirement, Company, Lead, LeadInteraction, LeadSource, OutboundMessage, OutreachRecord, Product, SalesOpportunity,
-    SuppressionEntry,
+    SuppressionEntry, Task,
 )
 from app.marketing import access
 from app.marketing.access import AccessDenied
@@ -232,6 +232,37 @@ def create_lead(session: Session, policy: Policy, *, actor: str, company: dict, 
     recompute_score(session, policy, lead, now)
     _audit(session, "lead.create", "lead", lead.id, actor, {"company_id": comp.id, "source_type": src.source_type, "score": lead.score})
     return lead
+
+
+def delete_lead(session: Session, lead: Lead, *, actor: str) -> None:
+    """Hapus prospek yang belum punya riwayat; pertahankan audit dan catatan suppression."""
+    _human(actor)
+    linked_models = (LeadInteraction, SalesOpportunity, OutboundMessage)
+    if any(session.scalar(select(func.count()).select_from(model).where(model.lead_id == lead.id)) for model in linked_models):
+        raise MarketingError("lead_has_history", "Prospek sudah memiliki riwayat. Hapus ditolak agar catatan interaksi dan pengiriman tetap utuh.")
+    active_drafts = session.scalars(select(Task).where(Task.action_type == "draft_outreach", Task.status.in_(
+        {"draft", "queued", "running", "pending_approval"}))).all()
+    if any((task.params or {}).get("lead_id") == lead.id for task in active_drafts):
+        raise MarketingError("lead_draft_running", "Draf promosi masih diproses. Tunggu task selesai sebelum menghapus prospek.")
+
+    company_id, source_id = lead.company_id, lead.source_id
+    drafts = session.scalars(select(OutreachRecord).where(OutreachRecord.lead_id == lead.id)).all()
+    if any(d.status == "sent_manual" for d in drafts):
+        raise MarketingError("lead_has_history", "Prospek sudah memiliki pesan terkirim. Riwayat pengiriman harus tetap utuh.")
+    for draft in drafts:
+        _audit(session, "outreach.delete", "outreach", draft.id, actor, {"reason": "lead_deleted"})
+        session.delete(draft)
+    _audit(session, "lead.delete", "lead", lead.id, actor, {"created_by": lead.created_by})
+    session.delete(lead)
+    session.flush()
+    if not session.scalar(select(func.count()).select_from(Lead).where(Lead.company_id == company_id)):
+        company = session.get(Company, company_id)
+        if company is not None:
+            session.delete(company)
+    if not session.scalar(select(func.count()).select_from(Lead).where(Lead.source_id == source_id)):
+        source = session.get(LeadSource, source_id)
+        if source is not None:
+            session.delete(source)
 
 
 def update_contact(session: Session, policy: Policy, lead: Lead, *, actor: str, **fields) -> Lead:
