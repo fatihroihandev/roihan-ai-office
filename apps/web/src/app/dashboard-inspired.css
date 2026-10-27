@@ -1292,3 +1292,11 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Wadah kerja selalu selebar sisa layar (menimpa aturan global `main`), juga di halaman detail. */
+.inspired-workspace { max-width: none; margin: 0; padding: 22px 26px; }
+.inspired-workspace .feature-view-container { width: 100%; }
+
+.inspired-dashboard-container { width: 100%; }
+
+.inspired-workspace main { max-width: none; margin: 0; padding: 0; width: 100%; }
