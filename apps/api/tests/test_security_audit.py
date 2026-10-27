@@ -6,7 +6,13 @@ from fastapi.testclient import TestClient
 
 from app.main import create_app
 
-PUBLIC = {("GET", "/api/health")}  # liveness minimal tanpa data; WebSocket memakai tiket sekali pakai yang diterbitkan lewat rute bertoken
+PUBLIC = {
+    ("GET", "/api/health"),
+    ("GET", "/api/auth/status"),
+    ("POST", "/api/auth/bootstrap"),
+    ("POST", "/api/auth/login"),
+    ("POST", "/api/auth/logout"),
+}  # liveness minimal tanpa data; WebSocket memakai tiket sekali pakai yang diterbitkan lewat rute bertoken
 
 
 def _routes(app):

@@ -291,12 +291,14 @@ code, pre {
   width: 34px;
   height: 34px;
   border-radius: var(--radius-md);
-  background: var(--accent);
+  background: transparent;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-brand-text {
@@ -612,24 +614,41 @@ code, pre {
   align-items: center;
 }
 
-.workspace-search svg {
+.workspace-search-icon,
+.workspace-search svg.workspace-search-icon {
   position: absolute;
   left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
   color: var(--text-dim);
   pointer-events: none;
+  flex-shrink: 0;
+  display: block;
+  transition: color 0.15s ease;
+}
+
+.workspace-search:focus-within .workspace-search-icon {
+  color: var(--accent);
 }
 
 .workspace-search input {
   background: var(--surface-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 6px 12px 6px 32px;
+  padding: 6px 28px 6px 34px;
   font-size: 0.8rem;
   color: var(--text);
   width: 230px;
   height: 34px;
   outline: none;
-  transition: border-color 0.15s ease, width 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, width 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.workspace-search input::-webkit-search-decoration,
+.workspace-search input::-webkit-search-cancel-button {
+  display: none;
 }
 
 .workspace-search input:focus {
@@ -637,6 +656,30 @@ code, pre {
   border-color: var(--accent);
   width: 270px;
   box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.workspace-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--surface-subtle);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.workspace-search-clear:hover {
+  background: var(--border);
+  color: var(--text);
 }
 
 /* Navbar Status Pill (AI Power & Worker) */
@@ -722,16 +765,18 @@ code, pre {
 }
 
 .navbar-user-avatar {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-sm);
-  background: var(--sidebar-bg);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   color: #ffffff;
   font-size: 0.68rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 /* 2.3 Main Content Container */

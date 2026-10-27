@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { authApi, type AuthStatus } from "@/lib/authApi";
 
@@ -124,19 +125,26 @@ export function AuthGateway({ children }: { children: ReactNode }) {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: "var(--radius-md)",
-              background: "var(--accent)",
+              width: 52,
+              height: 52,
+              borderRadius: "var(--radius-lg)",
+              overflow: "hidden",
+              margin: "0 auto 12px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              margin: "0 auto 12px",
             }}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 12h12" />
-            </svg>
+            <Image
+              src="/brand/roihan-app-icon.png"
+              alt="Roihan Technologies Logo"
+              width={52}
+              height={52}
+              unoptimized
+              priority
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
           </div>
           <h1 style={{ fontSize: "1.25rem", fontWeight: 700, margin: "0 0 4px" }}>
             Roihan AI Office

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useCallback, type ReactNode } from "react";
@@ -322,10 +323,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             }}
             title="Roihan AI Office — Command Center"
           >
-            <div className="sidebar-brand-logo">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 12h12" />
-              </svg>
+            <div className="sidebar-brand-logo" aria-hidden="true">
+              <Image
+                src="/brand/roihan-app-icon.png"
+                alt="Roihan Technologies Logo"
+                width={34}
+                height={34}
+                unoptimized
+                priority
+                style={{ width: "100%", height: "100%", borderRadius: "inherit", objectFit: "cover" }}
+              />
             </div>
             <div className="sidebar-brand-text">
               <span className="sidebar-brand-name">Roihan AI Office</span>
@@ -429,9 +436,20 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="navbar-right">
             {/* Global Search */}
             <div className="workspace-search">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <svg
+                className="workspace-search-icon"
+                width="15"
+                height="15"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="9" cy="9" r="6" />
+                <line x1="13.5" y1="13.5" x2="17.5" y2="17.5" />
               </svg>
               <input
                 type="search"
@@ -440,6 +458,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="workspace-search-clear"
+                  onClick={() => setSearchQuery("")}
+                  aria-label="Bersihkan pencarian"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
               {filteredSearch.length > 0 && (
                 <div className="search-results-dropdown" role="listbox">
                   {filteredSearch.map((item) => (
@@ -581,13 +612,26 @@ export function AppShell({ children }: { children: ReactNode }) {
 
             {/* Owner Account & Logout */}
             <div className="navbar-user-chip">
-              <span className="navbar-user-avatar">R</span>
+              <span className="navbar-user-avatar" style={{ padding: 2, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <Image
+                  src="/brand/roihan-logo-icon.png"
+                  alt="Roihan Logo"
+                  width={18}
+                  height={18}
+                  unoptimized
+                  style={{ width: 18, height: 18, objectFit: "contain" }}
+                />
+              </span>
               <span className="navbar-user-name">Owner</span>
               <button
                 type="button"
                 onClick={async () => {
                   if (window.confirm("Keluar dari sesi pemilik Roihan AI Office?")) {
-                    await authApi.logout();
+                    try {
+                      await authApi.logout();
+                    } catch {
+                      // Fallback bila backend tidak dapat dihubungi
+                    }
                     window.location.reload();
                   }
                 }}
@@ -598,9 +642,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   background: "transparent",
                   padding: "2px 4px",
                   color: "var(--text-secondary)",
+                  cursor: "pointer",
                 }}
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16 17 21 12 16 7" />
                   <line x1="21" y1="12" x2="9" y2="12" />
