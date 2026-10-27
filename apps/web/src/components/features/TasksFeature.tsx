@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
@@ -33,7 +33,7 @@ export function TasksFeature() {
     try {
       const [tk, ag, wk] = await Promise.all([tasksApi.list(pid), tasksApi.agents(pid), tasksApi.worker()]);
       setTasks(tk);
-      setAgents(ag);
+      setAgents(ag.filter((a) => a.department !== "engineering"));
       setWorker(wk);
       setError(null);
     } catch (e) {
@@ -46,7 +46,6 @@ export function TasksFeature() {
   useEffect(() => {
     let cancelled = false;
     tasksApi.projects().then((p) => !cancelled && setProjects(p), () => undefined);
-    tasksApi.sandbox().then((s) => !cancelled && setSandbox(s), () => undefined);
     return () => {
       cancelled = true;
     };
@@ -157,45 +156,6 @@ export function TasksFeature() {
         </form>
       </section>
 
-      <section className="card">
-        <h3>{t("sandbox.title")}</h3>
-        {!sandbox && <Loading lines={2} />}
-        {sandbox && (
-          <>
-            <div className="chips">
-              <span className="badge" data-state={sandbox.available ? "active" : undefined}>
-                {t(sandbox.available ? "sandbox.available" : "sandbox.unavailable")}
-              </span>
-              <span className="badge">{sandbox.backend}</span>
-            </div>
-            {!sandbox.available && (
-              <>
-                <p className="muted">{sandbox.reason ? tOr(`block.${sandbox.reason}`, sandbox.reason) : ""}{sandbox.message ? ` — ${sandbox.message}` : ""}</p>
-                <p className="muted small">{t("sandbox.setupHint")}</p>
-              </>
-            )}
-            <p className="muted small">
-              {t("sandbox.limits")}: {t("sandbox.limit.time")} {sandbox.limits.timeout_s}s · {t("sandbox.limit.memory")} {sandbox.limits.memory_mb} MB ·{" "}
-              {t("sandbox.limit.network")} {t("sandbox.limit.networkOff")}
-            </p>
-            {sandbox.selftest && sandbox.selftest.checks.length > 0 && (
-              <details>
-                <summary>{t("sandbox.checks")} ({sandbox.selftest.checks.filter((c) => c.passed).length}/{sandbox.selftest.checks.length})</summary>
-                <ul>
-                  {sandbox.selftest.checks.map((c) => (
-                    <li key={c.name}>{c.passed ? "✓" : "✗"} {c.description}</li>
-                  ))}
-                </ul>
-              </details>
-            )}
-            {sandbox.configured_backend !== "none" && (
-              <button type="button" disabled={checking} onClick={onSelftest}>
-                {t(checking ? "sandbox.selftest.running" : "sandbox.selftest")}
-              </button>
-            )}
-          </>
-        )}
-      </section>
 
       </div>
 

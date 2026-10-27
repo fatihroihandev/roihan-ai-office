@@ -1300,3 +1300,6 @@
 .inspired-dashboard-container { width: 100%; }
 
 .inspired-workspace main { max-width: none; margin: 0; padding: 0; width: 100%; }
+
+.kpi-card-stat.stacked { flex-direction: column; align-items: flex-start; gap: 4px; }
+.kpi-card-stat.stacked span { font-size: 0.72rem; line-height: 1.3; }

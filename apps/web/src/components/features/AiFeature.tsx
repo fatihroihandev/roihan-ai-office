@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -165,7 +165,7 @@ export function AiFeature() {
         </div>
         {!providers && !error && <Loading />}
         <div className="prov-grid">
-          {providers?.map((p) => {
+          {providers?.filter((p) => p.name !== "ollama").map((p) => {
             const st = stateOf(p);
             const typed = keyDraft[p.name]?.trim();
             const enabled = enabledDraft[p.name] ?? (typed ? true : p.enabled);

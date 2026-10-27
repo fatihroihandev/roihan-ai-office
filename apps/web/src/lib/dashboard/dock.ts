@@ -7,11 +7,11 @@ export const DOCK: { view: DashboardView; icon: string; title: string }[] = [
   { view: "content", icon: "✍️", title: "Content Studio" },
   { view: "leads", icon: "👥", title: "Leads & CRM" },
   { view: "campaigns", icon: "🚀", title: "Kampanye & Analitik" },
-  { view: "projects", icon: "📁", title: "Proyek" },
-  { view: "products", icon: "📦", title: "Produk" },
+  { view: "projects", icon: "📁", title: "Proyek Marketing" },
+  { view: "products", icon: "📦", title: "Produk & Penawaran" },
   { view: "approvals", icon: "🛡️", title: "Pusat Persetujuan" },
-  { view: "tasks", icon: "📋", title: "Tugas & Antrean Worker" },
-  { view: "office", icon: "🏢", title: "Kantor Virtual" },
+  { view: "tasks", icon: "📋", title: "Tugas Tim Marketing" },
+  { view: "office", icon: "🏢", title: "Kantor Tim Marketing" },
   { view: "ai", icon: "⚙️", title: "AI Core & Integrasi" },
 ];
 

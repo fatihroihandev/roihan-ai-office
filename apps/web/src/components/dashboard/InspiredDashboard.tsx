@@ -20,6 +20,9 @@ import { TasksFeature } from "@/components/features/TasksFeature";
 import { OfficeFeature } from "@/components/features/OfficeFeature";
 import { AiFeature } from "@/components/features/AiFeature";
 
+import { MarketingOverview } from "./MarketingOverview";
+import { MarketingSidePanel } from "./MarketingSidePanel";
+import type { Kpis } from "@/lib/seoApi";
 import { DOCK, VIEW_IDS, type DashboardView } from "@/lib/dashboard/dock";
 
 interface SearchResult {
@@ -78,6 +81,7 @@ export function InspiredDashboard() {
   const [campaignsList, setCampaignsList] = useState<SeoCampaign[]>([]);
   const [retentionInfo, setRetentionInfo] = useState<Retention | null>(null);
   const [tasksList, setTasksList] = useState<Task[]>([]);
+  const [kpis, setKpis] = useState<Kpis | null>(null);
 
   // Selected calendar day
   const [selectedDay, setSelectedDay] = useState<number>(27);
@@ -117,6 +121,7 @@ export function InspiredDashboard() {
     seoApi.campaigns().then(setCampaignsList, () => undefined);
     marketingApi.retention().then(setRetentionInfo, () => undefined);
     tasksApi.list().then(setTasksList, () => undefined);
+    seoApi.kpis().then(setKpis, () => undefined);
   }, []);
 
   const togglePower = async () => {
@@ -212,12 +217,12 @@ export function InspiredDashboard() {
   }, [searchQuery]);
 
   // Real backend metrics
-  const aiCalls = data?.ai?.calls_24h ?? 1428;
-  const activeTasks = data?.tasks?.running ?? 12;
-  const completedTasks = data?.tasks?.completed ?? 428;
+  const aiCalls = data?.ai?.calls_24h ?? 0;
+  const activeTasks = data?.tasks?.running ?? 0;
+  const completedTasks = data?.tasks?.completed ?? 0;
   const pendingApprovals = approvalsList.filter((a) => a.status === "pending").length;
-  const totalLeads = leadsList.length > 0 ? leadsList.length : (data?.marketing?.leads_total ?? 104);
-  const openOpportunities = data?.marketing?.opportunities_open ?? 3;
+  const totalLeads = leadsList.length > 0 ? leadsList.length : (data?.marketing?.leads_total ?? 0);
+  const openOpportunities = data?.marketing?.opportunities_open ?? 0;
 
   return (
     <div className={`inspired-dashboard-container ${theme === "light" ? "light-theme" : ""}`} data-theme={theme}>
@@ -390,289 +395,8 @@ export function InspiredDashboard() {
           </div>
         </div>
 
-        {/* VIEW 1: Overview */}
-        {activeView === "overview" && (
-          <>
-            {/* Top 4 KPI White Cards with Real Backend Data */}
-            <div className="workspace-kpi-grid">
-              {/* Card 1: AI Operations */}
-              <div className="kpi-card" onClick={() => setActiveView("ai")}>
-                <div className="kpi-card-top">
-                  <span className="kpi-card-title">AI Operations</span>
-                  <div className="kpi-card-icon" style={{ background: "rgba(255, 87, 34, 0.12)", color: "#ff5722" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2c1.1 0 2 .9 2 2 0 .74-.4 1.38-1 1.72v1.56c2.8 1.15 4 4.14 4 6.72 0 4.42-3.58 8-8 8s-8-3.58-8-8c0-3.72 2.56-6.85 6-7.74V5.72C6.4 5.38 6 4.74 6 4c0-1.1.9-2 2-2 1.66 0 3 1.34 3 3 0 .35-.07.69-.18 1 .84-.33 1.77-.5 2.76-.5.48 0 .95.04 1.42.13-.39-.42-.64-.98-.64-1.63 0-1.1.9-2 2-2z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="kpi-card-visual">
-                  <svg width="100%" height="32" viewBox="0 0 100 32">
-                    <rect x="5" y="16" width="6" height="16" rx="3" fill="#ff5722" opacity="0.3" />
-                    <rect x="20" y="8" width="6" height="24" rx="3" fill="#ff5722" opacity="0.6" />
-                    <rect x="35" y="12" width="6" height="20" rx="3" fill="#ff5722" opacity="0.4" />
-                    <rect x="50" y="4" width="6" height="28" rx="3" fill="#ff5722" />
-                    <rect x="65" y="14" width="6" height="18" rx="3" fill="#ff5722" opacity="0.5" />
-                    <rect x="80" y="10" width="6" height="22" rx="3" fill="#ff5722" opacity="0.7" />
-                  </svg>
-                </div>
-                <div className="kpi-card-stat">
-                  <strong>{aiCalls}</strong>
-                  <span>Panggilan AI</span>
-                </div>
-              </div>
-
-              {/* Card 2: Conversion Pulse */}
-              <div className="kpi-card" onClick={() => setActiveView("leads")}>
-                <div className="kpi-card-top">
-                  <span className="kpi-card-title">Conversion Pulse</span>
-                  <div className="kpi-card-icon" style={{ background: "rgba(236, 72, 153, 0.12)", color: "#ec4899" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="kpi-card-visual">
-                  <svg width="100%" height="32" viewBox="0 0 100 32">
-                    <path
-                      d="M0 16 L30 16 L35 4 L42 28 L48 8 L54 22 L58 16 L100 16"
-                      fill="none"
-                      stroke="#ec4899"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div className="kpi-card-stat">
-                  <strong>{totalLeads}</strong>
-                  <span>Prospek Terdata</span>
-                </div>
-              </div>
-
-              {/* Card 3: SEO Health */}
-              <div className="kpi-card" onClick={() => setActiveView("seo")}>
-                <div className="kpi-card-top">
-                  <span className="kpi-card-title">SEO Health Score</span>
-                  <div className="kpi-card-icon" style={{ background: "rgba(16, 185, 129, 0.12)", color: "#10b981" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M13 4v16M17 8l-4-4-4 4" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="kpi-card-visual" style={{ justifyContent: "center" }}>
-                  <svg width="60" height="32" viewBox="0 0 60 32">
-                    <path d="M 6 30 A 24 24 0 0 1 54 30" fill="none" stroke="var(--dash-border)" strokeWidth="5" strokeLinecap="round" />
-                    <path d="M 6 30 A 24 24 0 0 1 46 12" fill="none" stroke="#10b981" strokeWidth="5" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <div className="kpi-card-stat">
-                  <strong style={{ color: "#10b981" }}>98%</strong>
-                  <span>Kesehatan Teknis</span>
-                </div>
-              </div>
-
-              {/* Card 4: Avg Rank */}
-              <div className="kpi-card" onClick={() => setActiveView("seo")}>
-                <div className="kpi-card-top">
-                  <span className="kpi-card-title">Avg Position</span>
-                  <div className="kpi-card-icon" style={{ background: "rgba(59, 130, 246, 0.12)", color: "#3b82f6" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12.3 2a10 10 0 0 0 9.7 13.7 10 10 0 1 1-9.7-13.7z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="kpi-card-visual">
-                  <svg width="100%" height="32" viewBox="0 0 100 32">
-                    <rect x="10" y="12" width="6" height="20" rx="3" fill="#3b82f6" opacity="0.6" />
-                    <rect x="25" y="6" width="6" height="26" rx="3" fill="#3b82f6" />
-                    <rect x="40" y="16" width="6" height="16" rx="3" fill="#3b82f6" opacity="0.4" />
-                    <rect x="55" y="8" width="6" height="24" rx="3" fill="#3b82f6" opacity="0.8" />
-                    <rect x="70" y="4" width="6" height="28" rx="3" fill="#3b82f6" />
-                    <rect x="85" y="14" width="6" height="18" rx="3" fill="#3b82f6" opacity="0.5" />
-                  </svg>
-                </div>
-                <div className="kpi-card-stat">
-                  <strong style={{ color: "#3b82f6" }}>8.5</strong>
-                  <span>Peringkat Organik</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Middle Row (Activity Tracking & Focus Banner) */}
-            <div className="workspace-middle-grid">
-              {/* Activity Tracking */}
-              <div className="white-panel">
-                <div className="white-panel-header">
-                  <span className="white-panel-title">Pertumbuhan &amp; Laju Tugas</span>
-                  <select
-                    className="pill-select"
-                    value={timeframe}
-                    onChange={(e) => setTimeframe(e.target.value as any)}
-                  >
-                    <option value="Mingguan">Mingguan ▾</option>
-                    <option value="Bulanan">Bulanan ▾</option>
-                  </select>
-                </div>
-
-                <div className="chart-area-container">
-                  <svg width="100%" height="150" viewBox="0 0 460 150" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="splineGradientMkt" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ff5722" stopOpacity="0.38" />
-                        <stop offset="100%" stopColor="#ff5722" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Y-axis labels */}
-                    <text x="5" y="20" fill="var(--dash-text-dim)" fontSize="9" fontWeight="600">100%</text>
-                    <text x="5" y="50" fill="var(--dash-text-dim)" fontSize="9" fontWeight="600">80%</text>
-                    <text x="5" y="80" fill="var(--dash-text-dim)" fontSize="9" fontWeight="600">60%</text>
-                    <text x="5" y="110" fill="var(--dash-text-dim)" fontSize="9" fontWeight="600">40%</text>
-                    <text x="5" y="138" fill="var(--dash-text-dim)" fontSize="9" fontWeight="600">20%</text>
-
-                    {/* Spline Area Fill */}
-                    <path
-                      d="M 40 125 C 80 115, 110 98, 140 102 C 170 106, 190 75, 230 65 C 260 58, 280 82, 320 95 C 350 105, 380 92, 430 110 L 430 140 L 40 140 Z"
-                      fill="url(#splineGradientMkt)"
-                    />
-
-                    {/* Spline Stroke Line */}
-                    <path
-                      d="M 40 125 C 80 115, 110 98, 140 102 C 170 106, 190 75, 230 65 C 260 58, 280 82, 320 95 C 350 105, 380 92, 430 110"
-                      fill="none"
-                      stroke="#ff5722"
-                      strokeWidth="3.5"
-                      strokeLinecap="round"
-                    />
-
-                    {/* Peak Tooltip Pill */}
-                    <circle cx="230" cy="65" r="5" fill="#ffffff" stroke="#ff5722" strokeWidth="3" />
-                    <rect x="202" y="32" width="56" height="20" rx="10" fill="#ffffff" stroke="#ff5722" strokeWidth="1" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
-                    <text x="209" y="45" fill="#ff5722" fontSize="9" fontWeight="800">+24% ROI</text>
-
-                    {/* X-axis months */}
-                    <text x="40" y="148" fill="var(--dash-text-dim)" fontSize="9" fontWeight="500">Jan</text>
-                    <text x="80" y="148" fill="var(--dash-text-dim)" fontSize="9" fontWeight="500">Feb</text>
-                    <text x="120" y="148" fill="var(--dash-text-dim)" fontSize="9" fontWeight="500">Mar</text>
-                    <text x="160" y="148" fill="var(--dash-text-dim)" fontSize="9" fontWeight="500">Apr</text>
-                    <text x="200" y="148" fill="var(--dash-text-dim)" fontSize="9" fontWeight="500">Mei</text>
-                    <text x="240" y="148" fill="var(--dash-text-dim)" fontSize="9" fontWeight="500">Jun</text>
-                    <text x="280" y="148" fill="var(--dash-text-dim)" fontSize="9" fontWeight="500">Jul</text>
-                    <text x="320" y="148" fill="var(--dash-text-dim)" fontSize="9" fontWeight="500">Agu</text>
-                    <text x="360" y="148" fill="var(--dash-text-dim)" fontSize="9" fontWeight="500">Sep</text>
-                    <text x="400" y="148" fill="var(--dash-text-dim)" fontSize="9" fontWeight="500">Okt</text>
-                  </svg>
-                </div>
-              </div>
-
-              {/* Mesin Pertumbuhan Website Otonom */}
-              <div className="white-panel focus-banner-card">
-                <div className="focus-banner-info">
-                  <h3>Mesin Pertumbuhan Website Otonom</h3>
-
-                  <div className="focus-banner-stat-block">
-                    <strong>{activeTasks} Tugas</strong>
-                    <span>Operasi aktif hari ini</span>
-                  </div>
-
-                  <div className="focus-banner-stat-block">
-                    <strong>{completedTasks} Selesai</strong>
-                    <span>Total misi tereksekusi</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="focus-card-trigger-btn"
-                    onClick={() => setAuditModalOpen(true)}
-                  >
-                    ⚡ Jalankan Audit SEO
-                  </button>
-                </div>
-
-                <div className="focus-banner-image">
-                  <svg width="100%" height="100%" viewBox="0 0 140 140" fill="none">
-                    <rect width="140" height="140" fill="#1e293b" />
-                    <circle cx="70" cy="50" r="28" fill="#334155" />
-                    <path d="M40 120 C 50 85, 90 85, 100 120" fill="#f8fafc" opacity="0.9" />
-                    <rect x="30" y="115" width="80" height="25" rx="6" fill="#0f172a" />
-                    <circle cx="85" cy="45" r="14" fill="#94a3b8" />
-                    <path d="M60 70 L95 110" stroke="#ff5722" strokeWidth="4" strokeLinecap="round" />
-                    <path d="M55 105 L80 125" stroke="#ff5722" strokeWidth="4" strokeLinecap="round" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Section — Ruang Kerja Operasional Marketing */}
-            <div className="workspace-bottom-section">
-              <div className="section-head-row">
-                <div className="section-head-title">
-                  <span className="section-head-bar">|</span>
-                  <span>Ruang Kerja Operasional Marketing</span>
-                </div>
-                <button type="button" className="section-head-link" onClick={() => setActiveView("seo")}>
-                  Buka Modul Detail →
-                </button>
-              </div>
-
-              <div className="workspace-bottom-grid">
-                {/* Card 1: Website & Technical SEO */}
-                <div className="strategy-card white" onClick={() => setActiveView("seo")}>
-                  <div className="strategy-card-text">
-                    <strong>Website &amp; SEO Teknis</strong>
-                    <p>Audit on-page, robots.txt, sitemap &amp; canonical.</p>
-                    <span className="strategy-card-badge">Fase 20 • Selesai</span>
-                  </div>
-                  <div className="strategy-card-avatar">
-                    <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
-                      <circle cx="25" cy="25" r="25" fill="#fef3c7" />
-                      <circle cx="25" cy="25" r="18" fill="#f59e0b" opacity="0.8" />
-                      <circle cx="20" cy="20" r="4" fill="#ef4444" />
-                      <circle cx="30" cy="22" r="5" fill="#10b981" />
-                      <circle cx="24" cy="30" r="4" fill="#8b5cf6" />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Card 2: Kampanye & Content Studio */}
-                <div className="strategy-card orange" onClick={() => setActiveView("content")}>
-                  <div className="strategy-card-text">
-                    <strong>Kampanye &amp; Content Studio</strong>
-                    <p>Kalender konten, draf artikel &amp; linter klaim.</p>
-                    <span className="strategy-card-badge">Mesin Aktif</span>
-                  </div>
-                  <div className="strategy-card-avatar">
-                    <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
-                      <circle cx="25" cy="25" r="25" fill="#ffffff" />
-                      <circle cx="25" cy="25" r="18" fill="#10b981" />
-                      <circle cx="20" cy="22" r="4" fill="#ef4444" />
-                      <circle cx="28" cy="26" r="4" fill="#f59e0b" />
-                      <circle cx="30" cy="18" r="3" fill="#ffffff" />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Card 3: Leads & CRM Pipeline */}
-                <div className="strategy-card white" onClick={() => setActiveView("leads")}>
-                  <div className="strategy-card-text">
-                    <strong>Leads &amp; CRM Pipeline</strong>
-                    <p>Akuisisi prospek B2B &amp; kepatuhan retensi UU PDP.</p>
-                    <span className="strategy-card-badge">Kepatuhan Terverifikasi</span>
-                  </div>
-                  <div className="strategy-card-avatar">
-                    <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
-                      <circle cx="25" cy="25" r="25" fill="#ecfdf5" />
-                      <circle cx="25" cy="25" r="18" fill="#3b82f6" opacity="0.8" />
-                      <circle cx="22" cy="20" r="5" fill="#10b981" />
-                      <circle cx="29" cy="28" r="4" fill="#f59e0b" />
-                      <circle cx="20" cy="28" r="3" fill="#ef4444" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+        {/* Overview marketing: seluruh angka dari backend */}
+        {activeView === "overview" && (<MarketingOverview data={data} kpis={kpis} campaigns={campaignsList} pendingApprovals={pendingApprovals} onNavigate={setActiveView} onAudit={() => setAuditModalOpen(true)} onLead={() => setLeadModalOpen(true)} />)}
 
         {/* Fitur terintegrasi: semua modul dijalankan langsung di dashboard tunggal */}
         {activeView === "seo" && (<div className="feature-view-container"><SeoFeature /></div>)}
@@ -687,209 +411,7 @@ export function InspiredDashboard() {
         {activeView === "ai" && (<div className="feature-view-container"><AiFeature /></div>)}
       </main>
 
-      {/* 3. Right Profile & Calendar Panel (Persistent on all views) */}
-      <aside className="inspired-sidebar-panel" aria-label="Panel Profil dan Kalender Operasi">
-        {/* User Identity Header */}
-        <div className="profile-card-header">
-          <div className="profile-identity">
-            <div className="profile-avatar-circle">
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                <rect width="40" height="40" fill="#3f3f46" />
-                <circle cx="20" cy="15" r="8" fill="#e4e4e7" />
-                <path d="M6 35 C 10 25, 30 25, 34 35" fill="#d4d4d8" />
-              </svg>
-            </div>
-            <div className="profile-name-group">
-              <strong>Roihan Admin ▾</strong>
-              <span>@roihan.ai • CEO</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="profile-more-btn"
-            title="Tambah Prospek Cepat"
-            onClick={() => setLeadModalOpen(true)}
-          >
-            +
-          </button>
-        </div>
-
-        {/* System Telemetry Stats Row */}
-        <div className="profile-stats-row">
-          <div className="profile-stat-col">
-            <strong>6 Unit</strong>
-            <span>Agent AI</span>
-          </div>
-          <div className="profile-stat-col">
-            <strong>48 Tabel</strong>
-            <span>PostgreSQL</span>
-          </div>
-          <div className="profile-stat-col">
-            <strong>945 Tes</strong>
-            <span>100% Lolos</span>
-          </div>
-        </div>
-
-        {/* Calendar Widget (Oktober 2026) */}
-        <div className="calendar-widget">
-          <div className="calendar-header">
-            <strong>Oktober 2026</strong>
-            <div className="calendar-nav-btns">
-              <button type="button" className="calendar-nav-btn">&lt;</button>
-              <button type="button" className="calendar-nav-btn">&gt;</button>
-            </div>
-          </div>
-
-          <div className="calendar-grid">
-            <span className="calendar-day-label">Min</span>
-            <span className="calendar-day-label">Sen</span>
-            <span className="calendar-day-label">Sel</span>
-            <span className="calendar-day-label">Rab</span>
-            <span className="calendar-day-label">Kam</span>
-            <span className="calendar-day-label">Jum</span>
-            <span className="calendar-day-label">Sab</span>
-
-            <span className="calendar-date-cell" style={{ opacity: 0.3 }}>27</span>
-            <span className="calendar-date-cell" style={{ opacity: 0.3 }}>28</span>
-            <span className="calendar-date-cell" style={{ opacity: 0.3 }}>29</span>
-            <span className="calendar-date-cell" style={{ opacity: 0.3 }}>30</span>
-            <span className={`calendar-date-cell ${selectedDay === 1 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(1)}>1</span>
-            <span className={`calendar-date-cell ${selectedDay === 2 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(2)}>2</span>
-            <span className={`calendar-date-cell ${selectedDay === 3 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(3)}>3</span>
-
-            <span className={`calendar-date-cell ${selectedDay === 4 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(4)}>4</span>
-            <span className={`calendar-date-cell ${selectedDay === 5 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(5)}>5</span>
-            <span className={`calendar-date-cell ${selectedDay === 6 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(6)}>6</span>
-            <span className={`calendar-date-cell ${selectedDay === 7 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(7)}>7</span>
-            <span className={`calendar-date-cell ${selectedDay === 8 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(8)}>8</span>
-            <span className={`calendar-date-cell ${selectedDay === 9 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(9)}>9</span>
-            <span className={`calendar-date-cell ${selectedDay === 10 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(10)}>10</span>
-
-            <span className={`calendar-date-cell ${selectedDay === 11 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(11)}>11</span>
-            <span className={`calendar-date-cell ${selectedDay === 12 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(12)}>12</span>
-            <span className={`calendar-date-cell ${selectedDay === 13 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(13)}>13</span>
-            <span className={`calendar-date-cell ${selectedDay === 14 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(14)}>14</span>
-            <span className={`calendar-date-cell ${selectedDay === 15 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(15)}>15</span>
-            <span className={`calendar-date-cell ${selectedDay === 16 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(16)}>16</span>
-            <span className="calendar-date-cell badge-green" onClick={() => setSelectedDay(17)}>17</span>
-
-            <span className={`calendar-date-cell ${selectedDay === 18 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(18)}>18</span>
-            <span className={`calendar-date-cell ${selectedDay === 19 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(19)}>19</span>
-            <span className={`calendar-date-cell ${selectedDay === 20 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(20)}>20</span>
-            <span className="calendar-date-cell badge-green" onClick={() => setSelectedDay(21)}>21</span>
-            <span className={`calendar-date-cell ${selectedDay === 22 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(22)}>22</span>
-            <span className="calendar-date-cell badge-orange" onClick={() => setSelectedDay(23)}>23</span>
-            <span className={`calendar-date-cell ${selectedDay === 24 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(24)}>24</span>
-
-            <span className="calendar-date-cell badge-red" onClick={() => setSelectedDay(25)}>25</span>
-            <span className={`calendar-date-cell ${selectedDay === 26 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(26)}>26</span>
-            <span className={`calendar-date-cell ${selectedDay === 27 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(27)}>27</span>
-            <span className={`calendar-date-cell ${selectedDay === 28 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(28)}>28</span>
-            <span className={`calendar-date-cell ${selectedDay === 29 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(29)}>29</span>
-            <span className={`calendar-date-cell ${selectedDay === 30 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(30)}>30</span>
-            <span className={`calendar-date-cell ${selectedDay === 31 ? "badge-orange" : ""}`} onClick={() => setSelectedDay(31)}>31</span>
-          </div>
-        </div>
-
-        {/* Scheduled List Section */}
-        <div className="scheduled-section">
-          <div className="section-head-row">
-            <div className="section-head-title">
-              <span className="section-head-bar">|</span>
-              <span>Agenda &amp; Tugas Terjadwal</span>
-            </div>
-            <button type="button" className="section-head-link" onClick={() => setActiveView("tasks")}>
-              Lihat Semua →
-            </button>
-          </div>
-
-          <div className="scheduled-list">
-            {/* Item 1 */}
-            <div className="scheduled-item">
-              <div className="scheduled-thumb">
-                <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-                  <rect width="44" height="44" fill="#374151" />
-                  <circle cx="22" cy="18" r="8" fill="#ff5722" />
-                  <path d="M12 36 L22 26 L32 36" stroke="#ffffff" strokeWidth="2.5" />
-                </svg>
-              </div>
-              <div className="scheduled-info">
-                <span className="scheduled-tag">Website &amp; SEO</span>
-                <strong>Audit Teknis Website Berkala</strong>
-                <span>Crawl otomatis sitemap &amp; canonical</span>
-              </div>
-              <div className="scheduled-meta">
-                <span className="scheduled-date">Hari ini 18:00</span>
-                <button
-                  type="button"
-                  className="profile-more-btn"
-                  style={{ width: 22, height: 22, fontSize: "0.6rem" }}
-                  onClick={() => setAuditModalOpen(true)}
-                  title="Jalankan Audit Sekarang"
-                >
-                  ▶
-                </button>
-              </div>
-            </div>
-
-            {/* Item 2 */}
-            <div className="scheduled-item">
-              <div className="scheduled-thumb">
-                <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-                  <rect width="44" height="44" fill="#1f2937" />
-                  <circle cx="22" cy="16" r="7" fill="#10b981" />
-                  <rect x="14" y="26" width="16" height="12" rx="4" fill="#e5e7eb" />
-                </svg>
-              </div>
-              <div className="scheduled-info">
-                <span className="scheduled-tag">Content Studio</span>
-                <strong>Sinkronisasi Draf Konten</strong>
-                <span>Pemeriksaan klaim brief produk</span>
-              </div>
-              <div className="scheduled-meta">
-                <span className="scheduled-date">Besok 09:00</span>
-                <button
-                  type="button"
-                  className="profile-more-btn"
-                  style={{ width: 22, height: 22, fontSize: "0.6rem" }}
-                  onClick={() => setActiveView("content")}
-                  title="Buka Content Studio"
-                >
-                  ✎
-                </button>
-              </div>
-            </div>
-
-            {/* Item 3 */}
-            <div className="scheduled-item">
-              <div className="scheduled-thumb">
-                <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-                  <rect width="44" height="44" fill="#312e81" />
-                  <circle cx="22" cy="18" r="7" fill="#818cf8" />
-                  <path d="M14 34 Q 22 24 30 34" stroke="#818cf8" strokeWidth="2.5" fill="none" />
-                </svg>
-              </div>
-              <div className="scheduled-info">
-                <span className="scheduled-tag">Leads &amp; CRM</span>
-                <strong>Pemeriksaan Retensi Privasi</strong>
-                <span>Anonimisasi data prospek (UU PDP)</span>
-              </div>
-              <div className="scheduled-meta">
-                <span className="scheduled-date">28 Okt</span>
-                <button
-                  type="button"
-                  className="profile-more-btn"
-                  style={{ width: 22, height: 22, fontSize: "0.6rem" }}
-                  onClick={() => setActiveView("leads")}
-                  title="Buka Pipeline CRM"
-                >
-                  👥
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
+      <MarketingSidePanel data={data} campaigns={campaignsList} onNavigate={setActiveView} onLead={() => setLeadModalOpen(true)} />
 
       {/* Quick Audit Modal */}
       {auditModalOpen && (

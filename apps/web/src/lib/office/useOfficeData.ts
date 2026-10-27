@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { dashboardApi, type Dashboard } from "@/lib/dashboardApi";
@@ -27,7 +27,7 @@ export function useOfficeData(): { data: Dashboard | null; stale: boolean; conne
         (d) => {
           if (cancelled || !shouldApply(applied, seq)) return;
           applied = seq;
-          setData(d);
+          setData({ ...d, agents: d.agents.filter((a) => a.department !== "engineering") }); // tim operasional hanya marketing
           setStale(false);
           setUpdatedAt(Date.now());
         },
