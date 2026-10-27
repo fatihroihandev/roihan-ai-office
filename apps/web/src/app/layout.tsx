@@ -8,6 +8,7 @@ import "@fontsource-variable/montserrat";
 import "./globals.css";
 import "./cyber-ui.css";
 import "./modern-ui.css";
+import "./dashboard-inspired.css";
 
 async function resolveLang(): Promise<Lang> {
   const cookieLang = (await cookies()).get("lang")?.value;

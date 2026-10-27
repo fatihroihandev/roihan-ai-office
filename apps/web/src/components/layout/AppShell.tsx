@@ -33,6 +33,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isOffice = pathname === "/office";
+  const isDashboard = pathname === "/";
+
+  if (isDashboard) {
+    return <div className="app-shell dashboard-mode">{children}</div>;
+  }
 
   // Fungsi penentu halaman aktif
   const isActive = (href: string) => {
