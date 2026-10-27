@@ -216,6 +216,9 @@ export function InspiredDashboard() {
     );
   }, [searchQuery]);
 
+  const hour = new Date().getHours();
+  const greeting = hour < 11 ? "Selamat Pagi" : hour < 15 ? "Selamat Siang" : hour < 18 ? "Selamat Sore" : "Selamat Malam";
+
   // Real backend metrics
   const aiCalls = data?.ai?.calls_24h ?? 0;
   const activeTasks = data?.tasks?.running ?? 0;
@@ -298,7 +301,7 @@ export function InspiredDashboard() {
         {/* Header */}
         <div className="workspace-header">
           <div className="workspace-greeting">
-            <h2>Selamat Pagi, Roihan 👋</h2>
+            <h2>{greeting}, Roihan 👋</h2>
             <p>Pusat Operasi Marketing &amp; Pertumbuhan Website Otonom</p>
           </div>
 

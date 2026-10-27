@@ -1303,3 +1303,138 @@
 
 .kpi-card-stat.stacked { flex-direction: column; align-items: flex-start; gap: 4px; }
 .kpi-card-stat.stacked span { font-size: 0.72rem; line-height: 1.3; }
+
+/* ==========================================================================
+   Penyelarasan halaman fitur (hasil migrasi) dengan desain dashboard baru.
+   Berlaku hanya di dalam .inspired-workspace; menimpa gaya HUD/neon lama.
+   ========================================================================== */
+.inspired-workspace { color: var(--dash-text-main); }
+.inspired-workspace h2, .inspired-workspace h3, .inspired-workspace h4 {
+  text-shadow: none; text-transform: none; letter-spacing: 0; color: var(--dash-text-main); font-weight: 700;
+}
+.inspired-workspace h2 { font-size: 1.5rem; margin: 0 0 4px; }
+.inspired-workspace h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.inspired-workspace h4 { font-size: 0.92rem; margin: 0 0 8px; }
+.inspired-workspace h3::before, .inspired-workspace h2::before { content: none !important; }
+.inspired-workspace .ai-eyebrow, .inspired-workspace .hud-title { display: none; }
+.inspired-workspace a { color: var(--dash-accent); }
+.inspired-workspace a:hover { color: var(--dash-accent-hover); }
+.inspired-workspace .muted, .inspired-workspace .hint, .inspired-workspace .small { color: var(--dash-text-muted); }
+
+/* Kepala halaman */
+.inspired-workspace .pagehero {
+  display: block; clip-path: none; background: transparent; border: 0; box-shadow: none; padding: 0 0 6px; margin: 0 0 8px; min-height: 0;
+}
+.inspired-workspace .pagehero::before, .inspired-workspace .pagehero::after { content: none; }
+.inspired-workspace .pagehero-hint { color: var(--dash-text-muted); margin: 0 0 12px; font-size: 0.88rem; }
+.inspired-workspace .pagehero-stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.inspired-workspace .pagehero-stats li {
+  background: var(--dash-pill-bg); border: 1px solid var(--dash-border); border-left: 3px solid var(--dash-accent);
+  border-radius: 14px; padding: 8px 16px; animation: none; opacity: 1; transform: none; min-width: 110px;
+}
+.inspired-workspace .pagehero-stats li[data-tone="ok"] { border-left-color: #10b981; }
+.inspired-workspace .pagehero-stats li[data-tone="warn"] { border-left-color: #f59e0b; }
+.inspired-workspace .pagehero-stats li[data-tone="bad"] { border-left-color: #ef4444; }
+.inspired-workspace .pagehero-stats strong { font-size: 1.4rem; color: var(--dash-text-main); text-shadow: none; }
+.inspired-workspace .pagehero-stats span { color: var(--dash-text-muted); letter-spacing: 0; text-transform: none; font-size: 0.72rem; }
+
+/* Kartu, kolom, panel */
+.inspired-workspace .card, .inspired-workspace .column, .inspired-workspace .agent, .inspired-workspace .task, .inspired-workspace .output {
+  background: var(--dash-pill-bg); border: 1px solid var(--dash-border); border-radius: 18px;
+  clip-path: none; box-shadow: none; color: var(--dash-text-main);
+}
+.inspired-workspace .card { margin-top: 0; padding: 18px 20px; }
+.inspired-workspace .card::before, .inspired-workspace .card::after { content: none; display: none; }
+.inspired-workspace .card.approval { border-left: 4px solid #f59e0b; }
+.inspired-workspace .card.approval[data-risk="high"], .inspired-workspace .card.approval[data-risk="critical"] { border-left-color: #ef4444; }
+
+/* Tombol */
+.inspired-workspace button:not(.inspired-dock-btn):not(.profile-more-btn):not(.section-head-link):not(.kpi-card):not(.btn-primary-orange):not(.btn-secondary):not(.inspired-modal-close),
+.inspired-workspace a.button {
+  background: var(--dash-input-bg); color: var(--dash-text-main); border: 1px solid var(--dash-border); border-radius: 12px;
+  padding: 8px 14px; font-weight: 600; font-size: 0.84rem; box-shadow: none; text-shadow: none; letter-spacing: 0; text-transform: none; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.inspired-workspace button:not(.inspired-dock-btn):not(.profile-more-btn):not(.section-head-link):not(.btn-primary-orange):not(.btn-secondary):not(.inspired-modal-close):hover:not(:disabled),
+.inspired-workspace a.button:hover {
+  background: var(--dash-accent-subtle); border-color: var(--dash-accent); color: var(--dash-text-main); box-shadow: none;
+}
+.inspired-workspace button[aria-pressed="true"], .inspired-workspace button.tab.on {
+  background: var(--dash-accent); border-color: var(--dash-accent); color: #fff;
+}
+.inspired-workspace button:disabled { opacity: 0.45; cursor: not-allowed; }
+.inspired-workspace button.danger:hover:not(:disabled) { background: #ef4444; border-color: #ef4444; color: #fff; }
+.inspired-workspace button:focus-visible, .inspired-workspace a:focus-visible, .inspired-dock-btn:focus-visible {
+  outline: 2px solid var(--dash-accent); outline-offset: 2px;
+}
+
+/* Form */
+.inspired-workspace label { color: var(--dash-text-muted); font-size: 0.8rem; font-weight: 600; }
+.inspired-workspace input, .inspired-workspace textarea, .inspired-workspace select {
+  background: var(--dash-input-bg); color: var(--dash-text-main); border: 1px solid var(--dash-border); border-radius: 12px; padding: 9px 12px; font-size: 0.86rem;
+}
+.inspired-workspace input:focus, .inspired-workspace textarea:focus, .inspired-workspace select:focus {
+  outline: none; border-color: var(--dash-accent); box-shadow: 0 0 0 3px var(--dash-accent-subtle);
+}
+.inspired-workspace ::placeholder { color: var(--dash-text-dim); }
+
+/* Tabel */
+.inspired-workspace table { border-collapse: collapse; width: 100%; }
+.inspired-workspace th { text-align: left; font-size: 0.72rem; color: var(--dash-text-muted); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--dash-border); }
+.inspired-workspace td { border-top: 1px solid var(--dash-border-subtle); padding: 10px; font-size: 0.84rem; }
+.inspired-workspace tbody tr:hover { background: var(--dash-accent-subtle); }
+
+/* Badge */
+.inspired-workspace .badge {
+  background: var(--dash-input-bg); border: 1px solid var(--dash-border); color: var(--dash-text-muted); border-radius: 999px;
+  padding: 2px 10px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0;
+}
+.inspired-workspace .badge[data-state="active"], .inspired-workspace .badge[data-task="completed"], .inspired-workspace .badge[data-task="running"] { color: #10b981; border-color: #10b981; }
+.inspired-workspace .badge[data-risk="medium"], .inspired-workspace .badge[data-task="blocked"], .inspired-workspace .badge[data-task="pending_approval"] { color: #f59e0b; border-color: #f59e0b; }
+.inspired-workspace .badge[data-risk="high"], .inspired-workspace .badge[data-risk="critical"], .inspired-workspace .badge[data-task="failed"] { color: #ef4444; border-color: #ef4444; }
+
+/* Loading */
+.inspired-workspace .skeleton { background: linear-gradient(90deg, var(--dash-pill-bg), var(--dash-border), var(--dash-pill-bg)); border-radius: 8px; height: 12px; margin: 8px 0; }
+
+/* Responsif: dock mengecil, panel kanan turun */
+@media (max-width: 1100px) {
+  .inspired-dashboard-container { flex-wrap: wrap; }
+  .inspired-sidebar-panel { width: 100%; }
+}
+@media (max-width: 720px) {
+  .inspired-dashboard-container { padding: 8px; flex-direction: column; }
+  .inspired-dock { width: 100%; flex-direction: row; border-radius: 22px; padding: 8px 10px; overflow-x: auto; }
+  .inspired-dock-nav { flex-direction: row; }
+  .inspired-dock-footer { flex-direction: row; margin: 0; }
+  .inspired-workspace { padding: 16px; border-radius: 22px; }
+}
+
+.inspired-workspace .card h2, .inspired-workspace .card h3, .inspired-workspace .card h4, .inspired-workspace section h3, .inspired-workspace section h2 {
+  text-transform: none !important; letter-spacing: 0 !important; font-family: inherit; text-shadow: none !important;
+}
+.inspired-workspace .workspace-search input { padding: 9px 18px 9px 44px; border-radius: 22px; width: 250px; }
+.inspired-workspace .workspace-search input:focus { width: 280px; }
+.inspired-sidebar-panel .hint { color: var(--dash-text-muted); font-size: 0.78rem; margin: 0; }
+.inspired-sidebar-panel { color: var(--dash-text-main); }
+
+/* Petakan token lama (modern-ui/globals) ke token tema dashboard agar semua halaman fitur
+   otomatis mengikuti Dark/Light Mode. */
+.inspired-dashboard-container {
+  --bg: transparent;
+  --panel: var(--dash-pill-bg);
+  --panel-hover: var(--dash-accent-subtle);
+  --panel-muted: var(--dash-input-bg);
+  --text: var(--dash-text-main);
+  --muted: var(--dash-text-muted);
+  --border: var(--dash-border);
+  --line: var(--dash-border);
+  --border-focus: var(--dash-accent);
+  --accent: var(--dash-accent);
+  --accent-hover: var(--dash-accent-hover);
+  --accent-subtle: var(--dash-accent-subtle);
+  --ok: #10b981; --warn: #f59e0b; --bad: #ef4444;
+}
+
+.inspired-workspace .card h2, .inspired-workspace .card h3, .inspired-workspace .card h4 { color: var(--dash-text-main) !important; }
+.inspired-workspace a:not(.button):not(.inspired-dock-btn) { color: var(--dash-accent) !important; }
+.inspired-workspace .card p, .inspired-workspace .card li, .inspired-workspace .card td { color: inherit; }
