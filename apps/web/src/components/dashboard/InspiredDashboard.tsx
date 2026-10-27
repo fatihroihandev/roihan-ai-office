@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useOfficeData } from "@/lib/office/useOfficeData";
 import { useInsights } from "@/lib/charts/useInsights";
 import { powerApi, type PowerState } from "@/lib/powerApi";
@@ -9,7 +9,34 @@ import { seoApi, type Artifact, type SeoCampaign } from "@/lib/seoApi";
 import { marketingApi, type Lead, type Outreach, type Policy, type Retention } from "@/lib/marketingApi";
 import { tasksApi, type Approval, type Task } from "@/lib/tasksApi";
 
-type DashboardView = "overview" | "seo" | "content" | "leads" | "campaigns" | "approvals" | "tasks" | "ai";
+import { SeoFeature } from "@/components/features/SeoFeature";
+import { ContentFeature } from "@/components/features/ContentFeature";
+import { LeadsFeature } from "@/components/features/LeadsFeature";
+import { CampaignsFeature } from "@/components/features/CampaignsFeature";
+import { ProjectsFeature } from "@/components/features/ProjectsFeature";
+import { ProductsFeature } from "@/components/features/ProductsFeature";
+import { ApprovalsFeature } from "@/components/features/ApprovalsFeature";
+import { TasksFeature } from "@/components/features/TasksFeature";
+import { OfficeFeature } from "@/components/features/OfficeFeature";
+import { AiFeature } from "@/components/features/AiFeature";
+
+type DashboardView = "overview" | "seo" | "content" | "leads" | "campaigns" | "projects" | "products" | "approvals" | "tasks" | "office" | "ai";
+
+const DOCK: { view: DashboardView; icon: string; title: string }[] = [
+  { view: "overview", icon: "⊞", title: "Overview" },
+  { view: "seo", icon: "🌐", title: "Website & SEO" },
+  { view: "content", icon: "✍️", title: "Content Studio" },
+  { view: "leads", icon: "👥", title: "Leads & CRM" },
+  { view: "campaigns", icon: "🚀", title: "Kampanye & Analitik" },
+  { view: "projects", icon: "📁", title: "Proyek" },
+  { view: "products", icon: "📦", title: "Produk" },
+  { view: "approvals", icon: "🛡️", title: "Pusat Persetujuan" },
+  { view: "tasks", icon: "📋", title: "Tugas & Antrean Worker" },
+  { view: "office", icon: "🏢", title: "Kantor Virtual" },
+  { view: "ai", icon: "⚙️", title: "AI Core & Integrasi" },
+];
+
+const VIEW_IDS = DOCK.map((d) => d.view);
 
 interface SearchResult {
   title: string;
@@ -70,6 +97,12 @@ export function InspiredDashboard() {
 
   // Selected calendar day
   const [selectedDay, setSelectedDay] = useState<number>(27);
+
+  // Buka tampilan dari ?view= (menggantikan route lama yang kini redirect ke sini)
+  useEffect(() => {
+    const v = new URLSearchParams(window.location.search).get("view") as DashboardView | null;
+    if (v && VIEW_IDS.includes(v)) setActiveView(v);
+  }, []);
 
   // Load theme preference on mount
   useEffect(() => {
@@ -217,106 +250,14 @@ export function InspiredDashboard() {
         </div>
 
         <ul className="inspired-dock-nav">
-          <li>
-            <button
-              type="button"
-              className={`inspired-dock-btn ${activeView === "overview" ? "active" : ""}`}
-              onClick={() => setActiveView("overview")}
-              title="Dashboard Utama (Overview)"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="3" y="3" width="7" height="7" rx="2" />
-                <rect x="14" y="3" width="7" height="7" rx="2" />
-                <rect x="14" y="14" width="7" height="7" rx="2" />
-                <rect x="3" y="14" width="7" height="7" rx="2" />
-              </svg>
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={`inspired-dock-btn ${activeView === "seo" ? "active" : ""}`}
-              onClick={() => setActiveView("seo")}
-              title="Website & Technical SEO"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              </svg>
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={`inspired-dock-btn ${activeView === "content" ? "active" : ""}`}
-              onClick={() => setActiveView("content")}
-              title="Content Studio & Kampanye"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={`inspired-dock-btn ${activeView === "leads" ? "active" : ""}`}
-              onClick={() => setActiveView("leads")}
-              title="Leads & CRM Pipeline"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={`inspired-dock-btn ${activeView === "approvals" ? "active" : ""}`}
-              onClick={() => setActiveView("approvals")}
-              title="Pusat Persetujuan CEO"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              {pendingApprovals > 0 && (
-                <span style={{ position: "absolute", top: 6, right: 6, width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }} />
-              )}
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={`inspired-dock-btn ${activeView === "tasks" ? "active" : ""}`}
-              onClick={() => setActiveView("tasks")}
-              title="Log Aktivitas & Antrean Worker"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className={`inspired-dock-btn ${activeView === "ai" ? "active" : ""}`}
-              onClick={() => setActiveView("ai")}
-              title="AI Core, Daya & Integrasi"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </button>
-          </li>
+          {DOCK.map((d) => (
+            <li key={d.view}>
+              <button type="button" className={`inspired-dock-btn ${activeView === d.view ? "active" : ""}`} onClick={() => setActiveView(d.view)} title={d.title} aria-label={d.title}>
+                <span aria-hidden="true" style={{ fontSize: "1.1rem" }}>{d.icon}</span>
+                {d.view === "approvals" && pendingApprovals > 0 && (<span style={{ position: "absolute", top: 6, right: 6, width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }} />)}
+              </button>
+            </li>
+          ))}
         </ul>
 
         {/* Dock Footer: Power Status & Dark/Light Mode Switch */}
@@ -749,292 +690,17 @@ export function InspiredDashboard() {
           </>
         )}
 
-        {/* VIEW 2: Website & Technical SEO */}
-        {activeView === "seo" && (
-          <div className="feature-view-container">
-            <div className="feature-view-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div>
-                  <h3>🌐 Website &amp; Technical SEO Engine</h3>
-                  <p className="hint">Audit teknis on-page, robots.txt, sitemap, dan riset kata kunci berbasis bukti.</p>
-                </div>
-                <button type="button" className="btn-primary-orange" onClick={() => setAuditModalOpen(true)}>
-                  + Jalankan Audit Baru
-                </button>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "16px" }}>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#10b981", display: "block" }}>100% Aman</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)" }}>Perlindungan SSRF Aktif</span>
-                </div>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#ff5722", display: "block" }}>0 Temuan Kritis</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)" }}>Struktur Canonical Valid</span>
-                </div>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#3b82f6", display: "block" }}>{campaignsList.length} Kampanye</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)" }}>Kampanye SEO Aktif</span>
-                </div>
-              </div>
-
-              <h4 style={{ fontSize: "0.9rem", margin: "16px 0 8px" }}>Kampanye SEO Terdaftar</h4>
-              {campaignsList.length === 0 ? (
-                <p style={{ fontSize: "0.78rem", color: "var(--dash-card-muted)" }}>Belum ada kampanye SEO dibuat. Klik tombol di atas untuk memulai audit situs.</p>
-              ) : (
-                <table className="feature-data-table">
-                  <thead>
-                    <tr>
-                      <th>Nama Kampanye</th>
-                      <th>URL Website</th>
-                      <th>Tujuan</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {campaignsList.map((c) => (
-                      <tr key={c.id}>
-                        <td><strong>{c.name}</strong></td>
-                        <td><code>{c.website_url}</code></td>
-                        <td>{c.objective}</td>
-                        <td><span className="badge-sev info">{c.status}</span></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 3: Content Studio */}
-        {activeView === "content" && (
-          <div className="feature-view-container">
-            <div className="feature-view-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div>
-                  <h3>✍️ Content Studio &amp; Promotion</h3>
-                  <p className="hint">Penyusunan draf konten otomatis dengan verifikasi linter klaim resmi dari brief produk.</p>
-                </div>
-                <Link href="/marketing/content" className="btn-primary-orange" style={{ textDecoration: "none" }}>
-                  Buka Editor Studio Lengkap
-                </Link>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "16px" }}>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#10b981", display: "block" }}>Lolos Linter</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)" }}>Pemeriksaan Klaim Terverifikasi</span>
-                </div>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#ff5722", display: "block" }}>Kotak Keluar</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)" }}>{data?.marketing?.outbox_waiting ?? 0} Pesan Siap Kirim</span>
-                </div>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#3b82f6", display: "block" }}>Kanal Aktif</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)" }}>Blog, LinkedIn, Website</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 4: Leads & CRM Pipeline */}
-        {activeView === "leads" && (
-          <div className="feature-view-container">
-            <div className="feature-view-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div>
-                  <h3>👥 Leads &amp; CRM Pipeline</h3>
-                  <p className="hint">Pipeline prospek terverifikasi asal sumber dengan kepatuhan retensi privasi UU PDP.</p>
-                </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button type="button" className="btn-secondary" onClick={handleRunRetention}>
-                    Anonimkan Retensi UU PDP
-                  </button>
-                  <button type="button" className="btn-primary-orange" onClick={() => setLeadModalOpen(true)}>
-                    + Catat Prospek Baru
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "16px" }}>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#ff5722", display: "block" }}>{totalLeads} Prospek</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)" }}>Total Prospek Tercatat</span>
-                </div>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#10b981", display: "block" }}>{openOpportunities} Peluang</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)" }}>Peluang Terbuka</span>
-                </div>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#ef4444", display: "block" }}>{retentionInfo?.due.length ?? 0} Jatuh Tempo</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)" }}>Retensi Privasi</span>
-                </div>
-              </div>
-
-              <table className="feature-data-table">
-                <thead>
-                  <tr>
-                    <th>Perusahaan</th>
-                    <th>Kontak Bisnis</th>
-                    <th>Status</th>
-                    <th>Asal Sumber</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leadsList.slice(0, 5).map((l) => (
-                    <tr key={l.id}>
-                      <td><strong>{l.company.name}</strong></td>
-                      <td>{l.contact.name || "-"} ({l.contact.email || "-"})</td>
-                      <td><span className="badge-sev info">{l.status}</span></td>
-                      <td>{l.source.type}</td>
-                    </tr>
-                  ))}
-                  {leadsList.length === 0 && (
-                    <tr>
-                      <td colSpan={4} style={{ textAlign: "center", color: "var(--dash-card-muted)", padding: "20px" }}>
-                        Belum ada prospek tercatat. Klik tombol di atas untuk menambah prospek.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 5: Approvals Center */}
-        {activeView === "approvals" && (
-          <div className="feature-view-container">
-            <div className="feature-view-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div>
-                  <h3>🛡️ Pusat Persetujuan CEO (Approval Gate)</h3>
-                  <p className="hint">Tindakan berisiko tinggi wajib diverifikasi oleh manusia sebelum dieksekusi.</p>
-                </div>
-              </div>
-
-              {approvalsList.length === 0 ? (
-                <p style={{ fontSize: "0.82rem", color: "var(--dash-card-muted)", padding: "20px 0" }}>
-                  Semua tindakan aman. Tidak ada persetujuan yang menunggu tindakan CEO.
-                </p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {approvalsList.map((a) => (
-                    <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                      <div>
-                        <strong>{a.action_type || "Tindakan Kritis"}</strong>
-                        <p style={{ margin: "2px 0 0", fontSize: "0.72rem", color: "var(--dash-card-muted)" }}>Task ID: {a.task_id} • Status: {a.status}</p>
-                      </div>
-                      {a.status === "pending" ? (
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <button type="button" className="btn-primary-orange" style={{ padding: "6px 14px", fontSize: "0.75rem" }} onClick={() => handleDecideApproval(a.id, "approve")}>
-                            Setujui ✓
-                          </button>
-                          <button type="button" className="btn-secondary" style={{ padding: "6px 14px", fontSize: "0.75rem" }} onClick={() => handleDecideApproval(a.id, "reject")}>
-                            Tolak ✕
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="badge-sev info">{a.status}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 6: Activity Log (Tasks) */}
-        {activeView === "tasks" && (
-          <div className="feature-view-container">
-            <div className="feature-view-card">
-              <h3>📋 Log Aktivitas &amp; Antrean Worker</h3>
-              <p className="hint">Status eksekusi mesin tugas otonom secara langsung.</p>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "16px" }}>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#3b82f6" }}>{activeTasks}</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)", display: "block" }}>Tugas Berjalan</span>
-                </div>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#10b981" }}>{completedTasks}</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)", display: "block" }}>Tugas Selesai</span>
-                </div>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#f59e0b" }}>{data?.tasks?.queued ?? 0}</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)", display: "block" }}>Antrean</span>
-                </div>
-                <div style={{ padding: "12px", background: "var(--dash-pill-bg)", borderRadius: "14px" }}>
-                  <strong style={{ fontSize: "1.2rem", color: "#ef4444" }}>{data?.tasks?.failed ?? 0}</strong>
-                  <span style={{ fontSize: "0.72rem", color: "var(--dash-card-muted)", display: "block" }}>Gagal/Terblokir</span>
-                </div>
-              </div>
-
-              {stale && <p className="hint">Data kantor tertunda — menampilkan data terakhir.</p>}
-              {tasksList.length === 0 ? (
-                <p className="hint">Belum ada tugas tercatat.</p>
-              ) : (
-                <table className="feature-data-table">
-                  <thead>
-                    <tr><th>Tugas</th><th>Peran</th><th>Status</th><th>Dibuat</th></tr>
-                  </thead>
-                  <tbody>
-                    {tasksList.slice(0, 20).map((t) => (
-                      <tr key={t.id}>
-                        <td>{t.title}</td>
-                        <td>{t.role}</td>
-                        <td><span className="badge-sev info">{t.status}</span></td>
-                        <td>{new Date(t.created_at).toLocaleString("id-ID")}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 7: AI Core & Settings */}
-        {activeView === "ai" && (
-          <div className="feature-view-container">
-            <div className="feature-view-card">
-              <h3>⚙️ AI Core, Kontrol Daya &amp; Integrasi</h3>
-              <p className="hint">Konfigurasi Google Gemini API, kuota token, dan pemulihan sistem.</p>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px", marginTop: "16px" }}>
-                <div style={{ padding: "16px", background: "var(--dash-pill-bg)", borderRadius: "16px" }}>
-                  <h4 style={{ margin: "0 0 8px", fontSize: "0.95rem" }}>Google Gemini API</h4>
-                  <p style={{ fontSize: "0.78rem", color: "var(--dash-card-muted)", margin: "0 0 12px" }}>
-                    Provider AI utama aktif tanpa dependensi runtime Ollama.
-                  </p>
-                  <div style={{ fontSize: "0.78rem" }}>
-                    <div>Model Default: <code>gemini-2.5-flash</code></div>
-                    <div>Model Kompleks: <code>gemini-2.5-pro</code></div>
-                    <div>Total Panggilan 24 jam: <strong>{aiCalls} panggilan</strong></div>
-                  </div>
-                </div>
-
-                <div style={{ padding: "16px", background: "var(--dash-pill-bg)", borderRadius: "16px" }}>
-                  <h4 style={{ margin: "0 0 8px", fontSize: "0.95rem" }}>Kontrol Daya Kantor</h4>
-                  <p style={{ fontSize: "0.78rem", color: "var(--dash-card-muted)", margin: "0 0 12px" }}>
-                    Status saat ini: <strong style={{ color: powerState === "RUNNING" ? "#10b981" : "#ef4444" }}>{powerState}</strong>
-                  </p>
-                  <button
-                    type="button"
-                    className="btn-primary-orange"
-                    onClick={togglePower}
-                    disabled={powerBusy}
-                  >
-                    {powerState === "RUNNING" ? "Jeda Daya Kantor ⏸️" : "Lanjutkan Daya Kantor ▶️"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Fitur terintegrasi: semua modul dijalankan langsung di dashboard tunggal */}
+        {activeView === "seo" && (<div className="feature-view-container"><SeoFeature /></div>)}
+        {activeView === "content" && (<div className="feature-view-container"><ContentFeature /></div>)}
+        {activeView === "leads" && (<div className="feature-view-container"><LeadsFeature /></div>)}
+        {activeView === "campaigns" && (<div className="feature-view-container"><CampaignsFeature /></div>)}
+        {activeView === "projects" && (<div className="feature-view-container"><ProjectsFeature /></div>)}
+        {activeView === "products" && (<div className="feature-view-container"><ProductsFeature /></div>)}
+        {activeView === "approvals" && (<div className="feature-view-container"><ApprovalsFeature /></div>)}
+        {activeView === "tasks" && (<div className="feature-view-container"><TasksFeature /></div>)}
+        {activeView === "office" && (<div className="feature-view-container"><Suspense fallback={null}><OfficeFeature /></Suspense></div>)}
+        {activeView === "ai" && (<div className="feature-view-container"><AiFeature /></div>)}
       </main>
 
       {/* 3. Right Profile & Calendar Panel (Persistent on all views) */}
