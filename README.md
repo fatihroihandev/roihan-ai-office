@@ -1,14 +1,12 @@
-# Roihan Software House
+# Roihan AI Office
 
-Platform software house lokal berbasis AI: tim agent Engineering dan Marketing, model router, approval center, dan kantor virtual 3D.
+Platform operasional AI Marketing & Autonomous Website Growth lokal: tim agent marketing khusus, orchestrator kampanye, audit SEO & perbaikan website otonom, approval center, dan antarmuka modern minimalist SaaS.
 
-Sumber acuan utama: [`docs/MASTER_DEVELOPMENT.md`](docs/MASTER_DEVELOPMENT.md). Baca dokumen itu sebelum mengubah kode.
+Sumber acuan utama: [docs/MASTER_DEVELOPMENT.md](docs/MASTER_DEVELOPMENT.md) (v3.0, Addendum v1.0 & v1.1). Baca dokumen itu sebelum mengubah kode.
 
 ## Status
 
-Phase 0 sampai 7 selesai: backend FastAPI + PostgreSQL + migration, frontend Next.js (Indonesia/Inggris), health check, manajemen proyek dan file (`/projects`), AI Control Center (`/ai`), serta task engine dengan Manager (`/tasks`: papan task real-time, status agent, rencana otomatis). Agent Analyst, Reporter, Developer, QA, dan Reviewer dapat bekerja (Developer, QA, dan Reviewer yang menjalankan tes hanya jika sandbox lolos uji isolasi); agent Marketing belum tersedia (task-nya diblokir secara jujur). Tindakan berisiko tinggi atau kritis tidak berjalan sebelum CEO menyetujuinya di Approval Center (`/approvals`). Katalog produk dengan Product Release Gate tersedia di `/products`: Marketing hanya boleh memakai klaim produk yang terverifikasi.
-
-Roadmap lanjutan (Master Development v2.3): **Phase 13** Office Power Control dan **Phase 14** SEO Specialist selesai. **Phase 15** aktif kembali atas instruksi CEO; kandidat MVP dan bukti QA ada di workspace proyek terisolasi. Belum siap rilis: penerima/SMTP kontak dan domain/hosting belum dikonfigurasi, Reviewer memberi `changes_requested`, dan belum ada persetujuan rilis publik. Spesifikasi: `docs/MASTER_DEVELOPMENT.md` Bagian 29. **Cara penggunaan: `docs/PANDUAN_PENGGUNAAN.md`.**
+Phase 0 sampai 14 selesai (fondasi backend FastAPI + PostgreSQL, task engine, SEO Specialist, Office Power Control). **Phase 16** (Backup, Verifikasi Integritas & Audit Komprehensif) dan **Phase 17** (Rebranding & Modern Minimalist Design System) aktif di bawah Addendum v1.0 & v1.1. Organisasi operasional difokuskan khusus ke **Marketing & Website Growth**, migrasi AI provider terencana menuju Google Gemini API (tanpa kewajiban runtime Ollama), dan antarmuka beralih ke Modern Minimalist SaaS.
 
 ## Prasyarat Phase 0
 

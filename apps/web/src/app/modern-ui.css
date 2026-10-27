@@ -1,0 +1,456 @@
+/* ==========================================================================
+   ROIHAN AI OFFICE — MODERN MINIMALIST SAAS DESIGN SYSTEM
+   Addendum v1.1: Clean, professional, consistent, accessible, and responsive.
+   ========================================================================== */
+
+:root {
+  --font-sans: "Montserrat Variable", Montserrat, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  
+  /* Core Color Tokens (Dark Minimalist Default) */
+  --bg: #0b0f19;
+  --panel: #111827;
+  --panel-hover: #1f2937;
+  --panel-muted: #1e293b;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --border: #1f293d;
+  --border-focus: #3b82f6;
+
+  /* Brand Accents */
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: rgba(37, 99, 235, 0.12);
+  --ok: #10b981;
+  --ok-subtle: rgba(16, 185, 129, 0.12);
+  --warn: #f59e0b;
+  --warn-subtle: rgba(245, 158, 11, 0.12);
+  --bad: #ef4444;
+  --bad-subtle: rgba(239, 68, 68, 0.12);
+
+  /* Geometry & Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 9999px;
+
+  /* Layout */
+  --sidebar-w: 240px;
+  --header-h: 56px;
+}
+
+/* --------------------------------------------------------------------------
+   App Shell Layout (Sidebar + Header + Body)
+   -------------------------------------------------------------------------- */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+.app-sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  z-index: 40;
+  transition: transform 0.2s ease-in-out;
+}
+
+.sidebar-header {
+  height: var(--header-h);
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background-color: var(--accent);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brand-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.brand-sub {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+}
+
+.mobile-close-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 0.75rem;
+}
+
+.nav-group-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 0.5rem 0.5rem 0.35rem;
+  text-transform: uppercase;
+}
+
+.nav-group-title.secondary-group {
+  margin-top: 1.25rem;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.nav-link:hover {
+  background: var(--panel-hover);
+  color: var(--text);
+}
+
+.nav-link.active {
+  background: var(--accent-subtle);
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.nav-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-footer {
+  padding: 0.85rem 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.avatar-chip {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--panel-muted);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.user-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.user-role {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   App Main Area (Header & Body)
+   -------------------------------------------------------------------------- */
+.app-main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-header {
+  height: var(--header-h);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hamburger-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 1rem;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.header-crumb {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.header-separator {
+  color: var(--border);
+}
+
+.header-page {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-indicator-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: var(--ok-subtle);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background-color: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
+}
+
+.app-content-body {
+  flex: 1;
+  padding: 1.5rem 2rem;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Mode khusus 3D Office */
+.office-mode .app-content-body {
+  padding: 0;
+  max-width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Modern Minimalist Components (Button, Input, Card)
+   Overriding and replacing Cyberpunk chamfer & neon effects
+   -------------------------------------------------------------------------- */
+button, a.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md) !important;
+  clip-path: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  min-height: 2.25rem !important;
+  padding: 0.45rem 1rem !important;
+  border: 1px solid var(--border) !important;
+  background: var(--panel-hover) !important;
+  color: var(--text) !important;
+  box-shadow: none !important;
+  transition: all 0.15s ease !important;
+  filter: none !important;
+}
+
+button:hover:not(:disabled), a.button:hover {
+  background: var(--panel-muted) !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+  filter: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  transform: none !important;
+}
+
+button:focus-visible, a.button:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+
+button.primary-btn, a.button.primary, button[type="submit"] {
+  background: var(--accent) !important;
+  border-color: var(--accent-hover) !important;
+  color: #ffffff !important;
+}
+
+button.primary-btn:hover:not(:disabled), a.button.primary:hover, button[type="submit"]:hover:not(:disabled) {
+  background: var(--accent-hover) !important;
+  color: #ffffff !important;
+}
+
+button.danger {
+  background: var(--bad) !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+button.danger:hover:not(:disabled) {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  background: var(--panel) !important;
+  color: var(--muted) !important;
+  border-color: var(--border) !important;
+}
+
+input, textarea, select {
+  border-radius: var(--radius-md) !important;
+  clip-path: none !important;
+  border: 1px solid var(--border) !important;
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.85rem !important;
+  border-left: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-subtle) !important;
+}
+
+.card {
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--border) !important;
+  background: var(--panel) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Breakpoints
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translateX(-100%);
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 39;
+    backdrop-filter: blur(2px);
+  }
+
+  .hamburger-btn {
+    display: inline-flex;
+  }
+
+  .mobile-close-btn {
+    display: block;
+  }
+
+  .app-content-body {
+    padding: 1rem;
+  }
+}

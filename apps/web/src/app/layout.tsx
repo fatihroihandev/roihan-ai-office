@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { FloatNav } from "@/components/FloatNav";
+import { AppShell } from "@/components/layout/AppShell";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { ensureRootEnv } from "@/lib/server-env";
 import { isLang, translate, type Lang } from "@/i18n/dictionaries";
 import "@fontsource-variable/montserrat";
 import "./globals.css";
 import "./cyber-ui.css";
+import "./modern-ui.css";
 
 async function resolveLang(): Promise<Lang> {
   const cookieLang = (await cookies()).get("lang")?.value;
@@ -21,14 +22,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: translate(lang, "app.name"), description: translate(lang, "app.tagline") };
 }
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const lang = await resolveLang();
   return (
     <html lang={lang}>
       <body>
         <LanguageProvider initialLang={lang}>
-          {children}
-          <FloatNav />
+          <AppShell>
+            {children}
+          </AppShell>
         </LanguageProvider>
       </body>
     </html>
