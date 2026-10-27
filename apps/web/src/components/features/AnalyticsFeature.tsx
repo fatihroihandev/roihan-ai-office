@@ -11,12 +11,10 @@ export function AnalyticsFeature() {
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [campaigns, setCampaigns] = useState<SeoCampaign[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"overview" | "funnel" | "attribution" | "roi">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "funnel" | "attribution">("overview");
 
   const loadData = useCallback(async () => {
     try {
-      setLoading(true);
       const [an, kp, c, l] = await Promise.all([
         marketingApi.analytics(),
         seoApi.kpis(),
@@ -29,57 +27,60 @@ export function AnalyticsFeature() {
       setLeads(l);
     } catch {
       // fallback
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadData();
+    const id = setTimeout(() => {
+      void loadData();
+    }, 0);
+    return () => clearTimeout(id);
   }, [loadData]);
 
   const handleExportCsv = () => {
-    const csvContent = "data:text/csv;charset=utf-8," +
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
       "Metric,Value,Note\n" +
       `Total Leads,${analytics?.leads_total ?? 0},Database aktual\n` +
       `Qualified Leads,${kpis?.leads?.qualified ?? 0},Skor >= 40\n` +
-      `Organic Clicks,${kpis?.organic?.clicks ?? 0},Google Search Console\n` +
-      `Organic Impressions,${kpis?.organic?.impressions ?? 0},GSC\n` +
+      `Organic Clicks,${kpis?.organic?.clicks ?? 0},Search Console / SEO\n` +
+      `Organic Impressions,${kpis?.organic?.impressions ?? 0},Search Console / SEO\n` +
       `Opportunities Open,${analytics?.opportunities_open ?? 0},CRM Pipeline\n` +
       `Recorded Revenue (IDR),${analytics?.revenue_recorded_idr ?? 0},Won Opportunities\n`;
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `roihan_marketing_analytics_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute(
+      "download",
+      `roihan_marketing_analytics_${new Date().toISOString().slice(0, 10)}.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const leadsTotal = analytics?.leads_total ?? leads.length;
-  const qualifiedTotal = kpis?.leads?.qualified ?? leads.filter((l) => (l.score ?? 0) >= 40).length;
+  const qualifiedTotal =
+    kpis?.leads?.qualified ?? leads.filter((l) => (l.score ?? 0) >= 40).length;
   const opportunitiesTotal = analytics?.opportunities_open ?? 0;
   const wonDeals = leads.filter((l) => l.status === "won").length;
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <h2 style={{ fontSize: "1.4rem", fontWeight: 700, margin: 0, color: "var(--dash-text-main)" }}>
-            📊 Analytics &amp; Intelligence Hub
-          </h2>
-          <p style={{ margin: "4px 0 0", color: "var(--dash-text-muted)", fontSize: "0.85rem" }}>
-            Penyajian metrik marketing aktual, corong konversi, atribusi kanal, performa pendapatan riil, dan ekspor laporan.
+      <div className="workspace-header">
+        <div className="workspace-greeting">
+          <h2>Analytics &amp; Intelligence Hub</h2>
+          <p>
+            Evaluasi metrik pemasaran aktual, corong konversi penuh, distribusi sumber prospek, dan ekspor laporan.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div className="workspace-header-actions">
           <button
             type="button"
             className={activeTab === "overview" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setActiveTab("overview")}
           >
-            Ringkasan Dashboard
+            Ringkasan Metrik
           </button>
           <button
             type="button"
@@ -101,61 +102,86 @@ export function AnalyticsFeature() {
             onClick={handleExportCsv}
             title="Unduh laporan dalam format CSV"
           >
-            📥 Ekspor CSV
+            Ekspor CSV
           </button>
         </div>
       </div>
 
       {/* Top 4 KPI Metrics */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+      <div className="workspace-kpi-grid">
         <div className="kpi-card">
-          <span className="kpi-card-title">Trafik &amp; Klik Organik</span>
-          <strong style={{ color: "#10b981" }}>{kpis?.organic.clicks ?? 0}</strong>
-          <span style={{ fontSize: "0.72rem", color: "var(--dash-text-muted)" }}>
-            Impresi: {kpis?.organic.impressions ?? 0} • CTR: {((kpis?.organic.ctr ?? 0) * 100).toFixed(1)}%
+          <span className="kpi-card-title">Klik Organik</span>
+          <strong style={{ color: "var(--ok)" }}>{kpis?.organic.clicks ?? 0}</strong>
+          <span className="small muted">
+            Impresi: {kpis?.organic.impressions ?? 0} • CTR:{" "}
+            {((kpis?.organic.ctr ?? 0) * 100).toFixed(1)}%
           </span>
         </div>
         <div className="kpi-card">
           <span className="kpi-card-title">Total Prospek (Leads)</span>
-          <strong style={{ color: "#ff5722" }}>{leadsTotal}</strong>
-          <span style={{ fontSize: "0.72rem", color: "var(--dash-text-muted)" }}>
-            {qualifiedTotal} terkualifikasi ({leadsTotal > 0 ? Math.round((qualifiedTotal / leadsTotal) * 100) : 0}%)
+          <strong style={{ color: "var(--accent)" }}>{leadsTotal}</strong>
+          <span className="small muted">
+            {qualifiedTotal} terkualifikasi (
+            {leadsTotal > 0 ? Math.round((qualifiedTotal / leadsTotal) * 100) : 0}%)
           </span>
         </div>
         <div className="kpi-card">
           <span className="kpi-card-title">Peluang Terbuka (Deals)</span>
-          <strong style={{ color: "#3b82f6" }}>{opportunitiesTotal}</strong>
-          <span style={{ fontSize: "0.72rem", color: "var(--dash-text-muted)" }}>
-            Tingkat closing: {analytics?.win_rate != null ? `${Math.round(analytics.win_rate * 100)}%` : "0%"}
+          <strong style={{ color: "var(--info)" }}>{opportunitiesTotal}</strong>
+          <span className="small muted">
+            Win rate:{" "}
+            {analytics?.win_rate != null ? `${Math.round(analytics.win_rate * 100)}%` : "—"}
           </span>
         </div>
         <div className="kpi-card">
-          <span className="kpi-card-title">Pendapatan Riil Tercatat</span>
-          <strong style={{ color: "#ec4899" }}>
-            Rp {IDR.format(analytics?.revenue_recorded_idr ?? 0)}
-          </strong>
-          <span style={{ fontSize: "0.72rem", color: "var(--dash-text-muted)" }}>
-            ROI Kampanye: {kpis?.money.roi != null ? `${(kpis.money.roi * 100).toFixed(0)}%` : "N/A"}
+          <span className="kpi-card-title">Pendapatan Tercatat</span>
+          <strong>Rp {IDR.format(analytics?.revenue_recorded_idr ?? 0)}</strong>
+          <span className="small muted">
+            ROI Kampanye:{" "}
+            {kpis?.money.roi != null ? `${(kpis.money.roi * 100).toFixed(0)}%` : "—"}
           </span>
         </div>
       </div>
 
       {/* Tab: Overview */}
       {activeTab === "overview" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20 }}>
+        <div className="workspace-middle-grid">
           <div className="white-panel">
-            <h3 style={{ fontSize: "1.05rem", margin: "0 0 12px", color: "var(--dash-text-main)" }}>
-              🌐 Sumber Prospek (Lead Sources)
-            </h3>
+            <h3>Distribusi Sumber Prospek (Lead Sources)</h3>
             {Object.keys(analytics?.by_source ?? {}).length === 0 ? (
-              <p style={{ color: "var(--dash-text-muted)", fontSize: "0.85rem" }}>Belum ada data sumber prospek terdistribusi.</p>
+              <p className="hint">Belum ada data sumber prospek tercatat.</p>
             ) : (
               <div style={{ display: "grid", gap: 10 }}>
                 {Object.entries(analytics?.by_source ?? {}).map(([src, count]) => (
-                  <div key={src} style={{ display: "grid", gridTemplateColumns: "140px 1fr 40px", alignItems: "center", gap: 10, fontSize: "0.82rem" }}>
-                    <span style={{ textTransform: "capitalize", color: "var(--dash-text-main)" }}>{src.replace("_", " ")}</span>
-                    <div style={{ background: "var(--dash-pill-bg)", borderRadius: 8, height: 10, overflow: "hidden" }}>
-                      <div style={{ width: `${Math.min(100, (count / Math.max(1, leadsTotal)) * 100)}%`, height: "100%", background: "#ff5722", borderRadius: 8 }} />
+                  <div
+                    key={src}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "140px 1fr 40px",
+                      alignItems: "center",
+                      gap: 10,
+                      fontSize: "0.82rem",
+                    }}
+                  >
+                    <span style={{ textTransform: "capitalize" }}>
+                      {src.replace("_", " ")}
+                    </span>
+                    <div
+                      style={{
+                        background: "var(--surface-subtle)",
+                        borderRadius: 6,
+                        height: 8,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${Math.min(100, (count / Math.max(1, leadsTotal)) * 100)}%`,
+                          height: "100%",
+                          background: "var(--accent)",
+                          borderRadius: 6,
+                        }}
+                      />
                     </div>
                     <strong style={{ textAlign: "right" }}>{count}</strong>
                   </div>
@@ -165,21 +191,34 @@ export function AnalyticsFeature() {
           </div>
 
           <div className="white-panel">
-            <h3 style={{ fontSize: "1.05rem", margin: "0 0 12px", color: "var(--dash-text-main)" }}>
-              🎯 Kampanye Aktif &amp; Objektif
-            </h3>
+            <h3>Kampanye SEO &amp; Target Anggaran</h3>
             {campaigns.length === 0 ? (
-              <p style={{ color: "var(--dash-text-muted)", fontSize: "0.85rem" }}>Belum ada kampanye SEO yang dikonfigurasi.</p>
+              <p className="hint">Belum ada kampanye SEO yang dikonfigurasi.</p>
             ) : (
               <div style={{ display: "grid", gap: 10, maxHeight: 280, overflowY: "auto" }}>
                 {campaigns.map((c) => (
-                  <div key={c.id} style={{ padding: 12, borderRadius: 12, background: "var(--dash-pill-bg)", border: "1px solid var(--dash-border)" }}>
+                  <div
+                    key={c.id}
+                    style={{
+                      padding: 12,
+                      borderRadius: "var(--radius-md)",
+                      background: "var(--surface-subtle)",
+                      border: "1px solid var(--border)",
+                    }}
+                  >
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <strong style={{ fontSize: "0.88rem", color: "var(--dash-text-main)" }}>{c.name}</strong>
-                      <span style={{ fontSize: "0.72rem", color: "#10b981", fontWeight: 600 }}>{c.status}</span>
+                      <strong style={{ fontSize: "0.86rem" }}>{c.name}</strong>
+                      <span className="badge">{c.status}</span>
                     </div>
-                    <span style={{ fontSize: "0.75rem", color: "var(--dash-text-muted)", display: "block", marginTop: 4 }}>
-                      Target: {c.objective} • Anggaran API: Rp {IDR.format(c.api_budget_idr)}
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--text-secondary)",
+                        display: "block",
+                        marginTop: 4,
+                      }}
+                    >
+                      Objektif: {c.objective} • Anggaran API: Rp {IDR.format(c.api_budget_idr)}
                     </span>
                   </div>
                 ))}
@@ -192,25 +231,88 @@ export function AnalyticsFeature() {
       {/* Tab: Funnel */}
       {activeTab === "funnel" && (
         <div className="white-panel">
-          <h3 style={{ fontSize: "1.05rem", margin: "0 0 16px", color: "var(--dash-text-main)" }}>
-            🎯 Corong Konversi Penuh (Full Marketing Funnel)
-          </h3>
-          <div style={{ display: "grid", gap: 16 }}>
+          <h3>Corong Konversi Pemasaran (Full Marketing Funnel)</h3>
+          <div style={{ display: "grid", gap: 14 }}>
             {[
-              { label: "1. Pengunjung & Klik Organik", val: kpis?.organic.clicks ?? 0, color: "#10b981", pct: "100%" },
-              { label: "2. Prospek Baru Ditangkap (Leads)", val: leadsTotal, color: "#3b82f6", pct: kpis?.organic.clicks ? `${Math.min(100, Math.round((leadsTotal / kpis.organic.clicks) * 100))}%` : "100%" },
-              { label: "3. Terkualifikasi Penjualan (Qualified)", val: qualifiedTotal, color: "#ff5722", pct: leadsTotal ? `${Math.round((qualifiedTotal / leadsTotal) * 100)}%` : "0%" },
-              { label: "4. Peluang Terbuka (Opportunity)", val: opportunitiesTotal, color: "#ec4899", pct: qualifiedTotal ? `${Math.round((opportunitiesTotal / qualifiedTotal) * 100)}%` : "0%" },
-              { label: "5. Klien Menang (Won Deals)", val: wonDeals, color: "#8b5cf6", pct: opportunitiesTotal ? `${Math.round((wonDeals / Math.max(1, opportunitiesTotal)) * 100)}%` : "0%" },
+              {
+                label: "1. Klik Organik Website",
+                val: kpis?.organic.clicks ?? 0,
+                color: "var(--ok)",
+                pct: "100%",
+              },
+              {
+                label: "2. Prospek Baru Ditangkap (Leads)",
+                val: leadsTotal,
+                color: "var(--info)",
+                pct: kpis?.organic.clicks
+                  ? `${Math.min(100, Math.round((leadsTotal / kpis.organic.clicks) * 100))}%`
+                  : "100%",
+              },
+              {
+                label: "3. Terkualifikasi Penjualan (Qualified)",
+                val: qualifiedTotal,
+                color: "var(--accent)",
+                pct: leadsTotal
+                  ? `${Math.round((qualifiedTotal / leadsTotal) * 100)}%`
+                  : "0%",
+              },
+              {
+                label: "4. Peluang Terbuka (Opportunity)",
+                val: opportunitiesTotal,
+                color: "var(--warn)",
+                pct: qualifiedTotal
+                  ? `${Math.round((opportunitiesTotal / qualifiedTotal) * 100)}%`
+                  : "0%",
+              },
+              {
+                label: "5. Peluang Menang (Won Deals)",
+                val: wonDeals,
+                color: "var(--ok)",
+                pct: opportunitiesTotal
+                  ? `${Math.round((wonDeals / Math.max(1, opportunitiesTotal)) * 100)}%`
+                  : "0%",
+              },
             ].map((step) => (
-              <div key={step.label} style={{ display: "grid", gridTemplateColumns: "220px 1fr 100px", alignItems: "center", gap: 16 }}>
-                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--dash-text-main)" }}>{step.label}</span>
-                <div style={{ background: "var(--dash-pill-bg)", borderRadius: 10, height: 16, overflow: "hidden" }}>
-                  <div style={{ width: step.pct, height: "100%", background: step.color, borderRadius: 10 }} />
+              <div
+                key={step.label}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "240px 1fr 100px",
+                  alignItems: "center",
+                  gap: 16,
+                }}
+              >
+                <span style={{ fontSize: "0.84rem", fontWeight: 600 }}>
+                  {step.label}
+                </span>
+                <div
+                  style={{
+                    background: "var(--surface-subtle)",
+                    borderRadius: 6,
+                    height: 12,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: step.pct,
+                      height: "100%",
+                      background: step.color,
+                      borderRadius: 6,
+                    }}
+                  />
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <strong style={{ fontSize: "0.95rem", color: "var(--dash-text-main)" }}>{step.val}</strong>
-                  <span style={{ display: "block", fontSize: "0.7rem", color: "var(--dash-text-muted)" }}>{step.pct} konversi</span>
+                  <strong style={{ fontSize: "0.92rem" }}>{step.val}</strong>
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: "0.7rem",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    {step.pct}
+                  </span>
                 </div>
               </div>
             ))}
@@ -221,40 +323,40 @@ export function AnalyticsFeature() {
       {/* Tab: Attribution */}
       {activeTab === "attribution" && (
         <div className="white-panel">
-          <h3 style={{ fontSize: "1.05rem", margin: "0 0 12px", color: "var(--dash-text-main)" }}>
-            🧭 Atribusi Kanal Multi-Touch (Channel Attribution)
-          </h3>
-          <p style={{ fontSize: "0.82rem", color: "var(--dash-text-muted)", marginBottom: 16 }}>
-            Model atribusi membandingkan kontribusi titik sentuh pertama (first-touch: SEO / Pencarian Organik) dan titik sentuh penutupan (last-touch: Outreach Email / Pertemuan Langsung).
+          <h3>Evaluasi Atribusi Kanal Pemasaran</h3>
+          <p className="hint">
+            Ringkasan kontribusi kanal berdasarkan asal prospek (source provenance) dan status konversi peluang di database CRM.
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={{ padding: 16, borderRadius: 14, background: "var(--dash-pill-bg)", border: "1px solid var(--dash-border)" }}>
-              <strong style={{ display: "block", fontSize: "0.92rem", color: "var(--dash-text-main)", marginBottom: 6 }}>
-                First-Touch Attribution
-              </strong>
-              <p style={{ fontSize: "0.78rem", color: "var(--dash-text-muted)", margin: "0 0 12px" }}>
-                Kanal yang pertama kali membawa prospek mengenal profil bisnis Anda.
-              </p>
-              <ul style={{ margin: 0, paddingLeft: 18, fontSize: "0.82rem", color: "var(--dash-text-main)", display: "grid", gap: 6 }}>
-                <li>Website SEO Organik: <strong>58%</strong></li>
-                <li>Pencarian Publik / Registry: <strong>24%</strong></li>
-                <li>Event &amp; Referral: <strong>18%</strong></li>
-              </ul>
-            </div>
-            <div style={{ padding: 16, borderRadius: 14, background: "var(--dash-pill-bg)", border: "1px solid var(--dash-border)" }}>
-              <strong style={{ display: "block", fontSize: "0.92rem", color: "var(--dash-text-main)", marginBottom: 6 }}>
-                Last-Touch Attribution
-              </strong>
-              <p style={{ fontSize: "0.78rem", color: "var(--dash-text-muted)", margin: "0 0 12px" }}>
-                Interaksi terakhir yang mengonversi prospek menjadi peluang deal formal.
-              </p>
-              <ul style={{ margin: 0, paddingLeft: 18, fontSize: "0.82rem", color: "var(--dash-text-main)", display: "grid", gap: 6 }}>
-                <li>Email Outreach &amp; Proposal: <strong>62%</strong></li>
-                <li>Direct Inbound Contact: <strong>26%</strong></li>
-                <li>Pertemuan / Call Langsung: <strong>12%</strong></li>
-              </ul>
-            </div>
-          </div>
+          <table className="feature-data-table">
+            <thead>
+              <tr>
+                <th>Sumber Akuisisi</th>
+                <th>Jumlah Prospek</th>
+                <th>Porsi Kanal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(analytics?.by_source ?? {}).length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="muted">
+                    Belum ada prospek tercatat untuk dihitung atribusinya.
+                  </td>
+                </tr>
+              ) : (
+                Object.entries(analytics?.by_source ?? {}).map(([src, count]) => (
+                  <tr key={src}>
+                    <td style={{ textTransform: "capitalize" }}>
+                      <strong>{src.replace("_", " ")}</strong>
+                    </td>
+                    <td>{count}</td>
+                    <td>
+                      {leadsTotal > 0 ? `${Math.round((count / leadsTotal) * 100)}%` : "0%"}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

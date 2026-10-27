@@ -7,8 +7,6 @@ import { ensureRootEnv } from "@/lib/server-env";
 import { isLang, translate, type Lang } from "@/i18n/dictionaries";
 import "@fontsource-variable/montserrat";
 import "./globals.css";
-import "./modern-ui.css";
-import "./dashboard-inspired.css";
 
 async function resolveLang(): Promise<Lang> {
   const cookieLang = (await cookies()).get("lang")?.value;
@@ -26,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const lang = await resolveLang();
   return (
-    <html lang={lang}>
+    <html lang={lang} data-theme="light">
       <body>
         <LanguageProvider initialLang={lang}>
           <AuthGateway>

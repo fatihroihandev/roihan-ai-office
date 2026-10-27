@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, type ReactNode } from "react";
-import { authApi, type AuthStatus, type OwnerUser } from "@/lib/authApi";
+import { authApi, type AuthStatus } from "@/lib/authApi";
 
 export function AuthGateway({ children }: { children: ReactNode }) {
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
@@ -18,7 +18,7 @@ export function AuthGateway({ children }: { children: ReactNode }) {
       const s = await authApi.status();
       setAuthStatus(s);
     } catch {
-      // Offline fallback: allow local development to proceed
+      // Offline / local development fallback
       setAuthStatus({
         initialized: true,
         authenticated: true,
@@ -31,7 +31,10 @@ export function AuthGateway({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    checkStatus();
+    const id = setTimeout(() => {
+      void checkStatus();
+    }, 0);
+    return () => clearTimeout(id);
   }, [checkStatus]);
 
   const handleBootstrap = async (e: React.FormEvent) => {
@@ -71,16 +74,25 @@ export function AuthGateway({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#131517", color: "#f4f4f5" }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--bg)",
+          color: "var(--text)",
+        }}
+      >
         <div style={{ textAlign: "center" }}>
-          <div style={{ width: 44, height: 44, border: "3px solid #27272a", borderTopColor: "#ff5722", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
-          <p style={{ fontSize: "0.88rem", color: "#a1a1aa" }}>Memverifikasi sesi pemilik...</p>
+          <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", margin: 0 }}>
+            Memverifikasi sesi pemilik...
+          </p>
         </div>
       </div>
     );
   }
 
-  // Jika sudah terautentikasi, tampilkan aplikasi utama
   if (authStatus?.authenticated) {
     return <>{children}</>;
   }
@@ -94,190 +106,125 @@ export function AuthGateway({ children }: { children: ReactNode }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#131517",
+        background: "var(--bg)",
         padding: 20,
-        boxSizing: "border-box",
-        fontFamily: "var(--font-montserrat, system-ui, sans-serif)",
       }}
     >
       <div
+        className="card"
         style={{
           width: "100%",
-          maxWidth: 440,
-          background: "#1e2226",
-          border: "1px solid #2a2e33",
-          borderRadius: 20,
-          padding: "36px 32px",
-          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
-          color: "#f4f4f5",
+          maxWidth: 420,
+          padding: "32px 28px",
+          boxShadow: "var(--shadow-lg)",
+          marginBottom: 0,
         }}
       >
-        {/* Logo & Brand Header */}
+        {/* Brand Header */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div
             style={{
-              width: 52,
-              height: 52,
-              borderRadius: 16,
-              background: "#ff5722",
+              width: 44,
+              height: 44,
+              borderRadius: "var(--radius-md)",
+              background: "var(--accent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              margin: "0 auto 14px",
-              boxShadow: "0 8px 20px rgba(255, 87, 34, 0.35)",
+              margin: "0 auto 12px",
             }}
           >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 12h12" />
             </svg>
           </div>
-          <h1 style={{ fontSize: "1.35rem", fontWeight: 700, margin: "0 0 6px", color: "#ffffff" }}>
+          <h1 style={{ fontSize: "1.25rem", fontWeight: 700, margin: "0 0 4px" }}>
             Roihan AI Office
           </h1>
-          <p style={{ fontSize: "0.82rem", color: "#a1a1aa", margin: 0 }}>
-            {isInit ? "Gerbang Akses Pemilik Tunggal (Single-Owner)" : "Inisialisasi Akun Pemilik (Setup Awal)"}
+          <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>
+            {isInit
+              ? "Gerbang Akses Pemilik Tunggal (Single-Owner)"
+              : "Inisialisasi Akun Pemilik (Setup Awal)"}
           </p>
         </div>
 
         {error && (
           <div
+            role="alert"
             style={{
-              padding: "10px 14px",
-              borderRadius: 12,
-              background: "rgba(239, 68, 68, 0.12)",
-              border: "1px solid #ef4444",
-              color: "#f87171",
-              fontSize: "0.82rem",
-              marginBottom: 18,
+              padding: "10px 12px",
+              borderRadius: "var(--radius-md)",
+              background: "var(--bad-subtle)",
+              border: "1px solid var(--bad)",
+              color: "var(--bad)",
+              fontSize: "0.8rem",
+              fontWeight: 500,
+              marginBottom: 16,
             }}
           >
-            ⚠️ {error}
+            {error}
           </div>
         )}
 
-        {/* Form: Login if initialized, Bootstrap if first time */}
         {isInit ? (
-          <form onSubmit={handleLogin} style={{ display: "grid", gap: 14 }}>
-            <div>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#a1a1aa", marginBottom: 6 }}>
-                Email Pemilik
-              </label>
+          <form onSubmit={handleLogin} style={{ display: "grid", gap: 12 }}>
+            <label>
+              Email Pemilik
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="owner@roihan.id"
                 required
-                style={{
-                  width: "100%",
-                  padding: "11px 14px",
-                  borderRadius: 12,
-                  border: "1px solid #33383f",
-                  background: "#181b1e",
-                  color: "#ffffff",
-                  fontSize: "0.88rem",
-                  boxSizing: "border-box",
-                  outline: "none",
-                }}
               />
-            </div>
+            </label>
 
-            <div>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#a1a1aa", marginBottom: 6 }}>
-                Kata Sandi
-              </label>
+            <label>
+              Kata Sandi
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                style={{
-                  width: "100%",
-                  padding: "11px 14px",
-                  borderRadius: 12,
-                  border: "1px solid #33383f",
-                  background: "#181b1e",
-                  color: "#ffffff",
-                  fontSize: "0.88rem",
-                  boxSizing: "border-box",
-                  outline: "none",
-                }}
               />
-            </div>
+            </label>
 
             <button
               type="submit"
+              className="btn-primary-orange"
               disabled={busy}
-              style={{
-                marginTop: 8,
-                padding: "12px",
-                borderRadius: 12,
-                border: "none",
-                background: "#ff5722",
-                color: "#ffffff",
-                fontWeight: 700,
-                fontSize: "0.9rem",
-                cursor: busy ? "not-allowed" : "pointer",
-                boxShadow: "0 6px 16px rgba(255, 87, 34, 0.3)",
-                transition: "background 0.2s, transform 0.1s",
-              }}
+              style={{ width: "100%", padding: "10px 14px", marginTop: 4 }}
             >
-              {busy ? "Memverifikasi..." : "Masuk ke Workspace →"}
+              {busy ? "Memverifikasi..." : "Masuk ke Workspace"}
             </button>
           </form>
         ) : (
-          <form onSubmit={handleBootstrap} style={{ display: "grid", gap: 14 }}>
-            <div>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#a1a1aa", marginBottom: 6 }}>
-                Nama Lengkap Pemilik
-              </label>
+          <form onSubmit={handleBootstrap} style={{ display: "grid", gap: 12 }}>
+            <label>
+              Nama Lengkap Pemilik
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Fatih Roihan"
                 required
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  border: "1px solid #33383f",
-                  background: "#181b1e",
-                  color: "#ffffff",
-                  fontSize: "0.85rem",
-                  boxSizing: "border-box",
-                }}
               />
-            </div>
+            </label>
 
-            <div>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#a1a1aa", marginBottom: 6 }}>
-                Email Pemilik Sah
-              </label>
+            <label>
+              Email Pemilik Sah
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="owner@roihan.id"
                 required
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  border: "1px solid #33383f",
-                  background: "#181b1e",
-                  color: "#ffffff",
-                  fontSize: "0.85rem",
-                  boxSizing: "border-box",
-                }}
               />
-            </div>
+            </label>
 
-            <div>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#a1a1aa", marginBottom: 6 }}>
-                Kata Sandi Baru (Min. 8 Karakter)
-              </label>
+            <label>
+              Kata Sandi Baru (Min. 8 Karakter)
               <input
                 type="password"
                 value={password}
@@ -285,66 +232,47 @@ export function AuthGateway({ children }: { children: ReactNode }) {
                 placeholder="Minimal 8 karakter unik"
                 required
                 minLength={8}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  border: "1px solid #33383f",
-                  background: "#181b1e",
-                  color: "#ffffff",
-                  fontSize: "0.85rem",
-                  boxSizing: "border-box",
-                }}
               />
-            </div>
+            </label>
 
-            <div>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#a1a1aa", marginBottom: 6 }}>
-                Token Bootstrap (Opsional, jika diset di server)
-              </label>
+            <label>
+              Token Bootstrap (Opsional, jika diset di server)
               <input
                 type="text"
                 value={bootstrapToken}
                 onChange={(e) => setBootstrapToken(e.target.value)}
                 placeholder="Kosongkan jika tidak diset di .env"
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  border: "1px solid #33383f",
-                  background: "#181b1e",
-                  color: "#ffffff",
-                  fontSize: "0.85rem",
-                  boxSizing: "border-box",
-                }}
               />
-            </div>
+            </label>
 
             <button
               type="submit"
+              className="btn-primary-orange"
               disabled={busy}
-              style={{
-                marginTop: 6,
-                padding: "12px",
-                borderRadius: 12,
-                border: "none",
-                background: "#ff5722",
-                color: "#ffffff",
-                fontWeight: 700,
-                fontSize: "0.9rem",
-                cursor: busy ? "not-allowed" : "pointer",
-                boxShadow: "0 6px 16px rgba(255, 87, 34, 0.3)",
-              }}
+              style={{ width: "100%", padding: "10px 14px", marginTop: 4 }}
             >
-              {busy ? "Membuat Akun..." : "🔒 Inisialisasi Akun Pemilik"}
+              {busy ? "Membuat Akun..." : "Inisialisasi Akun Pemilik"}
             </button>
           </form>
         )}
 
-        {/* Security Notice Footer */}
-        <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #2a2e33", textAlign: "center" }}>
-          <p style={{ fontSize: "0.72rem", color: "#71717a", margin: 0, lineHeight: 1.4 }}>
-            🛡️ <strong>Single-Owner Security:</strong> Registrasi publik ditutup permanen. Akses dilindungi sesi HttpOnly terenkripsi &amp; rate limit anti brute-force.
+        <div
+          style={{
+            marginTop: 20,
+            paddingTop: 14,
+            borderTop: "1px solid var(--border)",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "0.72rem",
+              color: "var(--text-secondary)",
+              margin: 0,
+              lineHeight: 1.45,
+            }}
+          >
+            <strong>Single-Owner Security:</strong> Registrasi publik ditutup permanen. Akses dilindungi sesi HttpOnly terenkripsi &amp; proteksi rate limit.
           </p>
         </div>
       </div>

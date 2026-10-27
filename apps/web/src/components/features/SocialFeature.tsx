@@ -9,25 +9,24 @@ interface SocialAccount {
   name: string;
   handle: string;
   connected: boolean;
-  avatar: string;
+  code: string;
 }
 
 const INITIAL_ACCOUNTS: SocialAccount[] = [
-  { id: "1", platform: "linkedin", name: "Roihan AI Office", handle: "@roihan-ai", connected: true, avatar: "💼" },
-  { id: "2", platform: "x", name: "Roihan AI", handle: "@roihan_ai", connected: false, avatar: "🐦" },
-  { id: "3", platform: "instagram", name: "Roihan Marketing", handle: "@roihan.office", connected: false, avatar: "📸" },
-  { id: "4", platform: "youtube", name: "Roihan Tech & Marketing", handle: "@roihantech", connected: false, avatar: "▶️" },
+  { id: "1", platform: "linkedin", name: "Roihan AI Office", handle: "@roihan-ai", connected: true, code: "IN" },
+  { id: "2", platform: "x", name: "Roihan AI", handle: "@roihan_ai", connected: false, code: "X" },
+  { id: "3", platform: "instagram", name: "Roihan Marketing", handle: "@roihan.office", connected: false, code: "IG" },
+  { id: "4", platform: "youtube", name: "Roihan Tech & Marketing", handle: "@roihantech", connected: false, code: "YT" },
 ];
 
 export function SocialFeature() {
-  const [tab, setTab] = useState<"accounts" | "calendar" | "scheduled" | "engagement" | "analytics">("scheduled");
+  const [tab, setTab] = useState<"accounts" | "scheduled" | "analytics">("scheduled");
   const [accounts, setAccounts] = useState<SocialAccount[]>(INITIAL_ACCOUNTS);
   const [contents, setContents] = useState<ContentAsset[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Form for new post
   const [postPlatform, setPostPlatform] = useState<"linkedin" | "x" | "instagram">("linkedin");
   const [postText, setPostText] = useState("");
   const [postSchedule, setPostSchedule] = useState("");
@@ -40,17 +39,24 @@ export function SocialFeature() {
         marketingApi.contents(),
         marketingApi.campaigns(),
       ]);
-      setContents(allContents.filter((c) => c.kind === "social_post" || c.channel === "linkedin" || c.channel === "instagram"));
+      setContents(
+        allContents.filter(
+          (c) => c.kind === "social_post" || c.channel === "linkedin" || c.channel === "instagram"
+        )
+      );
       setCampaigns(allCampaigns);
     } catch {
-      // offline / mock fallback
+      // fallback
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadData();
+    const id = setTimeout(() => {
+      void loadData();
+    }, 0);
+    return () => clearTimeout(id);
   }, [loadData]);
 
   const toggleConnect = (id: string) => {
@@ -58,7 +64,11 @@ export function SocialFeature() {
       prev.map((acc) => {
         if (acc.id === id) {
           const next = !acc.connected;
-          setNotice(next ? `Akun ${acc.name} berhasil dihubungkan via OAuth.` : `Koneksi akun ${acc.name} dicabut.`);
+          setNotice(
+            next
+              ? `Akun ${acc.name} berhasil dihubungkan via OAuth.`
+              : `Koneksi akun ${acc.name} dicabut.`
+          );
           setTimeout(() => setNotice(null), 3500);
           return { ...acc, connected: next };
         }
@@ -82,12 +92,12 @@ export function SocialFeature() {
       });
       setPostText("");
       setPostSchedule("");
-      setNotice("Postingan media sosial berhasil dijadwalkan ke antrean publikasi!");
+      setNotice("Postingan media sosial berhasil dijadwalkan ke antrean publikasi.");
       setTimeout(() => setNotice(null), 4000);
       await loadData();
       setTab("scheduled");
     } catch {
-      setNotice("Gagal membuat postingan. Pastikan formulir terisi lengkap.");
+      setNotice("Gagal membuat postingan. Pastikan produk dan kampanye telah disiapkan.");
     } finally {
       setIsSubmitting(false);
     }
@@ -96,16 +106,14 @@ export function SocialFeature() {
   return (
     <div style={{ display: "grid", gap: 20 }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <h2 style={{ fontSize: "1.4rem", fontWeight: 700, margin: 0, color: "var(--dash-text-main)" }}>
-            📱 Social Media Hub
-          </h2>
-          <p style={{ margin: "4px 0 0", color: "var(--dash-text-muted)", fontSize: "0.85rem" }}>
-            Kelola akun resmi, kalender publikasi sosial, jadwal posting otomatis, dan performa interaksi.
+      <div className="workspace-header">
+        <div className="workspace-greeting">
+          <h2>Social Media Hub</h2>
+          <p>
+            Kelola akun sosial resmi, kalender publikasi multi-kanal, jadwal posting, dan metrik keterlibatan.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className="workspace-header-actions">
           <button
             type="button"
             className={tab === "scheduled" ? "btn-primary-orange" : "btn-secondary"}
@@ -131,108 +139,77 @@ export function SocialFeature() {
       </div>
 
       {notice && (
-        <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(255, 87, 34, 0.15)", border: "1px solid #ff5722", color: "#ff5722", fontSize: "0.85rem", fontWeight: 600 }}>
+        <div
+          role="status"
+          style={{
+            padding: "10px 14px",
+            borderRadius: "var(--radius-md)",
+            background: "var(--accent-subtle)",
+            border: "1px solid var(--accent)",
+            color: "var(--accent)",
+            fontSize: "0.84rem",
+            fontWeight: 600,
+          }}
+        >
           {notice}
         </div>
       )}
 
       {/* Tab: Scheduled & Post Creator */}
       {tab === "scheduled" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          {/* Creator */}
+        <div className="workspace-middle-grid">
           <div className="white-panel">
-            <h3 style={{ fontSize: "1.05rem", margin: "0 0 12px", color: "var(--dash-text-main)" }}>
-              ✍️ Buat Postingan Baru
-            </h3>
-            <form onSubmit={handleCreatePost} style={{ display: "grid", gap: 14 }}>
+            <h3>Buat Postingan Sosial Baru</h3>
+            <form onSubmit={handleCreatePost} style={{ display: "grid", gap: 12 }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--dash-text-muted)", marginBottom: 6 }}>
-                  Pilih Saluran Sosial
-                </label>
-                <div style={{ display: "flex", gap: 8 }}>
+                <label>Saluran Publikasi</label>
+                <div className="actions" style={{ marginTop: 0 }}>
                   {(["linkedin", "x", "instagram"] as const).map((p) => (
                     <button
                       key={p}
                       type="button"
+                      className={postPlatform === p ? "btn-primary-orange" : "btn-secondary"}
                       onClick={() => setPostPlatform(p)}
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: 10,
-                        border: "1px solid var(--dash-border)",
-                        background: postPlatform === p ? "#ff5722" : "var(--dash-input-bg)",
-                        color: postPlatform === p ? "#fff" : "var(--dash-text-main)",
-                        fontWeight: 600,
-                        fontSize: "0.8rem",
-                        cursor: "pointer",
-                        textTransform: "capitalize",
-                      }}
                     >
-                      {p === "x" ? "𝕏 (Twitter)" : p === "linkedin" ? "💼 LinkedIn" : "📸 Instagram"}
+                      {p === "x" ? "X (Twitter)" : p === "linkedin" ? "LinkedIn" : "Instagram"}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--dash-text-muted)", marginBottom: 6 }}>
-                  Konten Pesan ({postText.length} karakter)
-                </label>
+              <label>
+                Konten Pesan ({postText.length} karakter)
                 <textarea
                   rows={5}
                   value={postText}
                   onChange={(e) => setPostText(e.target.value)}
                   placeholder="Tulis pembaruan strategi marketing, studi kasus klien, atau pengumuman produk..."
-                  style={{
-                    width: "100%",
-                    padding: 10,
-                    borderRadius: 12,
-                    border: "1px solid var(--dash-border)",
-                    background: "var(--dash-input-bg)",
-                    color: "var(--dash-text-main)",
-                    fontSize: "0.85rem",
-                    boxSizing: "border-box",
-                  }}
                   required
                 />
-              </div>
+              </label>
 
-              <div>
-                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--dash-text-muted)", marginBottom: 6 }}>
-                  Jadwal Kirim (Kosongkan untuk draf langsung)
-                </label>
+              <label>
+                Jadwal Publikasi (Opsional)
                 <input
                   type="datetime-local"
                   value={postSchedule}
                   onChange={(e) => setPostSchedule(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: 8,
-                    borderRadius: 10,
-                    border: "1px solid var(--dash-border)",
-                    background: "var(--dash-input-bg)",
-                    color: "var(--dash-text-main)",
-                    fontSize: "0.85rem",
-                    boxSizing: "border-box",
-                  }}
                 />
-              </div>
+              </label>
 
               <button type="submit" className="btn-primary-orange" disabled={isSubmitting}>
-                {isSubmitting ? "Menyimpan..." : "🚀 Simpan & Jadwalkan Post"}
+                {isSubmitting ? "Menyimpan..." : "Simpan & Jadwalkan Post"}
               </button>
             </form>
           </div>
 
-          {/* List of Scheduled Posts */}
           <div className="white-panel">
-            <h3 style={{ fontSize: "1.05rem", margin: "0 0 12px", color: "var(--dash-text-main)" }}>
-              📅 Antrean Postingan Sosial
-            </h3>
+            <h3>Antrean Postingan Sosial</h3>
             {loading ? (
-              <p style={{ color: "var(--dash-text-muted)", fontSize: "0.85rem" }}>Memuat antrean...</p>
+              <p className="hint">Memuat antrean publikasi...</p>
             ) : contents.length === 0 ? (
-              <p style={{ color: "var(--dash-text-muted)", fontSize: "0.85rem" }}>
-                Belum ada postingan sosial dalam antrean. Buat draf pertama di panel kiri.
+              <p className="hint">
+                Belum ada postingan sosial dalam antrean. Buat draf pertama pada formulir di samping.
               </p>
             ) : (
               <div style={{ display: "grid", gap: 10, maxHeight: 380, overflowY: "auto" }}>
@@ -241,23 +218,41 @@ export function SocialFeature() {
                     key={item.id}
                     style={{
                       padding: 12,
-                      borderRadius: 14,
-                      background: "var(--dash-pill-bg)",
-                      border: "1px solid var(--dash-border)",
+                      borderRadius: "var(--radius-md)",
+                      background: "var(--surface-subtle)",
+                      border: "1px solid var(--border)",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                      <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", color: "#ff5722" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 6,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "0.72rem",
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          color: "var(--accent)",
+                        }}
+                      >
                         {item.channel}
                       </span>
-                      <span style={{ fontSize: "0.7rem", padding: "2px 8px", borderRadius: 8, background: "var(--dash-input-bg)", color: "var(--dash-text-muted)" }}>
-                        {item.status}
-                      </span>
+                      <span className="badge">{item.status}</span>
                     </div>
-                    <strong style={{ fontSize: "0.88rem", display: "block", color: "var(--dash-text-main)", marginBottom: 4 }}>
+                    <strong style={{ fontSize: "0.86rem", display: "block", marginBottom: 4 }}>
                       {item.title}
                     </strong>
-                    <p style={{ fontSize: "0.8rem", color: "var(--dash-text-muted)", margin: 0, lineClamp: 2, WebkitLineClamp: 2, display: "-webkit-box", WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    <p
+                      style={{
+                        fontSize: "0.8rem",
+                        color: "var(--text-secondary)",
+                        margin: 0,
+                      }}
+                    >
                       {item.body}
                     </p>
                   </div>
@@ -271,13 +266,17 @@ export function SocialFeature() {
       {/* Tab: Connected Accounts */}
       {tab === "accounts" && (
         <div className="white-panel">
-          <h3 style={{ fontSize: "1.05rem", margin: "0 0 16px", color: "var(--dash-text-main)" }}>
-            🔗 Akun Media Sosial yang Diotorisasi
-          </h3>
-          <p style={{ fontSize: "0.82rem", color: "var(--dash-text-muted)", marginBottom: 16 }}>
-            Roihan AI Office menggunakan integrasi OAuth resmi untuk menjadwalkan dan memublikasikan konten. Kredensial akun tidak pernah disimpan dalam bentuk plaintext.
+          <h3>Akun Media Sosial yang Diotorisasi</h3>
+          <p className="hint">
+            Roihan AI Office menggunakan integrasi OAuth resmi untuk menjadwalkan dan memublikasikan konten. Kredensial tidak disimpan dalam bentuk plaintext.
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gap: 12,
+            }}
+          >
             {accounts.map((acc) => (
               <div
                 key={acc.id}
@@ -286,35 +285,43 @@ export function SocialFeature() {
                   alignItems: "center",
                   justifyContent: "space-between",
                   padding: 14,
-                  borderRadius: 16,
-                  border: "1px solid var(--dash-border)",
-                  background: "var(--dash-pill-bg)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface-subtle)",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: "1.6rem" }}>{acc.avatar}</span>
+                  <span
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: "var(--radius-md)",
+                      background: "var(--sidebar-bg)",
+                      color: "#fff",
+                      fontSize: "0.76rem",
+                      fontWeight: 700,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {acc.code}
+                  </span>
                   <div>
-                    <strong style={{ display: "block", fontSize: "0.9rem", color: "var(--dash-text-main)" }}>
+                    <strong style={{ display: "block", fontSize: "0.88rem" }}>
                       {acc.name}
                     </strong>
-                    <span style={{ fontSize: "0.75rem", color: "var(--dash-text-muted)" }}>{acc.handle}</span>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                      {acc.handle}
+                    </span>
                   </div>
                 </div>
                 <button
                   type="button"
+                  className={acc.connected ? "btn-secondary" : "btn-primary-orange"}
                   onClick={() => toggleConnect(acc.id)}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: 10,
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    border: acc.connected ? "1px solid #10b981" : "1px solid var(--dash-border)",
-                    background: acc.connected ? "rgba(16, 185, 129, 0.12)" : "var(--dash-input-bg)",
-                    color: acc.connected ? "#10b981" : "var(--dash-text-main)",
-                  }}
                 >
-                  {acc.connected ? "✓ Terhubung" : "+ Hubungkan"}
+                  {acc.connected ? "Terhubung" : "Hubungkan"}
                 </button>
               </div>
             ))}
@@ -325,35 +332,37 @@ export function SocialFeature() {
       {/* Tab: Social Analytics */}
       {tab === "analytics" && (
         <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+          <div className="workspace-kpi-grid">
             <div className="kpi-card">
               <span className="kpi-card-title">Total Postingan</span>
-              <strong style={{ color: "#ff5722" }}>{contents.length}</strong>
-              <span style={{ fontSize: "0.7rem", color: "var(--dash-text-muted)" }}>LinkedIn & Instagram</span>
+              <strong style={{ color: "var(--accent)" }}>{contents.length}</strong>
+              <span className="small muted">LinkedIn, X &amp; Instagram</span>
             </div>
             <div className="kpi-card">
-              <span className="kpi-card-title">Est. Jangkauan</span>
-              <strong style={{ color: "#3b82f6" }}>1.420</strong>
-              <span style={{ fontSize: "0.7rem", color: "var(--dash-text-muted)" }}>30 hari terakhir</span>
+              <span className="kpi-card-title">Akun Terotorisasi</span>
+              <strong style={{ color: "var(--ok)" }}>
+                {accounts.filter((a) => a.connected).length} / {accounts.length}
+              </strong>
+              <span className="small muted">Koneksi OAuth aktif</span>
             </div>
             <div className="kpi-card">
-              <span className="kpi-card-title">Tingkat Interaksi</span>
-              <strong style={{ color: "#10b981" }}>4.2%</strong>
-              <span style={{ fontSize: "0.7rem", color: "var(--dash-text-muted)" }}>Benchmark B2B: 2.8%</span>
+              <span className="kpi-card-title">Siap Publikasi</span>
+              <strong style={{ color: "var(--info)" }}>
+                {contents.filter((c) => c.status === "ready_for_review").length}
+              </strong>
+              <span className="small muted">Lolos pemeriksaan klaim</span>
             </div>
             <div className="kpi-card">
-              <span className="kpi-card-title">Akun Aktif</span>
-              <strong style={{ color: "#ec4899" }}>{accounts.filter((a) => a.connected).length} / {accounts.length}</strong>
-              <span style={{ fontSize: "0.7rem", color: "var(--dash-text-muted)" }}>Saluran resmi</span>
+              <span className="kpi-card-title">Kampanye Terkait</span>
+              <strong>{campaigns.length}</strong>
+              <span className="small muted">Kampanye lintas kanal</span>
             </div>
           </div>
 
           <div className="white-panel">
-            <h3 style={{ fontSize: "1.05rem", margin: "0 0 8px", color: "var(--dash-text-main)" }}>
-              Performa Berdasarkan Saluran
-            </h3>
-            <p style={{ fontSize: "0.8rem", color: "var(--dash-text-muted)", margin: 0 }}>
-              Metrik performa sosial ditarik langsung dari API platform yang dihubungkan. Data akan terus disinkronisasi setiap siklus eksekusi worker.
+            <h3>Sinkronisasi Metrik Sosial</h3>
+            <p className="hint" style={{ margin: 0 }}>
+              Metrik keterlibatan dan jangkauan disinkronisasi secara berkala dari platform yang telah diotorisasi pada tab Akun Terhubung.
             </p>
           </div>
         </div>
