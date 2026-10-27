@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
@@ -19,6 +19,11 @@ import { ApprovalsFeature } from "@/components/features/ApprovalsFeature";
 import { TasksFeature } from "@/components/features/TasksFeature";
 import { OfficeFeature } from "@/components/features/OfficeFeature";
 import { AiFeature } from "@/components/features/AiFeature";
+import { SocialFeature } from "@/components/features/SocialFeature";
+import { EmailFeature } from "@/components/features/EmailFeature";
+import { AnalyticsFeature } from "@/components/features/AnalyticsFeature";
+import { OperationsFeature } from "@/components/features/OperationsFeature";
+import { SettingsFeature } from "@/components/features/SettingsFeature";
 
 import { MarketingOverview } from "./MarketingOverview";
 import { MarketingSidePanel } from "./MarketingSidePanel";
@@ -33,13 +38,16 @@ interface SearchResult {
 }
 
 const SEARCH_CATALOG: SearchResult[] = [
-  { title: "Website & SEO Audit", sub: "Crawl teknis, keyword ranking & rekomendasi", icon: "🌐", view: "seo" },
-  { title: "Content Studio", sub: "Brief konten, linter klaim & draf promosi", icon: "✍️", view: "content" },
+  { title: "Command Center (Overview)", sub: "Ringkasan performa marketing, KPI & tugas agen", icon: "⊞", view: "overview" },
+  { title: "Website & Growth (SEO)", sub: "Crawl teknis, keyword ranking & optimasi on-page", icon: "🌐", view: "seo" },
+  { title: "Content Studio", sub: "Brief konten, linter klaim & draf artikel/sosial", icon: "✍️", view: "content" },
+  { title: "Social Media Hub", sub: "Jadwal posting, multi-akun terhubung & analitik sosial", icon: "📱", view: "social" },
+  { title: "Campaigns & Advertising", sub: "Perencanaan kampanye, anggaran & eksperimen", icon: "🚀", view: "campaigns" },
   { title: "Leads & CRM Pipeline", sub: "Prospek B2B, skor & retensi privasi UU PDP", icon: "👥", view: "leads" },
-  { title: "Campaign Manager", sub: "Kalender kampanye multi-kanal terarah", icon: "🚀", view: "campaigns" },
-  { title: "Pusat Persetujuan (Approval)", sub: "Verifikasi tindakan kritis & segel CEO", icon: "🛡️", view: "approvals" },
-  { title: "Log Aktivitas (Tasks)", sub: "Antrean worker & riwayat eksekusi agen", icon: "📋", view: "tasks" },
-  { title: "AI Core & Integrasi", sub: "Google Gemini API & perutean model AI", icon: "⚙️", view: "ai" },
+  { title: "Email & Automation", sub: "Kampanye email, audiens & trigger alur kerja", icon: "✉️", view: "email" },
+  { title: "Analytics & Intelligence", sub: "Corong konversi, atribusi kanal & ekspor CSV", icon: "📊", view: "analytics" },
+  { title: "Pusat Operasi & Persetujuan", sub: "Verifikasi tindakan kritis & log aktivitas", icon: "🛡️", view: "operations" },
+  { title: "Pengaturan & AI Core", sub: "Google Gemini API, batas token & peran spesialis", icon: "⚙️", view: "settings" },
 ];
 
 export function InspiredDashboard() {
@@ -402,10 +410,18 @@ export function InspiredDashboard() {
         {activeView === "overview" && (<MarketingOverview data={data} kpis={kpis} campaigns={campaignsList} pendingApprovals={pendingApprovals} onNavigate={setActiveView} onAudit={() => setAuditModalOpen(true)} onLead={() => setLeadModalOpen(true)} />)}
 
         {/* Fitur terintegrasi: semua modul dijalankan langsung di dashboard tunggal */}
+        {/* 10 Modul Kanonis Master Addendum v2.0 */}
         {activeView === "seo" && (<div className="feature-view-container"><SeoFeature /></div>)}
         {activeView === "content" && (<div className="feature-view-container"><ContentFeature /></div>)}
-        {activeView === "leads" && (<div className="feature-view-container"><LeadsFeature /></div>)}
+        {activeView === "social" && (<div className="feature-view-container"><SocialFeature /></div>)}
         {activeView === "campaigns" && (<div className="feature-view-container"><CampaignsFeature /></div>)}
+        {activeView === "leads" && (<div className="feature-view-container"><LeadsFeature /></div>)}
+        {activeView === "email" && (<div className="feature-view-container"><EmailFeature /></div>)}
+        {activeView === "analytics" && (<div className="feature-view-container"><AnalyticsFeature /></div>)}
+        {activeView === "operations" && (<div className="feature-view-container"><OperationsFeature /></div>)}
+        {activeView === "settings" && (<div className="feature-view-container"><SettingsFeature /></div>)}
+
+        {/* Tampilan Pendukung & Detail */}
         {activeView === "projects" && (<div className="feature-view-container"><ProjectsFeature /></div>)}
         {activeView === "products" && (<div className="feature-view-container"><ProductsFeature /></div>)}
         {activeView === "approvals" && (<div className="feature-view-container"><ApprovalsFeature /></div>)}

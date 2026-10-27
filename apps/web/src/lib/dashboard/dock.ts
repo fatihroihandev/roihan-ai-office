@@ -1,18 +1,50 @@
-﻿// Daftar menu dock tunggal; dipakai dashboard dan halaman detail agar menu selalu sama.
-export type DashboardView = "overview" | "seo" | "content" | "leads" | "campaigns" | "projects" | "products" | "approvals" | "tasks" | "office" | "ai";
+// Daftar menu dock kanonis Master Addendum v2.0
+export type DashboardView =
+  | "overview"
+  | "seo"
+  | "content"
+  | "social"
+  | "campaigns"
+  | "leads"
+  | "email"
+  | "analytics"
+  | "operations"
+  | "settings"
+  | "projects"
+  | "products"
+  | "approvals"
+  | "tasks"
+  | "office"
+  | "ai";
 
 export const DOCK: { view: DashboardView; icon: string; title: string }[] = [
-  { view: "overview", icon: "⊞", title: "Overview" },
-  { view: "seo", icon: "🌐", title: "Website & SEO" },
+  { view: "overview", icon: "⊞", title: "Command Center" },
+  { view: "seo", icon: "🌐", title: "Website & Growth" },
   { view: "content", icon: "✍️", title: "Content Studio" },
+  { view: "social", icon: "📱", title: "Social Media" },
+  { view: "campaigns", icon: "🚀", title: "Campaigns & Ads" },
   { view: "leads", icon: "👥", title: "Leads & CRM" },
-  { view: "campaigns", icon: "🚀", title: "Kampanye & Analitik" },
-  { view: "projects", icon: "📁", title: "Proyek Marketing" },
-  { view: "products", icon: "📦", title: "Produk & Penawaran" },
-  { view: "approvals", icon: "🛡️", title: "Pusat Persetujuan" },
-  { view: "tasks", icon: "📋", title: "Tugas Tim Marketing" },
-  { view: "office", icon: "🏢", title: "Kantor Tim Marketing" },
-  { view: "ai", icon: "⚙️", title: "AI Core & Integrasi" },
+  { view: "email", icon: "✉️", title: "Email & Automation" },
+  { view: "analytics", icon: "📊", title: "Analytics & Intel" },
+  { view: "operations", icon: "🛡️", title: "Operations" },
+  { view: "settings", icon: "⚙️", title: "Settings & AI" },
 ];
 
-export const VIEW_IDS = DOCK.map((d) => d.view);
+export const VIEW_IDS: DashboardView[] = [
+  "overview",
+  "seo",
+  "content",
+  "social",
+  "campaigns",
+  "leads",
+  "email",
+  "analytics",
+  "operations",
+  "settings",
+  "projects",
+  "products",
+  "approvals",
+  "tasks",
+  "office",
+  "ai",
+];
