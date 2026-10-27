@@ -1,21 +1,23 @@
 # MASTER DEVELOPMENT DOCUMENT
 
-# ROIHAN SOFTWARE HOUSE
+# ROIHAN SOFTWARE HOUSE -> ROIHAN AI OFFICE
 
-### Local-First AI Software House, Multi-Agent Platform & Cyberpunk Virtual Office
+### AI Marketing Operations, Autonomous Website Growth & Modern Minimalist Platform
 
-**Versi:** 2.3
+**Versi:** 3.0
 
-**Terakhir diperbarui:** 2026-10-22
+**Terakhir diperbarui:** 2026-10-27
 
-**Status:** Master Development Specification (Phase 0-12 selesai; Phase 13-15 direncanakan menurut Addendum v2.3, Bagian 29)
+**Status:** Master Development Specification (Phase 0-14 selesai; Addendum v1.0 & v1.1 di Bagian 30 & 31 menjadi spesifikasi normatif utama untuk rebranding produk, organisasi marketing-only, migrasi AI ke Gemini API tanpa Ollama, serta redesain antarmuka Modern Minimalist SaaS; Phase 16-24 menyusun roadmap implementasinya)
 
-**Tujuan:** Sumber acuan utama untuk perencanaan, implementasi, pengujian, dan pengembangan Roihan Software House.
+**Tujuan:** Sumber acuan utama untuk perencanaan, implementasi, pengujian, dan pengembangan platform Roihan AI Office (sebelumnya Roihan Software House).
 
 ## Cara Membaca Dokumen Ini
 
-- **Prioritas jika ada konflik:** Bagian 25 (Keputusan yang Sudah Dikunci) > bagian lain dokumen ini > dokumen turunan (`ARCHITECTURE.md`, `SECURITY.md`, dll.).
-- **Addendum v2.3** (Office Power Control, SEO Specialist, proyek akhir Company Profile) terintegrasi di Bagian 4.4, 6.3, roadmap Phase 13-15, Bagian 25, 27, dan spesifikasi normatifnya di **Bagian 29**. Bagian 29 mengikat untuk Phase 13-15; yang sudah dibangun (Phase 0-12) tidak berubah.
+- **Prioritas jika ada konflik:** Addendum v1.0 & Addendum v1.1 (Bagian 30, 31, 32) serta Keputusan yang Sudah Dikunci (Bagian 25) > Addendum v2.3 (Bagian 29) > bagian lama dokumen ini > dokumen turunan (`ARCHITECTURE.md`, `SECURITY.md`, dll.).
+- **Addendum v1.0 & v1.1:** Menjadi ketentuan resmi untuk perubahan identitas produk menjadi **Roihan AI Office**, pemusatan tim operasional AI hanya untuk **Marketing & Website Growth**, migrasi dari Ollama ke **Google Gemini API**, dan perombakan UI/UX ke **Modern Minimalist SaaS** (menggantikan gaya cyberpunk berlebih).
+- **Addendum v2.3:** (Office Power Control, SEO Specialist, Website Portofolio/Company Profile) tetap berlaku pada aspek checkpoint, stabilitas kontrol, dan audit SEO teknis yang tidak bertentangan dengan Addendum v1.0/v1.1.
+- **Roadmap Pengembangan Terpadu:** Dikelompokkan dalam Phase 16 sampai Phase 24 di Bagian 21 dan Bagian 32.
 - **Penanda:** blok kode, konfigurasi, endpoint, dan skema entity adalah *contoh konseptual*, bukan klaim bahwa fitur sudah ada. Item berlabel **Usulan** belum dikunci dan menunggu keputusan CEO (lihat Bagian 27).
 - **Istilah:** lihat Glosarium di Bagian 28.
 - **Dokumen turunan** yang disebut di Bagian 19 bersifat rencana; dokumen tersebut baru dibuat ketika milestone terkait dimulai.
@@ -1951,6 +1953,100 @@ Yang dibangun (`app/marketing/seo.py`, `seo_agents.py`, `app/api/seo.py`, migras
 
 ---
 
+## TRANSFORMASI MENUJU ROIHAN AI OFFICE (ADDENDUM v1.0 & v1.1)
+
+Roadmap berikut mengintegrasikan seluruh tahapan dari **Addendum v1.0 (Fase 0 - 8)** dan **Addendum v1.1 (Fase A - E)** ke dalam urutan pelaksanaan terpadu (**Phase 16 sampai Phase 24**).
+
+### Phase 16 — Backup, Verifikasi Integritas & Audit Komprehensif
+- **Pemetaan Addendum:** Addendum v1.0 Fase 0 (Backup & Recovery) + Addendum v1.0 Fase 1 (Audit Repositori) + Addendum v1.1 Fase A (Audit UI).
+- **Fokus:**
+  - Pembuatan checkpoint Git bersih dan arsip repositori di lokasi terpisah.
+  - Backup database PostgreSQL & SQLite lokal beserta file data dan secret.
+  - Verifikasi integritas arsip dan simulasi uji restore mandiri.
+  - Audit repositori aktual: pemetaan seluruh dependensi Ollama, deteksi mock data/stub, inventarisasi modul backend.
+  - Audit UI: inventarisasi halaman, layout, komponen bersama, dependency visual, serta identifikasi masalah aksesibilitas dan responsivitas.
+- **Gate:** Backup terverifikasi dapat di-restore + Laporan audit repositori dan UI disetujui tanpa perubahan kode prematur.
+
+### Phase 17 — Rebranding & Modern Minimalist Design System
+- **Pemetaan Addendum:** Addendum v1.0 Fase 2 (Rebranding) + Addendum v1.1 Fase B (Design System) + Addendum v1.1 Fase C (Application Shell).
+- **Fokus:**
+  - Rename direktori kerja dan referensi konfigurasi menjadi `roihan-ai-office` tanpa merusak package/database internal.
+  - Pembaruan nama aplikasi, manifest, metadata, dan dokumen menjadi **Roihan AI Office**.
+  - Penetapan Design System Modern Minimalist SaaS: token warna netral profesional, tipografi terstandar, spacing konsisten kelipatan 4/8px.
+  - Redesain Application Shell: sidebar terpusat marketing (10 navigasi resmi), header fungsional, drawer responsif seluler/tablet.
+  - Pembersihan elemen cyberpunk/neon berlebih demi kejelasan informasi dan hierarki visual.
+- **Gate:** Build, lint, dan test regresi lulus; shell aplikasi baru berjalan responsif dan konsisten.
+
+### Phase 18 — AI Provider Migration: Google Gemini API & Mock Adapter
+- **Pemetaan Addendum:** Addendum v1.0 Fase 3 (AI Provider Migration).
+- **Fokus:**
+  - Implementasi AI Provider Adapter yang konsisten, aman, dan modular.
+  - Integrasi resmi Google Gemini API (model Flash untuk tugas rutin, Pro untuk tugas analisis kompleks).
+  - Penyimpanan API key secara aman di backend/environment (dilarang bocor ke frontend atau log).
+  - Penghapusan dependensi runtime langsung terhadap Ollama (Ollama tidak lagi menjadi prasyarat).
+  - Pembuatan Fake/Mock Provider untuk testing lengkap (routing, approval, retry, error handling) tanpa biaya API.
+- **Gate:** 100% tes provider, penanganan error, validasi format, dan eksekusi tugas AI lulus menggunakan Fake Provider & verifikasi live Gemini API.
+
+### Phase 19 — Marketing Foundation & Command Center Dashboard
+- **Pemetaan Addendum:** Addendum v1.0 Fase 4 (Marketing Foundation) + Addendum v1.1 Fase D (Overview, Approvals, Activity Log).
+- **Fokus:**
+  - Penegasan organisasi AI operasional: **Marketing-Only** (menonaktifkan tim engineering AI dari antarmuka operasional pengguna).
+  - Implementasi Marketing Orchestrator sebagai pusat koordinasi kampanye, delegasi tugas spesialis, dan laporan.
+  - Pembaruan Task Engine & Approval Lifecycle untuk alur kerja marketing nyata.
+  - Dashboard Overview Modern Minimalist: metrik aktual dari backend (membedakan nilai 0, null, dan data tidak tersedia; tanpa data tiruan).
+  - Halaman Approvals dan Activity Log terstruktur dengan penanda risiko jelas.
+- **Gate:** Task lifecycle marketing dan approval berjalan dengan pencatatan audit log lengkap dan status transparan.
+
+### Phase 20 — SEO MVP & Autonomous Website Growth Engine
+- **Pemetaan Addendum:** Addendum v1.0 Fase 5 (SEO MVP) + Addendum v1.1 Fase D (Website & SEO).
+- **Fokus:**
+  - Campaign Manager dengan parameter: URL website, target marketing, keyword, audiens, batas waktu, dan anggaran.
+  - Crawler website aman dengan proteksi ketat (SSRF guard, domain allowlist, rate limit, robots.txt compliance).
+  - Mesin audit Technical SEO & On-Page SEO berbasis bukti nyata (struktur heading, metadata, canonical, internal links).
+  - Riset keyword berbasis sumber data terverifikasi (tanpa angka/volume karangan).
+  - Halaman Website & SEO: tabel isu terprioritas, rencana tindakan, panel detail, dan bukti temuan.
+- **Gate:** Minimal satu website berhasil diaudit secara end-to-end dengan hasil tersimpan dan dapat diverifikasi.
+
+### Phase 21 — Controlled Execution & Integrasi Eksternal
+- **Pemetaan Addendum:** Addendum v1.0 Fase 6 (Controlled Execution) + Addendum v1.1 Fase D (Integrations & Settings).
+- **Fokus:**
+  - Lapisan integrasi eksternal (CMS/Git integration, Search Console, analytics jika otorisasi tersedia).
+  - Penetapan tingkat akses: `READ_ONLY`, `STAGING_WRITE`, `APPROVED_PRODUCTION_WRITE`.
+  - Approval Gate wajib untuk perubahan berisiko tinggi (redirect massal, robots directives, pengeluaran iklan, outreach).
+  - Mekanisme rollback untuk tindakan yang dapat dipulihkan dan verifikasi hasil pascaeksekusi.
+  - Halaman Integrations & Settings dengan status koneksi jujur (dilarang menampilkan status aktif sebelum tes koneksi berhasil).
+- **Gate:** Satu perubahan yang diizinkan berhasil diterapkan pada staging/target dengan bukti eksekusi dan verifikasi rollback.
+
+### Phase 22 — Autonomous Optimization Loop & Scheduled Audits
+- **Pemetaan Addendum:** Addendum v1.0 Fase 7 (Autonomous Optimization).
+- **Fokus:**
+  - Scheduler audit berkala dan perbandingan berkala terhadap baseline performa website.
+  - Pemecahan strategi otomatis menjadi tugas terukur dengan deduplikasi tugas aktif.
+  - Penegakan budget cap, batas retry, pencegahan infinite loop pemanggilan model.
+  - Evaluasi efektivitas tindakan sebelumnya berdasarkan perubahan metrik nyata.
+- **Gate:** Siklus otonom berjalan berulang tanpa tindakan di luar izin dan log audit mencatat seluruh siklus.
+
+### Phase 23 — Marketing Expansion: Content Studio, CRM & Campaigns
+- **Pemetaan Addendum:** Addendum v1.0 Fase 8 (Marketing Expansion) + Addendum v1.1 Fase D (Content Studio, Leads & CRM, Campaigns, Analytics).
+- **Fokus:**
+  - Content Marketing Agent & Content Studio: content calendar, SEO brief, draft artikel/FAQ/landing page, status draft/review/approved/published (tanpa klaim publikasi jika baru draft).
+  - Lead Generation & CRM Agent: pencatatan prospek sah, pipeline status, perlindungan data pribadi dan kepatuhan privasi (UU PDP).
+  - Campaign & Social Media Agent: jadwal kampanye, materi distribusi, kontrol ketat larangan spam dan iklan berbayar tanpa approval.
+  - Marketing Analytics Agent: baseline, tren klik/CTR/posisi/konversi dari sumber terhubung nyata.
+- **Gate:** Seluruh 4 modul ekspansi memiliki alur kerja backend nyata, UI bersih, dan metrik terverifikasi.
+
+### Phase 24 — UI/UX Regression, Accessibility & Final Acceptance Gate
+- **Pemetaan Addendum:** Addendum v1.1 Fase E (Regression dan Quality Assurance) + Addendum v1.0 Bagian 12 (Kriteria Penerimaan Akhir).
+- **Fokus:**
+  - Pengujian Aksesibilitas WCAG 2.2 AA (kontras warna, keyboard navigation, focus state, accessible name).
+  - Pengujian responsivitas lintas perangkat (Desktop, Tablet, Mobile) tanpa horizontal overflow.
+  - Verifikasi seluruh state komponen (loading, error, empty, success, disabled) terikat langsung ke API nyata.
+  - Uji regresi end-to-end seluruh platform Roihan AI Office.
+  - Verifikasi 14 Kriteria Penerimaan Akhir Addendum v1.0.
+- **Gate:** Platform memenuhi seluruh Kriteria Penerimaan Akhir Addendum v1.0 & v1.1 dan siap digunakan.
+
+---
+
 # 22. RISIKO UTAMA DAN MITIGASI
 
 | Risiko | Mitigasi |
@@ -2079,6 +2175,12 @@ Keputusan berikut menjadi baseline sampai ada perubahan yang disetujui CEO:
 25. (v2.3) Website publik tidak boleh bergantung pada kantor 3D yang sedang berjalan; deployment publik hanya setelah approval CEO.
 27. (2026-10-23, keputusan CEO) Agent boleh memakai web **hanya lewat alat terkendali di backend** (model tidak terhubung ke internet): saklar ON/OFF (bawaan mati) + batas permintaan harian + log audit, tanpa approval per pencarian. Pencarian memakai Brave Search API atau Tavily; konten web diperlakukan sebagai data tidak tepercaya.
 26. (2026-10-22, keputusan CEO) Website portofolio pribadi CEO (`fatihroihan.site`) didaftarkan sebagai **situs yang dipasarkan** oleh Marketing/SEO. Ini menggantikan pemisahan total pada keputusan 24 untuk keperluan pemasaran dan SEO: situs tetap milik CEO, kode aslinya tidak diubah, dan semua klaim/konten tentangnya tunduk pada aturan yang sama (klaim terverifikasi, tanpa jaminan peringkat, publikasi lewat approval).
+28. (v3.0 - Addendum v1.0) **Nama Produk Resmi**: Nama resmi produk adalah **Roihan AI Office**; nama direktori kerja repositori adalah `roihan-ai-office`.
+29. (v3.0 - Addendum v1.0) **Organisasi AI Marketing-Only**: Hanya tim marketing AI yang menjadi tim operasional produk. Tidak ada tim AI operasional Developer/QA internal yang berjalan untuk pengguna. Pengembangan kode aplikasi Roihan AI Office dilakukan lewat workflow coding eksternal.
+30. (v3.0 - Addendum v1.0) **Migrasi AI Provider**: Google Gemini API menjadi provider utama; runtime Ollama tidak lagi menjadi prasyarat wajib. Wajib menyediakan fake/mock provider untuk pengujian tanpa biaya.
+31. (v3.0 - Addendum v1.0) **Prinsip Backup Sebelum Refactor**: Backup lengkap dan verifikasi pemulihan adalah prasyarat mutlak sebelum perubahan kode atau struktur direktori dilakukan.
+32. (v3.0 - Addendum v1.1) **Arah Visual Modern Minimalist SaaS**: Antarmuka beralih ke desain Modern Minimalist yang bersih, fungsional, dan berkontras tinggi, menggantikan tema cyberpunk neon berlebih demi keterbacaan data marketing.
+33. (v3.0 - Addendum v1.1) **Pemisahan Data Nyata vs Tiruan**: Dashboard dan metrik dilarang menampilkan data tiruan (mock) seolah-olah data produksi; nilai nol, null, dan data belum tersedia wajib dibedakan.
 
 ---
 
@@ -2352,7 +2454,906 @@ Aturan: backend dan database adalah sumber kebenaran status; data proyek dan che
 
 ---
 
+# 30. ADDENDUM v1.0 — ROIHAN AI OFFICE
+## PRODUCT REBRANDING, MARKETING-ONLY ORGANIZATION, AI PROVIDER MIGRATION & DEVELOPMENT RESTRUCTURING
+
+**Dokumen:** Addendum untuk Master Development Document Roihan Software House  
+**Nama produk baru:** Roihan AI Office  
+**Nama direktori repositori target:** `roihan-ai-office`  
+**Fokus produk:** AI Marketing Operations & Autonomous Website Growth  
+**Prioritas:** Backup, keamanan data, kesinambungan fitur, penggantian provider AI, dan pengembangan tim marketing.
+
+---
+
+# 1. STATUS DAN PRIORITAS DOKUMEN
+
+1. Addendum ini menjadi ketentuan resmi untuk perubahan nama, identitas produk, struktur tim AI operasional, penggunaan AI provider, dan roadmap marketing.
+2. Ketentuan di dalamnya menggantikan keputusan terdahulu yang bertentangan mengenai nama produk, penggunaan Ollama, dan keberadaan tim AI operasional non-marketing.
+3. Ketentuan teknis lama yang tidak bertentangan tetap berlaku.
+4. Implementasi wajib didasarkan pada audit repositori aktual. Jangan menganggap modul, integrasi, database, atau kemampuan yang belum diverifikasi sudah tersedia.
+5. Addendum ini tidak mengizinkan penghapusan kode atau data secara langsung. Semua perubahan mengikuti prosedur backup dan migrasi yang ditentukan di bawah.
+
+# 2. IDENTITAS DAN BRANDING PRODUK
+
+## 2.1 Nama resmi
+
+Nama resmi produk adalah **Roihan AI Office**.
+
+Nama ini digunakan pada:
+- Dashboard dan antarmuka aplikasi.
+- Halaman login dan onboarding.
+- Navigasi dan pengaturan.
+- Judul dokumen, dokumentasi, dan panduan pengguna.
+- Identitas perusahaan di dalam aplikasi.
+- Nama aplikasi pada konfigurasi build dan deployment yang relevan.
+- Identitas kantor virtual dan seluruh visualisasi 3D jika fitur tersebut dipertahankan.
+- Metadata aplikasi dan manifest yang relevan.
+
+Nama lama `Roihan Software House` tidak boleh lagi digunakan sebagai nama produk aktif setelah proses rebranding selesai, kecuali dalam catatan migrasi, riwayat, dokumentasi historis, atau konteks yang memang perlu menjelaskan identitas sebelumnya.
+
+## 2.2 Nama repositori
+
+Nama direktori target adalah:
+
+`roihan-ai-office`
+
+Direktori lama `roihan-software-house` hanya boleh diubah namanya setelah backup lengkap diverifikasi.
+
+Aturan:
+1. Jangan mengganti nama direktori sebelum backup selesai.
+2. Jangan mengubah nama internal package, database, tabel, modul, atau identifier secara massal hanya karena direktori berubah.
+3. Audit semua referensi terhadap path absolut, path relatif, konfigurasi IDE, skrip terminal, Docker, CI/CD, environment, dokumentasi, dan tooling.
+4. Perbarui referensi yang benar-benar bergantung pada nama direktori lama.
+5. Pertahankan identifier internal yang tidak perlu diubah agar kompatibilitas tidak rusak.
+6. Jika repositori berada di remote Git, perubahan nama remote atau repositori harus direncanakan secara terpisah. Jangan menganggap perubahan nama folder lokal otomatis mengubah remote.
+7. Jangan mengubah domain publik, URL callback OAuth, atau deployment production tanpa pemeriksaan dampak dan persetujuan.
+
+## 2.3 Penyelesaian branding
+
+Rebranding dinyatakan selesai jika:
+- Nama aplikasi di UI sudah konsisten.
+- Metadata dan konfigurasi yang relevan sudah diperbarui.
+- Referensi aktif yang menyebabkan kegagalan karena nama lama telah diperbaiki.
+- Tidak ada perubahan terhadap data historis yang tidak diperlukan.
+- Build dan pengujian regresi yang tersedia berhasil.
+
+# 3. VISI DAN BATASAN PRODUK
+
+Roihan AI Office adalah platform yang membantu pemilik bisnis mengelola pekerjaan marketing melalui AI, integrasi eksternal, task execution, dan pengukuran hasil.
+
+Produk bukan sekadar chatbot, generator konten, atau dashboard rekomendasi.
+
+Sistem harus dapat:
+1. Menerima target marketing dari pengguna.
+2. Menganalisis website, data, audiens, dan konteks yang tersedia.
+3. Menyusun strategi serta memecahnya menjadi tugas terukur.
+4. Menjalankan tindakan melalui tools dan integrasi yang diizinkan.
+5. Memverifikasi hasil tindakan.
+6. Mengukur perubahan performa.
+7. Menentukan langkah berikutnya berdasarkan bukti.
+8. Meminta persetujuan ketika tindakan melampaui izin atau batas risiko.
+9. Menampilkan progres, kendala, biaya yang tersedia, dan hasil aktual.
+
+## 3.1 Fokus operasional
+
+**Hanya tim marketing AI yang menjadi tim operasional produk.**
+
+Roihan AI Office tidak memiliki tim AI operasional Developer, Software Engineer, Programmer, atau QA Engineer sebagai bagian dari organisasi kerja AI yang tampil dan berjalan untuk mengerjakan proyek software pengguna.
+
+Pekerjaan pengembangan kode aplikasi Roihan AI Office sendiri tetap dilakukan melalui workflow coding eksternal, misalnya CLI coding agent, sesuai kendali pemilik proyek.
+
+Pemisahan ini berarti:
+- Tim AI di dalam aplikasi berfokus pada marketing.
+- Pengembangan source code aplikasi tidak menjadi tanggung jawab tim marketing AI.
+- Pengujian teknis produk tetap dilakukan melalui proses development dan CI/testing yang sesuai.
+- Modul engineering internal lama tidak langsung dihapus. Audit dahulu, lalu nonaktifkan, keluarkan dari navigasi, atau hapus hanya setelah dependensi dan dampaknya dipastikan.
+
+# 4. STRUKTUR ORGANISASI AI — MARKETING ONLY
+
+## 4.1 Marketing Manager / Orchestrator
+
+Marketing Manager adalah pusat koordinasi seluruh tim.
+
+Tanggung jawab:
+- Memahami tujuan bisnis dan marketing.
+- Mengelola kampanye, target, anggaran, dan prioritas.
+- Membagi pekerjaan kepada spesialis yang relevan.
+- Memastikan setiap tugas memiliki tujuan dan kriteria selesai.
+- Menghindari pekerjaan duplikat.
+- Mengelola persetujuan manusia.
+- Mengevaluasi hasil dan menentukan tindakan selanjutnya.
+- Menghasilkan laporan keseluruhan marketing.
+
+Marketing Manager tidak boleh mengklaim suatu tindakan telah dilakukan jika tidak ada bukti eksekusi.
+
+## 4.2 SEO & Website Growth Agent
+
+Tanggung jawab:
+- Audit technical SEO dan on-page SEO.
+- Analisis struktur website, metadata, canonical, sitemap, robots directives, internal links, dan masalah lain yang relevan.
+- Riset dan pengelompokan keyword.
+- Analisis search intent dan relevansi bisnis.
+- Pembuatan rekomendasi serta prioritas optimasi.
+- Penyusunan content brief SEO.
+- Evaluasi konten lama dan peluang pembaruan.
+- Audit backlink jika tersedia sumber data yang memadai.
+- Identifikasi peluang backlink yang relevan dan sah.
+- Penyusunan outreach yang personal dan sesuai kebijakan.
+- Pemantauan kinerja dan siklus optimasi berkelanjutan.
+
+Agen tidak boleh menjanjikan ranking, trafik, atau jumlah backlink tertentu.
+
+## 4.3 Content Marketing Agent
+
+Tanggung jawab:
+- Membuat content strategy.
+- Menghasilkan content brief, artikel, FAQ, landing page, halaman layanan, dan materi pendukung.
+- Memperbarui konten lama berdasarkan kebutuhan yang terverifikasi.
+- Menyesuaikan format dengan audiens, tujuan, dan kanal distribusi.
+- Menjaga akurasi fakta, kualitas tulisan, dan konsistensi merek.
+- Menghindari konten massal berkualitas rendah, keyword stuffing, klaim palsu, dan duplikasi yang tidak berguna.
+
+Publikasi eksternal harus mengikuti izin dan akses yang tersedia.
+
+## 4.4 Lead Generation & CRM Agent
+
+Tanggung jawab:
+- Mengidentifikasi prospek yang relevan dari sumber yang sah.
+- Mencatat prospek dan sumber asalnya.
+- Mengelola status leads dan pipeline.
+- Mengidentifikasi peluang tindak lanjut.
+- Menyusun pesan komunikasi yang relevan.
+- Melacak respons dan konversi jika integrasi tersedia.
+- Menjaga kualitas data serta menghindari duplikasi.
+
+Agen tidak boleh mengambil atau menggunakan data pribadi tanpa dasar dan izin yang sesuai.
+
+## 4.5 Campaign & Social Media Agent
+
+Tanggung jawab:
+- Merencanakan kampanye marketing.
+- Menyiapkan kalender konten dan materi distribusi.
+- Menyesuaikan konten dengan kanal yang digunakan.
+- Menjadwalkan publikasi jika integrasi resmi mendukungnya.
+- Melacak status dan hasil kampanye.
+- Mengelola eksperimen yang dapat diukur.
+- Mengikuti batas anggaran dan approval untuk iklan berbayar.
+
+Agen tidak boleh mengirim spam, melakukan tindakan yang melanggar aturan platform, atau menjalankan iklan berbayar tanpa otorisasi.
+
+## 4.6 Marketing Analytics Agent
+
+Tanggung jawab:
+- Mengumpulkan metrik dari sumber yang benar-benar terhubung.
+- Menyusun baseline dan tren performa.
+- Membandingkan hasil aktual dengan target.
+- Menganalisis klik, impresi, CTR, posisi rata-rata, trafik, leads, konversi, dan revenue jika datanya tersedia.
+- Mengidentifikasi peluang dan hambatan.
+- Menilai dampak tindakan sebelumnya.
+- Memberikan rekomendasi berbasis data.
+- Membedakan data nol, data kosong, data tidak tersedia, dan data kedaluwarsa.
+
+ROI, CAC, dan atribusi revenue hanya boleh dihitung jika data biaya, pendapatan, dan atribusi mencukupi.
+
+## 4.7 Batas jumlah model
+
+Enam peran di atas merupakan peran logis, bukan kewajiban untuk menjalankan enam model AI secara terus-menerus.
+
+Arsitektur yang diprioritaskan:
+- Satu Marketing Orchestrator.
+- Spesialis dipanggil sesuai kebutuhan tugas.
+- Satu provider default untuk pekerjaan rutin.
+- Provider alternatif hanya digunakan jika dikonfigurasi dan diizinkan.
+- Proses terjadwal tidak boleh membuat pemanggilan model tanpa batas.
+
+# 5. AI PROVIDER — TANPA OLLAMA
+
+## 5.1 Keputusan provider
+
+Ollama tidak lagi menjadi provider AI yang diperlukan oleh aplikasi.
+
+Target provider utama adalah **Google Gemini API**, dengan ketentuan:
+1. Akses API harus diverifikasi secara terpisah dari langganan Google AI Pro.
+2. Google AI Pro tidak boleh diasumsikan mencakup biaya atau kuota Gemini API untuk aplikasi.
+3. Nama model harus dikonfigurasi, bukan tersebar di source code.
+4. Gunakan model Flash yang stabil dan tersedia untuk tugas rutin jika sesuai hasil evaluasi.
+5. Model kelas Pro dapat dipilih secara eksplisit untuk tugas yang memerlukan analisis lebih kompleks.
+6. Harga, batas penggunaan, dan ketersediaan model harus diverifikasi dari dokumentasi resmi sebelum konfigurasi production.
+7. API key disimpan di backend melalui environment atau secret manager.
+8. API key tidak boleh dikirim ke browser, ditulis dalam source code, atau dicatat dalam log.
+9. Tidak boleh ada fallback berbayar yang aktif tanpa persetujuan pengguna.
+
+## 5.2 AI Provider Adapter
+
+Semua fitur AI harus menggunakan lapisan provider yang konsisten.
+
+Tanggung jawab adapter:
+- Mengelola pemanggilan model.
+- Menangani timeout dan error.
+- Memvalidasi format respons.
+- Mendukung konfigurasi model.
+- Mengelola batas permintaan yang relevan.
+- Mencatat penggunaan dan biaya jika tersedia.
+- Menangani pembatalan jika provider mendukungnya.
+- Menghasilkan error yang jelas ketika konfigurasi tidak tersedia.
+
+Agent dan modul marketing tidak boleh memanggil endpoint Ollama secara langsung.
+
+## 5.3 Pengujian tanpa biaya
+
+Sediakan fake provider atau mock provider untuk pengujian:
+- Task lifecycle.
+- Routing tugas.
+- Approval.
+- Validasi format.
+- Penanganan error.
+- Retry dan cancellation.
+- Logging dan checkpoint.
+
+Fake provider hanya digunakan untuk testing. Output simulasi tidak boleh ditampilkan sebagai hasil marketing nyata.
+
+## 5.4 Perilaku saat provider gagal
+
+Jika Gemini API belum dikonfigurasi, kuota habis, koneksi gagal, atau request ditolak:
+- Tandai tugas sesuai kondisi kegagalan yang sebenarnya.
+- Simpan informasi error yang aman.
+- Jangan mengarang hasil.
+- Jangan mengulang tanpa batas.
+- Jangan berpindah ke provider berbayar lain secara diam-diam.
+- Izinkan tugas non-AI tetap berjalan jika tidak bergantung pada inference.
+
+# 6. PROSEDUR BACKUP DAN MIGRASI
+
+## 6.1 Tahap backup wajib
+
+Sebelum development ulang:
+1. Periksa status Git dan perubahan yang belum di-commit.
+2. Buat checkpoint Git yang aman.
+3. Buat arsip repositori di lokasi terpisah.
+4. Cadangkan database menggunakan metode sesuai teknologi aktual.
+5. Cadangkan file unggahan, data lokal, dan konfigurasi penting yang dibutuhkan.
+6. Pisahkan dan lindungi secret.
+7. Verifikasi integritas arsip.
+8. Verifikasi kelengkapan data yang diperlukan untuk restore.
+9. Lakukan uji restore di lokasi terpisah jika memungkinkan.
+
+Jangan menyatakan backup dapat dipulihkan sepenuhnya jika proses restore belum diverifikasi.
+
+## 6.2 Rename setelah backup
+
+Setelah backup dinyatakan valid:
+1. Audit path dan referensi nama lama.
+2. Rename direktori kerja menjadi `roihan-ai-office`.
+3. Perbarui referensi path yang relevan.
+4. Periksa Git, skrip pengembangan, konfigurasi IDE, dan workflow build.
+5. Jalankan pemeriksaan regresi.
+6. Jangan mengubah remote Git atau deployment tanpa pemeriksaan terpisah.
+
+## 6.3 Strategi migrasi
+
+Migrasi dilakukan secara bertahap dan dapat dibatalkan.
+
+Dilarang:
+- Menghapus seluruh kode lama untuk memulai dari nol tanpa bukti bahwa hal tersebut diperlukan.
+- Mengubah database secara destruktif.
+- Menghapus modul yang belum dipahami dependensinya.
+- Melakukan perubahan massal hanya demi konsistensi nama.
+- Menghapus Ollama dari konfigurasi sebelum seluruh referensinya dipetakan dan strategi migrasinya disiapkan.
+
+Setiap tahap harus memiliki checkpoint, tes, laporan, dan prosedur rollback.
+
+# 7. ARSITEKTUR APLIKASI TARGET
+
+Gunakan hasil audit untuk menentukan struktur aktual. Modular monolith menjadi pilihan awal jika cocok dengan repositori saat ini.
+
+Batas tanggung jawab target:
+1. Dashboard dan Marketing Command Center.
+2. Marketing Orchestrator.
+3. Modul SEO & Website Growth.
+4. Modul Content Marketing.
+5. Modul Lead Generation & CRM.
+6. Modul Campaign & Social Media.
+7. Modul Marketing Analytics.
+8. AI Provider Adapter.
+9. Task Execution Engine dan worker.
+10. External Integration Layer.
+11. Persistence, audit log, approval, budget control, dan recovery.
+
+Jangan memaksakan microservices, mengganti framework, atau memigrasikan database tanpa alasan teknis yang terverifikasi.
+
+Task engine dan worker merupakan infrastruktur eksekusi, bukan tim AI engineering yang mengerjakan produk pengguna.
+
+# 8. TARGET AUTONOMOUS WEBSITE GROWTH
+
+## 8.1 Input kampanye
+
+Pengguna harus dapat menentukan:
+- URL website.
+- Tujuan marketing.
+- Keyword sasaran jika ada.
+- Audiens dan lokasi jika relevan.
+- Target trafik, leads, atau metrik lain yang dapat diukur.
+- Batas waktu.
+- Batas anggaran.
+- Akses yang tersedia.
+- Tingkat otonomi dan persetujuan.
+
+## 8.2 Siklus operasional
+
+Siklus target:
+
+1. Validasi website dan akses.
+2. Ambil baseline dari sumber yang tersedia.
+3. Audit website.
+4. Riset keyword dan peluang konten.
+5. Susun strategi dan prioritas.
+6. Buat tugas yang terukur.
+7. Eksekusi tindakan yang diizinkan.
+8. Verifikasi hasil.
+9. Ukur dampak.
+10. Evaluasi strategi.
+11. Susun tindakan berikutnya.
+12. Hentikan atau minta keputusan manusia jika terjadi hambatan, risiko, atau batas anggaran.
+
+## 8.3 Keterbatasan akses
+
+URL saja tidak memberikan akses untuk mengubah website, membaca analytics privat, atau mengirim email.
+
+Sistem harus membedakan:
+- Website berhasil diperiksa secara publik.
+- Integrasi berhasil terhubung.
+- Akses hanya-baca.
+- Akses tulis tersedia.
+- Tindakan menunggu persetujuan.
+- Tindakan gagal.
+- Hasil belum dapat diverifikasi.
+
+Jangan menampilkan koneksi sebagai aktif sebelum pengujian koneksi berhasil.
+
+# 9. KONTROL KEAMANAN DAN OTONOMI
+
+Tetapkan tingkat akses:
+- READ_ONLY: membaca dan menganalisis.
+- STAGING_WRITE: mengubah lingkungan staging atau branch kerja yang diizinkan.
+- APPROVED_PRODUCTION_WRITE: mengubah production setelah memenuhi aturan approval.
+
+Approval wajib untuk:
+- Publikasi atau perubahan production.
+- Perubahan URL massal, canonical, robots directives, atau redirect yang berisiko.
+- Outreach eksternal dan pengiriman komunikasi.
+- Pengeluaran iklan.
+- Tindakan yang melampaui anggaran.
+- Operasi destruktif atau sulit dibatalkan.
+
+Tambahkan kontrol yang relevan:
+- URL allowlist dan perlindungan SSRF.
+- Rate limit dan batas crawler.
+- OAuth atau integrasi resmi.
+- Least privilege.
+- Secret redaction.
+- Idempotensi dan deduplikasi.
+- Audit log.
+- Budget cap.
+- Retry terbatas.
+- Checkpoint dan recovery.
+- Rollback untuk perubahan yang dapat dipulihkan.
+
+Dilarang menggunakan backlink spam, link network manipulatif, fake reviews, konten massal berkualitas rendah, atau teknik yang menipu pengguna maupun mesin pencari.
+
+# 10. DASHBOARD MARKETING COMMAND CENTER
+
+Dashboard harus menjadi pusat kendali untuk:
+- Ringkasan target dan performa.
+- Kampanye website dan SEO.
+- Status tugas.
+- Rencana dan prioritas tindakan.
+- Content calendar.
+- Leads dan CRM.
+- Persetujuan.
+- Status integrasi.
+- Pemakaian AI dan anggaran.
+- Audit log dan riwayat.
+- Laporan hasil serta rekomendasi selanjutnya.
+
+Semua status harus bersumber dari backend. Jangan menyajikan data mock sebagai status production.
+
+Navigasi produk harus berfokus pada marketing. Menu dan representasi tim AI engineering atau software development tidak menjadi bagian dari organisasi operasional aktif.
+
+# 11. ROADMAP IMPLEMENTASI
+
+## Fase 0 — Backup & Recovery
+- Backup Git, source code, database, dan data penting.
+- Verifikasi integritas dan pemulihan.
+- Catat baseline.
+
+Gate: backup valid dan dapat dipulihkan sesuai cakupan yang didokumentasikan.
+
+## Fase 1 — Audit Repositori
+- Inventarisasi stack dan fitur.
+- Petakan seluruh ketergantungan Ollama.
+- Identifikasi mock, kegagalan, dan integrasi yang belum tersedia.
+- Susun rencana perubahan berbasis bukti.
+
+Gate: tidak ada perubahan kode sebelum laporan audit disetujui.
+
+## Fase 2 — Rebranding
+- Rename direktori.
+- Perbarui identitas aplikasi.
+- Perbaiki referensi path dan metadata yang relevan.
+- Jalankan regression test.
+
+Gate: aplikasi dan workflow development tetap berfungsi.
+
+## Fase 3 — AI Provider Migration
+- Buat atau rapikan provider adapter.
+- Integrasikan Gemini API.
+- Tambahkan konfigurasi model dan kontrol biaya.
+- Sediakan fake provider untuk pengujian.
+- Hilangkan ketergantungan runtime langsung ke Ollama.
+
+Gate: tes provider, error handling, dan tugas AI berhasil.
+
+## Fase 4 — Marketing Foundation
+- Audit task engine dan approval.
+- Stabilkan backend, persistence, log, dan status tugas.
+- Siapkan Marketing Orchestrator.
+- Rapikan dashboard marketing.
+
+Gate: alur tugas dapat ditelusuri dan tidak mengandalkan status palsu.
+
+## Fase 5 — SEO MVP
+- Campaign Manager.
+- Website crawler yang aman.
+- Technical SEO audit.
+- Keyword research berbasis sumber data.
+- Prioritas tindakan dan laporan.
+
+Gate: satu website dapat diaudit dan hasilnya tersimpan serta dapat diverifikasi.
+
+## Fase 6 — Controlled Execution
+- CMS atau Git integration.
+- Staging changes.
+- Review dan approval.
+- Search Console dan analytics jika akses tersedia.
+- Verifikasi hasil serta rollback.
+
+Gate: satu perubahan yang diizinkan berhasil diterapkan dan diverifikasi.
+
+## Fase 7 — Autonomous Optimization
+- Audit terjadwal.
+- Perbandingan baseline dan hasil.
+- Task generation dan deduplikasi.
+- Batas anggaran, retry, dan approval.
+- Evaluasi tindakan sebelumnya.
+
+Gate: siklus berjalan tanpa tindakan di luar izin dan memiliki log yang lengkap.
+
+## Fase 8 — Marketing Expansion
+- Content Marketing.
+- Lead Generation & CRM.
+- Campaign & Social Media.
+- Marketing Analytics.
+
+Gate: setiap modul memiliki alur kerja nyata dan metrik yang relevan.
+
+Urutan fase dapat disesuaikan berdasarkan audit, tetapi backup dan audit tidak boleh dilewati.
+
+# 12. KRITERIA PENERIMAAN AKHIR
+
+Roihan AI Office dinyatakan memenuhi addendum ini jika:
+
+1. Identitas produk dan direktori target sudah konsisten.
+2. Backup serta prosedur restore terdokumentasi.
+3. Ollama tidak menjadi dependensi runtime yang wajib.
+4. Gemini API dapat digunakan melalui adapter yang aman.
+5. API key tidak terekspos ke frontend atau log.
+6. Kegagalan provider ditangani tanpa klaim palsu dan tanpa fallback berbayar tersembunyi.
+7. Organisasi AI operasional hanya memiliki peran marketing.
+8. Sistem dapat menerima tujuan marketing dan mengubahnya menjadi tugas terukur.
+9. SEO MVP melakukan audit nyata, menyimpan hasil, dan menyertakan bukti yang tersedia.
+10. Integrasi eksternal memiliki status koneksi dan izin yang akurat.
+11. Tindakan produksi dan eksternal mengikuti approval.
+12. Hasil, biaya yang tersedia, error, dan riwayat eksekusi dapat diaudit.
+13. Pengujian regresi yang relevan berhasil.
+14. Dokumentasi mencatat kemampuan yang belum selesai dan keterbatasan yang tersisa.
+
+Jangan menyatakan seluruh sistem selesai hanya karena dashboard terlihat lengkap.
+
+# 13. ATURAN PELAKSANAAN
+
+1. Mulai dari backup, bukan refactor.
+2. Audit repositori sebelum menetapkan file atau framework target.
+3. Buat perubahan kecil yang terisolasi.
+4. Jalankan tes setelah setiap tahap.
+5. Periksa Git diff sebelum menyelesaikan perubahan.
+6. Buat checkpoint setelah tahap yang berhasil.
+7. Laporkan file yang diubah, tes yang benar-benar dijalankan, hasilnya, risiko, dan pekerjaan yang tersisa.
+8. Jika ada tindakan yang berpotensi kehilangan data, menimbulkan biaya, atau memengaruhi production, berhenti dan minta persetujuan.
+9. Jangan menghapus modul lama sampai fungsinya, dependensinya, dan kebutuhan migrasinya terverifikasi.
+10. Semua klaim penyelesaian harus didukung bukti.
+
+**Keputusan final:** Roihan AI Office adalah platform marketing-only dengan Gemini API sebagai provider utama yang direncanakan, Ollama bukan dependensi wajib, backup sebagai prasyarat, dan migrasi bertahap berbasis audit. Seluruh implementasi mengikuti bukti repositori aktual serta kriteria penerimaan dalam addendum ini.
+
+---
+
+# 31. ADDENDUM v1.1 — CLEAN & MODERN UI/UX REDESIGN
+**Produk:** Roihan AI Office  
+**Fokus:** Modern Minimalist Interface, Marketing Command Center, Usability & Design System
+
+## 1. TUJUAN REDESAIN
+
+Redesain seluruh antarmuka Roihan AI Office menjadi clean, modern, minimalis, profesional, konsisten, responsif, dan mudah digunakan.
+
+Desain harus mendukung pekerjaan marketing sehari-hari, bukan sekadar terlihat menarik.
+
+Prioritas:
+1. Kejelasan informasi.
+2. Kemudahan penggunaan.
+3. Hierarki visual yang kuat.
+4. Navigasi yang sederhana.
+5. Konsistensi antarkomponen.
+6. Performa dan aksesibilitas.
+7. Responsivitas desktop, tablet, dan mobile.
+8. Fokus pada hasil kerja, kampanye, tugas, dan performa marketing.
+
+Redesain dilakukan di atas fondasi aplikasi yang sudah ada. Jangan membangun ulang backend atau mengganti framework hanya untuk mencapai tampilan baru.
+
+## 2. ARAH VISUAL
+
+Gunakan gaya **Modern Minimalist SaaS** dengan karakter:
+- Bersih dan lapang.
+- Profesional dan kredibel.
+- Ringkas tetapi tidak terasa kosong.
+- Tipografi jelas dan mudah dibaca.
+- Komponen sederhana dengan batas visual yang halus.
+- Warna aksen yang digunakan secara konsisten.
+- Animasi minimal dan fungsional.
+- Data dan tindakan utama menjadi fokus.
+
+Hindari:
+- Cyberpunk dan neon berlebihan.
+- Efek hologram atau glassmorphism yang dominan.
+- Gradient mencolok pada banyak komponen.
+- Shadow berat dan border dekoratif.
+- Dashboard penuh kartu tanpa hierarki.
+- Terlalu banyak warna aksen.
+- Animasi terus-menerus.
+- Elemen dekoratif yang tidak membantu pekerjaan.
+- Teks terlalu kecil dan kepadatan informasi berlebihan.
+- Menampilkan semua metrik sekaligus tanpa prioritas.
+
+## 3. DESIGN SYSTEM
+
+Sebelum merombak halaman, audit sistem desain yang sudah ada dan tetapkan design tokens terpusat.
+
+### 3.1 Warna
+
+Gunakan palet netral sebagai fondasi:
+- Background utama: putih atau off-white.
+- Surface: putih atau neutral surface.
+- Teks utama: charcoal atau near-black.
+- Teks sekunder: neutral gray dengan kontras memadai.
+- Border: neutral gray yang lembut.
+- Primary accent: satu warna utama yang profesional.
+- Success, warning, danger, dan info: warna semantik yang konsisten.
+
+Jangan menyebarkan kode warna secara acak di seluruh komponen. Gunakan token atau variabel desain yang sesuai dengan framework aktual.
+
+Sediakan light mode dan dark mode hanya jika implementasi yang ada mendukungnya dengan baik atau manfaatnya jelas. Jika keduanya tersedia, pastikan kontras, status, dan komponen konsisten pada kedua tema.
+
+### 3.2 Tipografi
+
+Gunakan satu keluarga font utama yang mudah dibaca, dengan skala ukuran dan bobot yang konsisten.
+
+Hierarki minimal:
+- Page title.
+- Section title.
+- Card atau panel title.
+- Body text.
+- Supporting text.
+- Metadata dan label.
+
+Jangan menggunakan banyak ukuran dan bobot tanpa alasan.
+
+### 3.3 Spacing dan layout
+
+Gunakan sistem spacing yang konsisten, misalnya kelipatan 4 atau 8 piksel.
+
+Tetapkan:
+- Page container.
+- Sidebar width.
+- Header height.
+- Section spacing.
+- Card padding.
+- Form spacing.
+- Table density.
+- Responsive breakpoints.
+
+Jangan menetapkan ukuran secara sembarangan di tiap halaman.
+
+### 3.4 Komponen
+
+Audit dan standarkan:
+- Button dan icon button.
+- Input, select, textarea, dan form validation.
+- Card dan panel.
+- Modal, drawer, dan popover.
+- Table dan pagination.
+- Tabs dan navigation.
+- Badge status.
+- Toast dan notification.
+- Empty state.
+- Loading skeleton.
+- Error state.
+- Confirmation dialog.
+- Progress indicator.
+- Filter, search, dan date range.
+- Chart dan data visualization.
+
+Gunakan kembali komponen bersama yang sudah layak. Jangan membuat variasi komponen baru jika komponen standar yang ada dapat memenuhi kebutuhan.
+
+## 4. STRUKTUR DASHBOARD
+
+Dashboard harus berorientasi pada pekerjaan marketing.
+
+### 4.1 Sidebar
+
+Navigasi utama:
+1. Overview.
+2. Website & SEO.
+3. Content Studio.
+4. Leads & CRM.
+5. Campaigns.
+6. Analytics.
+7. Approvals.
+8. Activity Log.
+9. Integrations.
+10. Settings.
+
+Item yang belum diimplementasikan harus disembunyikan, ditandai sebagai belum tersedia, atau ditampilkan dalam keadaan nonaktif yang jelas. Jangan membuat navigasi seolah-olah fitur sudah berfungsi jika backend-nya belum tersedia.
+
+Sidebar:
+- Ringkas.
+- Memiliki ikon yang konsisten.
+- Menampilkan active state yang jelas.
+- Mendukung collapse jika sesuai.
+- Menjadi drawer pada layar kecil.
+
+### 4.2 Header
+
+Header memuat elemen yang memang diperlukan, seperti:
+- Breadcrumb atau konteks halaman.
+- Search jika fungsinya nyata.
+- Status koneksi atau pekerjaan penting.
+- Notification jika didukung.
+- User menu dan pengaturan akun.
+
+Hindari memenuhi header dengan ikon yang tidak memiliki fungsi jelas.
+
+### 4.3 Overview
+
+Tampilkan informasi yang membantu keputusan:
+- Kampanye aktif.
+- Tugas yang berjalan atau membutuhkan tindakan.
+- Persetujuan yang tertunda.
+- Ringkasan performa berdasarkan data tersedia.
+- Penggunaan AI dan anggaran jika dapat dihitung.
+- Aktivitas terbaru.
+- Rekomendasi prioritas berikutnya yang memiliki dasar data.
+
+Setiap metrik harus memiliki sumber dan rentang waktu yang jelas. Data kosong, tidak tersedia, dan nol harus dibedakan.
+
+Jangan menampilkan angka contoh sebagai data produksi.
+
+## 5. DESAIN HALAMAN MARKETING
+
+### 5.1 Website & SEO
+
+Prioritaskan:
+- Daftar website dan kampanye.
+- Target dan baseline.
+- Ringkasan audit.
+- Daftar masalah berdasarkan tingkat prioritas.
+- Keyword dan search intent.
+- Rencana tindakan.
+- Status eksekusi.
+- Bukti hasil.
+- Perubahan performa dari waktu ke waktu.
+
+Gunakan tabel, filter, dan detail panel jika lebih efektif daripada banyak kartu.
+
+### 5.2 Content Studio
+
+Prioritaskan:
+- Content calendar.
+- Status draft, review, approved, scheduled, dan published.
+- Editor yang mudah dibaca.
+- SEO brief dan target keyword.
+- Preview konten.
+- Riwayat perubahan.
+- Approval publikasi.
+
+Jangan mengklaim konten telah dipublikasikan jika sistem hanya menghasilkan draft.
+
+### 5.3 Leads & CRM
+
+Prioritaskan:
+- Daftar prospek.
+- Pipeline dan status.
+- Sumber prospek.
+- Aktivitas tindak lanjut.
+- Informasi relevan untuk keputusan.
+- Filter dan pencarian.
+- Riwayat komunikasi jika tersedia.
+
+Lindungi data pribadi dan batasi akses sesuai otorisasi.
+
+### 5.4 Campaigns dan Analytics
+
+Prioritaskan:
+- Tujuan kampanye.
+- Status dan jadwal.
+- Anggaran.
+- Hasil aktual.
+- Perbandingan dengan baseline.
+- Grafik yang membantu membaca tren.
+- Penjelasan sumber data dan keterbatasannya.
+
+Hindari chart dekoratif yang tidak memberikan informasi atau mendistorsi skala data.
+
+### 5.5 Approvals dan Activity Log
+
+Pengguna harus mudah melihat:
+- Tindakan yang menunggu persetujuan.
+- Dampak dan risiko tindakan.
+- Alasan tindakan diajukan.
+- Identitas pelaksana.
+- Hasil tindakan.
+- Riwayat perubahan.
+
+Tindakan berisiko harus memiliki tombol dan status yang jelas. Jangan menggunakan warna atau label yang membuat tindakan berbahaya terlihat seperti tindakan rutin.
+
+## 6. INTERAKSI DAN FEEDBACK
+
+Setiap tindakan yang relevan harus memiliki feedback:
+- Loading ketika proses berjalan.
+- Success hanya setelah backend mengonfirmasi keberhasilan.
+- Error dengan penjelasan dan tindakan pemulihan yang sesuai.
+- Empty state yang memberikan arahan berikutnya.
+- Confirmation untuk tindakan destruktif atau berisiko.
+- Progress yang bersumber dari status backend.
+- Disabled state ketika tindakan tidak diizinkan.
+
+Jangan menggunakan animasi loading palsu atau status progres yang tidak terkait dengan eksekusi nyata.
+
+Animasi:
+- Singkat dan fungsional.
+- Mengutamakan transisi sederhana.
+- Tidak menghalangi interaksi.
+- Menghormati preferensi reduced motion bila relevan.
+
+## 7. RESPONSIVITAS DAN AKSESIBILITAS
+
+Pastikan:
+- Layout bekerja pada desktop, tablet, dan mobile.
+- Tidak ada horizontal overflow yang tidak diperlukan.
+- Tabel kompleks memiliki alternatif tampilan mobile yang layak.
+- Form dapat digunakan dengan keyboard.
+- Focus state terlihat.
+- Kontras teks memadai.
+- Ikon penting memiliki label atau accessible name.
+- Status tidak hanya dibedakan melalui warna.
+- Target interaksi cukup mudah digunakan pada layar sentuh.
+- Dialog, drawer, dan navigasi mendukung aksesibilitas dasar.
+
+Gunakan standar aksesibilitas WCAG 2.2 AA sebagai target desain dan pengujian yang relevan.
+
+## 8. STRATEGI IMPLEMENTASI
+
+### Fase A — Audit UI
+- Inventarisasi halaman, layout, komponen, dan styling.
+- Identifikasi komponen duplikat.
+- Identifikasi halaman yang masih menggunakan mock data.
+- Catat masalah usability dan responsivitas.
+- Dokumentasikan teknologi UI aktual.
+
+### Fase B — Design System
+- Tetapkan token warna, tipografi, spacing, radius, dan elevation.
+- Standarkan komponen utama.
+- Validasi light/dark mode jika berlaku.
+- Buat contoh halaman untuk menguji konsistensi.
+
+### Fase C — Application Shell
+- Rapikan sidebar, header, page container, dan navigasi.
+- Pertahankan routing, autentikasi, serta permission yang ada.
+- Pastikan responsivitas dan navigasi keyboard.
+
+### Fase D — Halaman Inti
+Urutan implementasi:
+1. Overview.
+2. Website & SEO.
+3. Content Studio.
+4. Leads & CRM.
+5. Campaigns.
+6. Analytics.
+7. Approvals dan Activity Log.
+8. Integrations dan Settings.
+
+Urutan dapat disesuaikan dengan fitur yang sudah tersedia, tetapi halaman yang paling sering digunakan harus diprioritaskan.
+
+### Fase E — Regression dan Quality Assurance
+- Jalankan build, lint, type checking, dan tes yang tersedia.
+- Uji navigasi, form, modal, tabel, loading, error, dan empty state.
+- Uji responsivitas.
+- Periksa tidak ada fungsi lama yang rusak.
+- Verifikasi bahwa data dashboard tetap berasal dari sumber yang benar.
+
+Jangan mengubah backend atau skema database hanya untuk memperbaiki tampilan kecuali ditemukan kebutuhan nyata.
+
+## 9. KRITERIA PENERIMAAN
+
+Redesain dinyatakan selesai jika:
+1. Semua halaman aktif menggunakan design system yang konsisten.
+2. Navigasi jelas dan berfokus pada marketing.
+3. Hierarki informasi dan tipografi mudah dibaca.
+4. Komponen memiliki state loading, error, empty, dan success yang sesuai.
+5. Halaman utama responsif.
+6. Kontras dan keyboard accessibility telah diperiksa.
+7. Tidak ada mock data yang disajikan sebagai data produksi.
+8. Tidak ada tindakan UI yang mengklaim berhasil tanpa konfirmasi backend.
+9. Fungsi inti dan permission lama tetap berfungsi.
+10. Build dan tes yang relevan berhasil, atau kegagalan yang tersisa didokumentasikan.
+
+## 10. BATASAN WAJIB
+
+- Jangan mengganti framework hanya untuk desain.
+- Jangan menghapus fitur backend demi menyederhanakan UI.
+- Jangan membuat ulang semua halaman sekaligus tanpa checkpoint.
+- Jangan mengubah API contract tanpa alasan dan pengujian.
+- Jangan menambahkan dependency UI baru sebelum mengevaluasi yang sudah ada.
+- Jangan menjadikan seluruh dashboard sebagai kumpulan kartu.
+- Jangan membuat visual dekoratif lebih dominan daripada data dan tindakan.
+- Jangan mengklaim desain selesai tanpa verifikasi halaman dan regresi.
+
+**Keputusan final:** Roihan AI Office menggunakan gaya Modern Minimalist SaaS, dengan tampilan bersih, navigasi marketing yang jelas, design system terpusat, komponen konsisten, dan responsivitas sebagai standar. Implementasi wajib mempertahankan fungsi yang sudah ada serta mengikuti hasil audit repositori aktual.
+
+---
+
+# 32. STRUKTUR DAN PEMETAAN PHASE TERPADU (ROIHAN AI OFFICE)
+
+Bagian ini menyusun integrasi normatif antara **Addendum v1.0 (Fase 0 - 8)** dan **Addendum v1.1 (Fase A - E)** ke dalam urutan eksekusi sekuensial yang konsisten dengan roadmap repositori (`Phase 16` sampai `Phase 24`).
+
+## 32.1 Matriks Pemetaan Phase
+
+| Phase Terpadu | Nama Phase | Sumber Addendum v1.0 | Sumber Addendum v1.1 | Gate / Syarat Kelulusan Utama |
+| :--- | :--- | :--- | :--- | :--- |
+| **Phase 16** | Backup, Integritas & Audit Komprehensif | Fase 0 (Backup) & Fase 1 (Audit Repositori) | Fase A (Audit UI) | Backup diverifikasi dengan uji restore; Laporan audit repositori & UI disetujui; Zero code changes. |
+| **Phase 17** | Rebranding & Modern Minimalist Design System | Fase 2 (Rebranding) | Fase B (Design System) & Fase C (Application Shell) | Nama direktori & app konsisten `roihan-ai-office`; Design tokens aktif; Shell sidebar/header responsif. |
+| **Phase 18** | AI Provider Migration: Gemini API & Mock Adapter | Fase 3 (AI Provider Migration) | - | Ollama runtime dihilangkan; Adapter Gemini API & Fake Provider lulus 100% tes tanpa kebocoran secret. |
+| **Phase 19** | Marketing Foundation & Command Center | Fase 4 (Marketing Foundation) | Fase D.1 (Overview) & D.7 (Approvals/Logs) | AI operasional khusus marketing; Orchestrator aktif; Dashboard data backend riil (tanpa mock). |
+| **Phase 20** | SEO MVP & Autonomous Website Growth Engine | Fase 5 (SEO MVP) | Fase D.2 (Website & SEO) | Website crawler aman (SSRF-guarded); Audit SEO on-page/teknis nyata; Keyword research berbasis data. |
+| **Phase 21** | Controlled Execution & Integrasi Eksternal | Fase 6 (Controlled Execution) | Fase D.8 (Integrations/Settings) | Staging changes, CMS/Git connector, approval gate tindakan berisiko, verifikasi hasil & rollback. |
+| **Phase 22** | Autonomous Optimization Loop & Scheduled Audits | Fase 7 (Autonomous Optimization) | - | Siklus otomatis: Audit -> Baseline comparison -> Task generation -> Budget cap check -> Evaluation. |
+| **Phase 23** | Marketing Expansion: Content, CRM & Campaigns | Fase 8 (Marketing Expansion) | Fase D.3, D.4, D.5, D.6 (Content, CRM, Camp., Analytics) | Modul Content Studio, Lead Gen CRM, Campaign/Sosmed, dan Analytics terintegrasi penuh. |
+| **Phase 24** | UI/UX Regression, Accessibility & Final Acceptance Gate | Bagian 12 (Kriteria Penerimaan Akhir) | Fase E (Regression & QA) | WCAG 2.2 AA compliant; Responsif multi-perangkat; Zero false success; 14 Kriteria Penerimaan Akhir lulus. |
+
+## 32.2 Aturan Transisi dan Eksekusi
+
+1. **Prinsip Non-Destruktif:** Modul lama Engineering (Developer, QA, Reviewer) tidak langsung dihapus pada Phase 16, melainkan dinonaktifkan dari antarmuka operasional pengguna dan diaudit dependensinya.
+2. **Prioritas Eksekusi:** Backup dan Audit (Phase 16) mendahului seluruh perubahan kode. Tidak ada refactoring atau pemindahan file sebelum bukti restore backup diverifikasi.
+3. **Kemandirian AI Provider:** Aplikasi tidak boleh bergantung pada instalasi lokal Ollama setelah Phase 18. Semua panggilan model diarahkan melalui Provider Adapter terpusat.
+4. **Keaslian Data:** Data yang disajikan pada dashboard dan laporan marketing harus bersumber langsung dari database atau integrasi eksternal nyata. Data mock dilarang ditampilkan sebagai data produksi.
+
+---
+
 # CHANGELOG
+
+**Versi 3.0 (2026-10-27)**
+
+- Mengintegrasikan Addendum v1.0: Rebranding produk menjadi Roihan AI Office, penetapan tim operasional AI khusus marketing (Marketing-Only), migrasi AI provider ke Google Gemini API tanpa dependensi Ollama, serta prosedur backup & recovery pra-refactor (Bagian 30).
+- Mengintegrasikan Addendum v1.1: Standarisasi desain antarmuka Modern Minimalist SaaS, design system terpusat, struktur sidebar & dashboard marketing, audit UI, dan target aksesibilitas WCAG 2.2 AA (Bagian 31).
+- Menyusun Roadmap Pengembangan Terpadu Phase 16 sampai Phase 24 di Bagian 21 dan Bagian 32 yang memetakan seluruh Fase 0-8 Addendum v1.0 dan Fase A-E Addendum v1.1.
+- Menambahkan Keputusan yang Sudah Dikunci nomor 28-33 (Bagian 25).
 
 **Versi 2.3 (2026-10-22)**
 

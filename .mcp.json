@@ -1,11 +1,13 @@
 {
   "mcpServers": {
-    "codegraph": {
+    "playwright": {
       "type": "stdio",
-      "command": "codegraph",
+      "command": "cmd.exe",
       "args": [
-        "serve",
-        "--mcp"
+        "/c",
+        "npx",
+        "-y",
+        "@executeautomation/playwright-mcp-server"
       ],
       "alwaysLoad": true
     }
