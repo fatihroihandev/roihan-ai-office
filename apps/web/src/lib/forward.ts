@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 import { buildUpstreamUrl } from "@/lib/proxy";
 import { ensureRootEnv } from "@/lib/server-env";
 
-// Proxy sisi server ke backend: token lokal ditambahkan di sini dan tidak pernah dikirim ke browser.
+// Proxy sisi server ke backend: token lokal atau sesi HttpOnly diteruskan secara aman ke backend.
 export type ProxyCtx = { params: Promise<{ path?: string[] }> };
 
-const PASS_HEADERS = ["content-type", "content-disposition", "content-length", "x-content-type-options"];
+const PASS_HEADERS = ["content-type", "content-disposition", "content-length", "x-content-type-options", "set-cookie"];
 
 export function makeProxyHandlers(prefix: string, timeoutMs: number) {
   async function forward(request: Request, ctx: ProxyCtx): Promise<Response> {
@@ -16,7 +16,17 @@ export function makeProxyHandlers(prefix: string, timeoutMs: number) {
     const url = buildUpstreamUrl(base, prefix, path, new URL(request.url).search);
     if (!url) return NextResponse.json({ detail: "Path tidak valid" }, { status: 400 });
 
-    const headers: Record<string, string> = { Authorization: `Bearer ${process.env.APP_LOCAL_TOKEN ?? ""}` };
+    const headers: Record<string, string> = {};
+    const clientAuth = request.headers.get("authorization");
+    if (clientAuth) {
+      headers["Authorization"] = clientAuth;
+    } else if (process.env.APP_LOCAL_TOKEN) {
+      headers["Authorization"] = `Bearer ${process.env.APP_LOCAL_TOKEN}`;
+    }
+
+    const cookie = request.headers.get("cookie");
+    if (cookie) headers["cookie"] = cookie;
+
     const contentType = request.headers.get("content-type");
     if (contentType) headers["content-type"] = contentType;
     const hasBody = request.method !== "GET" && request.method !== "HEAD" && request.body !== null;

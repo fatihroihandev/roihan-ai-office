@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, approvals, backups, dashboard, engineering, events, health, marketing, power, products, seo, web, projects, tasks
+from app.api import ai, approvals, auth, backups, dashboard, engineering, events, health, marketing, power, products, seo, web, projects, tasks
 from app.config import Settings, get_settings
 from app.db.session import create_db_engine, create_session_factory
 from app.logging_config import correlation_id, new_correlation_id, setup_logging
@@ -59,7 +59,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
                 pass
         await asyncio.to_thread(app.state.power.mark_shutdown_clean)
 
-    app = FastAPI(title="Roihan Software House API", version=health.APP_VERSION, lifespan=lifespan)
+    app = FastAPI(title="Roihan AI Office API", version=health.APP_VERSION, lifespan=lifespan)
     app.state.settings = settings
     app.state.engine = create_db_engine(settings.database_url)
     app.state.session_factory = create_session_factory(app.state.engine)
@@ -104,6 +104,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, ModelProvi
             correlation_id.reset(token)
 
     app.include_router(health.router)
+    app.include_router(auth.router)
     app.include_router(projects.router)
     app.include_router(ai.router)
     app.include_router(tasks.router)

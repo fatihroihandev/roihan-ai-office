@@ -96,6 +96,15 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
+    # Single-Owner Authentication (Addendum v2.1)
+    owner_email: str = ""
+    bootstrap_token: str = ""
+    session_ttl_days: int = 30
+    cookie_secure: bool = False
+    cookie_samesite: str = "lax"
+    max_failed_logins: int = 5
+    lockout_minutes: int = 15
+
     @model_validator(mode="after")
     def _validate(self) -> "Settings":
         if len(self.app_local_token) < 16:
@@ -153,7 +162,7 @@ class Settings(BaseSettings):
     @property
     def secret_values(self) -> list[str]:
         values = [self.app_local_token, self.openai_api_key, self.gemini_api_key, self.anthropic_api_key,
-                  self.brave_api_key, self.tavily_api_key]
+                  self.brave_api_key, self.tavily_api_key, self.bootstrap_token]
         return [v for v in values if v]
 
 

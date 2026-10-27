@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { AppShell } from "@/components/layout/AppShell";
+import { AuthGateway } from "@/components/auth/AuthGateway";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { ensureRootEnv } from "@/lib/server-env";
 import { isLang, translate, type Lang } from "@/i18n/dictionaries";
@@ -28,9 +29,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={lang}>
       <body>
         <LanguageProvider initialLang={lang}>
-          <AppShell>
-            {children}
-          </AppShell>
+          <AuthGateway>
+            <AppShell>
+              {children}
+            </AppShell>
+          </AuthGateway>
         </LanguageProvider>
       </body>
     </html>

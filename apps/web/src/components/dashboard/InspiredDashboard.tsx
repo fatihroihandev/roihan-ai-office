@@ -8,6 +8,7 @@ import { powerApi, type PowerState } from "@/lib/powerApi";
 import { seoApi, type Artifact, type SeoCampaign } from "@/lib/seoApi";
 import { marketingApi, type Lead, type Outreach, type Policy, type Retention } from "@/lib/marketingApi";
 import { tasksApi, type Approval, type Task } from "@/lib/tasksApi";
+import { authApi } from "@/lib/authApi";
 
 import { SeoFeature } from "@/components/features/SeoFeature";
 import { ContentFeature } from "@/components/features/ContentFeature";
@@ -300,6 +301,23 @@ export function InspiredDashboard() {
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             )}
+          </button>
+          <button
+            type="button"
+            className="inspired-dock-btn"
+            title="Keluar Sesi Pemilik (Logout)"
+            onClick={async () => {
+              if (window.confirm("Apakah Anda yakin ingin keluar dari sesi pemilik?")) {
+                await authApi.logout();
+                window.location.reload();
+              }
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
           </button>
         </div>
       </aside>

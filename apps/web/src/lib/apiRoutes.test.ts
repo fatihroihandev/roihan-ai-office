@@ -14,4 +14,7 @@ describe("rute proxy mengekspor metode yang dipakai klien", () => {
     expect(route("models")).toMatch(/export const POST/);
     expect(route("ai")).toMatch(/export const POST/);
   });
+  it("auth: GET, POST, PATCH, DELETE untuk single-owner authentication", () => {
+    for (const m of ["GET", "POST", "PATCH", "DELETE"]) expect(route("auth")).toMatch(new RegExp(`export const ${m}`));
+  });
 });

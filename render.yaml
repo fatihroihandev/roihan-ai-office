@@ -1,0 +1,47 @@
+# Render Blueprint Specification for Roihan AI Office Backend
+# Free-Tier Compatible (Rp0) - Addendum v2.1
+services:
+  - type: web
+    name: roihan-ai-office-api
+    runtime: python
+    region: singapore
+    plan: free
+    branch: main
+    buildCommand: "pip install -r apps/api/requirements.txt"
+    preDeployCommand: "cd apps/api && python -m alembic upgrade head"
+    startCommand: "cd apps/api && python -m uvicorn app.main:get_app --factory --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PYTHONPATH
+        value: apps/api
+      - key: APP_ENV
+        value: production
+      - key: APP_MODE
+        value: production
+      - key: APP_DEFAULT_LANGUAGE
+        value: id
+      - key: DATABASE_URL
+        sync: false  # Masukkan connection string PostgreSQL Neon Free (postgresql+psycopg://...)
+      - key: APP_LOCAL_TOKEN
+        generateValue: true
+      - key: OWNER_EMAIL
+        sync: false  # Email pemilik sah (mis. owner@roihan.id)
+      - key: BOOTSTRAP_TOKEN
+        generateValue: true  # Token rahasia sekali pakai untuk inisialisasi akun pemilik
+      - key: GEMINI_ENABLED
+        value: "true"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: BUDGET_ALLOW_PAID_CALLS
+        value: "false"
+      - key: BUDGET_MONTHLY_LIMIT
+        value: "0"
+      - key: WORKER_ENABLED
+        value: "true"
+      - key: WORKER_POLL_INTERVAL_S
+        value: "2.0"
+      - key: CORS_ORIGINS
+        sync: false  # URL frontend Anda, misal: ["https://roihan-ai-office.vercel.app"]

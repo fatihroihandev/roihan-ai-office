@@ -819,6 +819,34 @@ class SeoRecommendation(IdMixin, Base):
     decision_note: Mapped[str | None] = mapped_column(Text, default=None)
 
 
+class OwnerUser(IdMixin, Base):
+    """Akun pemilik tunggal platform (Addendum v2.1). Registrasi publik dinonaktifkan."""
+    __tablename__ = "owner_users"
+
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    full_name: Mapped[str] = mapped_column(String(100), default="Owner")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+
+class OwnerSession(IdMixin, Base):
+    """Sesi login aktif untuk pemilik tunggal (Addendum v2.1)."""
+    __tablename__ = "owner_sessions"
+    __table_args__ = (Index("ix_owner_sessions_token", "session_token", unique=True),)
+
+    user_id: Mapped[str] = mapped_column(ForeignKey("owner_users.id", ondelete="CASCADE"), index=True)
+    session_token: Mapped[str] = mapped_column(String(128), unique=True)
+    ip_address: Mapped[str | None] = mapped_column(String(64), default=None)
+    user_agent: Mapped[str | None] = mapped_column(String(255), default=None)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_activity_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
 class AppendOnlyError(RuntimeError):
     pass
 
