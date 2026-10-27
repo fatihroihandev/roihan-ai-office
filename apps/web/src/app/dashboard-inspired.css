@@ -897,3 +897,318 @@
     grid-template-columns: 1fr;
   }
 }
+/* ==========================================================================
+   ROIHAN AI OFFICE — INSPIRED DASHBOARD DESIGN (docs/desain dashboard.jpeg)
+   Interactive Modals, Dropdowns, Search Results & Control Enhancements
+   ========================================================================== */
+
+/* Search Dropdown Results */
+.search-results-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 320px;
+  background: rgba(22, 22, 28, 0.96);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  color: #f3f4f6;
+  text-decoration: none;
+  font-size: 0.8rem;
+  transition: all 0.15s ease;
+}
+
+.search-result-item:hover {
+  background: rgba(255, 87, 34, 0.15);
+  color: #ff5722;
+}
+
+.search-result-icon {
+  font-size: 1rem;
+}
+
+.search-result-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.search-result-title {
+  font-weight: 600;
+}
+
+.search-result-sub {
+  font-size: 0.68rem;
+  color: #9494a0;
+}
+
+/* Notifications Popover */
+.notifications-popover {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 320px;
+  background: rgba(22, 22, 28, 0.96);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65);
+  z-index: 50;
+}
+
+.notifications-popover h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notifications-popover-badge {
+  background: #ff5722;
+  color: #ffffff;
+  font-size: 0.65rem;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.notification-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.75rem;
+}
+
+.notification-row strong {
+  color: #ffffff;
+}
+
+.notification-row p {
+  margin: 2px 0 0;
+  color: #9494a0;
+  font-size: 0.68rem;
+}
+
+/* Modal Dialog Overlay */
+.inspired-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 15, 0.75);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.inspired-modal {
+  width: 100%;
+  max-width: 480px;
+  background: #181820;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 26px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+  color: #f3f4f6;
+  position: relative;
+  animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.inspired-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.inspired-modal-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inspired-modal-close {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #9494a0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.inspired-modal-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.inspired-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.inspired-form-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.inspired-form-input, .inspired-form-select, .inspired-form-textarea {
+  background: #101014;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 10px 14px;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.inspired-form-input:focus, .inspired-form-select:focus, .inspired-form-textarea:focus {
+  border-color: #ff5722;
+  box-shadow: 0 0 12px rgba(255, 87, 34, 0.3);
+}
+
+.inspired-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #d4d4d8;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.btn-primary-orange {
+  background: #ff5722;
+  border: none;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 14px rgba(255, 87, 34, 0.45);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary-orange:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 87, 34, 0.6);
+}
+
+.btn-primary-orange:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Quick Action Trigger Pill in Focus Card */
+.focus-card-trigger-btn {
+  background: #ff5722;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.74rem;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  box-shadow: 0 4px 12px rgba(255, 87, 34, 0.35);
+  transition: all 0.2s ease;
+}
+
+.focus-card-trigger-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 87, 34, 0.5);
+}
+
+/* Toast Message */
+.inspired-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #181820;
+  border: 1px solid #10b981;
+  border-left: 4px solid #10b981;
+  border-radius: 14px;
+  padding: 12px 18px;
+  color: #ffffff;
+  font-size: 0.82rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toastIn 0.3s ease;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
