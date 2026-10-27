@@ -8,10 +8,13 @@ ROLES: dict[str, str] = {
     "content_promotion": "marketing", "sales_client_relations": "marketing",
     "seo_specialist": "marketing", "marketing_analytics": "marketing",   # peran on-demand (Phase 14)
 }
-# Rencana Manager tidak memiliki skema params, sehingga hanya agent umum yang dapat
-# dipakai. Agent khusus (riset pasar, SEO, intake, promosi, dll.) membutuhkan input
-# terstruktur yang disediakan oleh endpoint domain masing-masing.
-PLANNABLE_ROLES = ["analyst", "developer", "qa", "reviewer", "reporter"]
+
+# Role yang dapat direncanakan oleh Manager (Engineering + Marketing)
+PLANNABLE_ROLES = [
+    "analyst", "developer", "qa", "reviewer", "reporter",
+    "market_research", "lead_generation", "content_promotion",
+    "sales_client_relations", "seo_specialist", "marketing_analytics",
+]
 
 # Tingkat risiko ditentukan aturan deterministik berdasarkan jenis tindakan, bukan oleh penilaian model.
 ACTION_RISK: dict[str, str] = {

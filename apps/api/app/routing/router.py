@@ -36,12 +36,15 @@ class TaskSnapshot:
     requires_tools: bool
     priority: int
     params: dict | None = None
+    parent_task_id: str | None = None
+    created_by: str = "ceo"
 
     @classmethod
     def from_task(cls, t: Task) -> "TaskSnapshot":
         return cls(t.id, t.project_id, t.title, t.description, t.role, t.action_type, list(t.acceptance_criteria or []),
                    t.risk_level, t.requires_approval, t.approved, t.difficulty_score, t.difficulty_category,
-                   t.preferred_model, t.requires_tools, t.priority, dict(t.params) if t.params else None)
+                   t.preferred_model, t.requires_tools, t.priority, dict(t.params) if t.params else None,
+                   getattr(t, "parent_task_id", None), getattr(t, "created_by", "ceo"))
 
 
 class RoutingError(Exception):

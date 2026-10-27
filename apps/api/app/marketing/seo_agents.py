@@ -282,7 +282,8 @@ class SeoSpecialistExecutor:
         order = {"critical": 0, "warning": 1, "info": 2}
         with ctx.session_factory() as s:
             for index, finding in enumerate(sorted(findings, key=lambda f: (order.get(f.get("severity"), 3), f.get("id", ""))), start=1):
-                s.add(SeoRecommendation(campaign_id=campaign_id, artifact_id=aid, finding_id=finding["id"], category=finding["id"],
+                f_id = f"{finding['id']}_{index}"[:100]
+                s.add(SeoRecommendation(campaign_id=campaign_id, artifact_id=aid, finding_id=f_id, category=finding["id"],
                     title=finding["message"][:500], severity=finding["severity"],
                     evidence={"page": finding.get("page"), "detail": finding.get("evidence"), "observed_by": "safe_external_crawler"},
                     recommendation=finding.get("recommendation", ""), impact_basis="unknown: no connected performance data",

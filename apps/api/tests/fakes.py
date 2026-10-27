@@ -39,12 +39,12 @@ class FakeProvider(ModelProvider):
             if callable(self.reply):
                 text = self.reply(request.prompt)
             elif isinstance(self.reply, list):
-                text = self.reply.pop(0)
+                text = self.reply.pop(0) if self.reply else (getattr(self, "default_reply", None) or f"jawaban:{request.prompt}")
             elif isinstance(self.reply, str):
                 text = self.reply
             else:
                 text = f"jawaban:{request.prompt}"
-            truncated = self.truncated.pop(0) if isinstance(self.truncated, list) else self.truncated
+            truncated = self.truncated.pop(0) if (isinstance(self.truncated, list) and self.truncated) else bool(self.truncated)
             return GenerateResult(text, model, Usage(5, 7, 12), truncated=truncated)
         finally:
             self.active -= 1

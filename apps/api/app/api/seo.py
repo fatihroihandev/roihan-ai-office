@@ -332,6 +332,8 @@ def set_campaign_status(campaign_id: str, body: CampaignStatusBody, session: Ses
 @router.post("/campaigns/{campaign_id}/tasks/audit", status_code=201)
 def campaign_audit(campaign_id: str, request: Request, session: SessionDep):
     c = _campaign_or_404(session, campaign_id)
+    if not c.site_id and not getattr(request.app.state.settings, "web_access_enabled", False):
+        raise HTTPException(422, "Akses web dinonaktifkan; aktifkan akses web di AI Control Center atau daftarkan situs proyek")
     if c.site_id:
         site = session.get(Site, c.site_id)
         if site is None or site.status != "active":

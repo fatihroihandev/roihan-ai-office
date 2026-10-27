@@ -75,6 +75,8 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     gemini_enabled: bool = False
     gemini_api_key: str = ""
+    gemini_default_model: str = "gemini-2.5-flash"
+    gemini_pro_model: str = "gemini-2.5-pro"
     anthropic_enabled: bool = False
     anthropic_api_key: str = ""
 
