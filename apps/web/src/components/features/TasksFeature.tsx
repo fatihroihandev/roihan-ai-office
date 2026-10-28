@@ -9,6 +9,7 @@ import { BOARD_COLUMNS, tasksApi, type Agent, type Task, type WorkerStatus } fro
 import { useTaskEvents } from "@/lib/useTaskEvents";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
+import { Icon } from "@/components/ui/Icons";
 
 export function TasksFeature() {
   const { t, tOr } = useLanguage();
@@ -110,7 +111,7 @@ export function TasksFeature() {
 
         <div className="duo">
           <section className="card">
-            <div className="row">
+            <div className="row" style={{ alignItems: "center" }}>
               <label>
                 {t("tasks.project")}
                 <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
@@ -130,16 +131,34 @@ export function TasksFeature() {
             </div>
 
             <form onSubmit={onPlan}>
-              <h3>{t("tasks.plan.title")}</h3>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, marginBottom: 8 }}>
+                <span style={{ color: "var(--accent)", display: "flex" }}>
+                  <Icon name="sparkles" size={17} />
+                </span>
+                <h3 style={{ margin: 0 }}>{t("tasks.plan.title")}</h3>
+              </div>
               {!projectId && <p className="muted">{t("tasks.noProject")}</p>}
               <label>
                 {t("tasks.plan.goal")}
                 <textarea value={goal} onChange={(e) => setGoal(e.target.value)} rows={2} maxLength={2000} disabled={!projectId} />
               </label>
               <div className="actions">
-                <button type="submit" disabled={busy || !projectId || !goal.trim()}>{t("tasks.plan.run")}</button>
-                <button type="button" disabled={busy || !projectId || !hasDrafts} onClick={() => act(() => tasksApi.queueDrafts(projectId))}>
-                  {t("tasks.queueAll")}
+                <button
+                  type="submit"
+                  disabled={busy || !projectId || !goal.trim()}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  <Icon name="plus" size={14} />
+                  <span>{t("tasks.plan.run")}</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || !projectId || !hasDrafts}
+                  onClick={() => act(() => tasksApi.queueDrafts(projectId))}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  <Icon name="send" size={14} />
+                  <span>{t("tasks.queueAll")}</span>
                 </button>
               </div>
               <p className="muted small">{t("tasks.plan.hint")}</p>
@@ -148,7 +167,12 @@ export function TasksFeature() {
         </div>
 
         <section className="card">
-          <h3>{t("tasks.agents")}</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--info)", display: "flex" }}>
+              <Icon name="bot" size={18} />
+            </span>
+            <h3 style={{ margin: 0 }}>{t("tasks.agents")}</h3>
+          </div>
           <div className="agents">
             {agents.map((a) => (
               <div key={a.role} className="agent" data-state={a.status}>
@@ -161,7 +185,12 @@ export function TasksFeature() {
           </div>
         </section>
 
-        <h3>{t("tasks.board")}</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 24, marginBottom: 8 }}>
+          <span style={{ color: "var(--accent)", display: "flex" }}>
+            <Icon name="list-todo" size={18} />
+          </span>
+          <h3 style={{ margin: 0 }}>{t("tasks.board")}</h3>
+        </div>
         {tasks.length === 0 && <p>{t("tasks.empty")}</p>}
         <div className="board">
           {BOARD_COLUMNS.map((col) => {
@@ -188,12 +217,22 @@ export function TasksFeature() {
                         className="danger"
                         disabled={busy}
                         onClick={() => window.confirm(t("task.confirmCancel")) && act(() => tasksApi.cancel(x.id))}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
                       >
-                        {t("task.cancel")}
+                        <Icon name="close" size={13} />
+                        <span>{t("task.cancel")}</span>
                       </button>
                     )}
                     {x.status === "draft" && (
-                      <button type="button" disabled={busy} onClick={() => act(() => tasksApi.queue(x.id))}>{t("task.queue")}</button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => act(() => tasksApi.queue(x.id))}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+                      >
+                        <Icon name="arrow-right" size={13} />
+                        <span>{t("task.queue")}</span>
+                      </button>
                     )}
                   </article>
                 ))}

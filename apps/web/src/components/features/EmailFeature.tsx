@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { marketingApi, type Lead, type OutboundMessage, type Policy } from "@/lib/marketingApi";
+import { Icon } from "@/components/ui/Icons";
 
 interface AutomationWorkflow {
   id: string;
@@ -125,29 +126,37 @@ export function EmailFeature() {
             type="button"
             className={tab === "campaigns" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setTab("campaigns")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Kampanye Email
+            <Icon name="mail" size={14} />
+            <span>Kampanye Email</span>
           </button>
           <button
             type="button"
             className={tab === "audiences" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setTab("audiences")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Audiens ({activeSubscribers.length})
+            <Icon name="users" size={14} />
+            <span>Audiens ({activeSubscribers.length})</span>
           </button>
           <button
             type="button"
             className={tab === "workflows" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setTab("workflows")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Alur Otomatisasi
+            <Icon name="zap" size={14} />
+            <span>Alur Otomatisasi</span>
           </button>
           <button
             type="button"
             className={tab === "deliverability" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setTab("deliverability")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Kebijakan &amp; Deliverability
+            <Icon name="shield" size={14} />
+            <span>Kebijakan &amp; Deliverability</span>
           </button>
         </div>
       </div>
@@ -163,9 +172,13 @@ export function EmailFeature() {
             color: "var(--accent)",
             fontSize: "0.84rem",
             fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
           }}
         >
-          {notice}
+          <Icon name="info" size={16} />
+          <span>{notice}</span>
         </div>
       )}
 
@@ -173,7 +186,12 @@ export function EmailFeature() {
       {tab === "campaigns" && (
         <div className="workspace-middle-grid">
           <div className="white-panel">
-            <h3>Siapkan Kampanye Email Baru</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ color: "var(--accent)", display: "flex" }}>
+                <Icon name="mail" size={18} />
+              </span>
+              <h3 style={{ margin: 0 }}>Siapkan Kampanye Email Baru</h3>
+            </div>
             <form onSubmit={handleSendCampaign} style={{ display: "grid", gap: 12 }}>
               <label>
                 Subjek Email
@@ -218,18 +236,49 @@ export function EmailFeature() {
                 </span>
               </label>
 
-              <button type="submit" className="btn-primary-orange" disabled={sending}>
-                {sending ? "Memproses..." : "Jadwalkan Pengiriman Kampanye"}
+              <button
+                type="submit"
+                className="btn-primary-orange"
+                disabled={sending}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, justifySelf: "start" }}
+              >
+                <Icon name="send" size={14} />
+                <span>{sending ? "Memproses..." : "Jadwalkan Pengiriman Kampanye"}</span>
               </button>
             </form>
           </div>
 
           <div className="white-panel">
-            <h3>Antrean Pesan Keluar (Outbox)</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ color: "var(--info)", display: "flex" }}>
+                <Icon name="clock" size={18} />
+              </span>
+              <h3 style={{ margin: 0 }}>Antrean Pesan Keluar (Outbox)</h3>
+            </div>
             {outbox.length === 0 ? (
-              <p className="hint">
-                Tidak ada pesan keluar yang menunggu. Seluruh pesan outreach telah diproses.
-              </p>
+              <div style={{ textAlign: "center", padding: "32px 16px" }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "50%",
+                    background: "var(--surface-subtle)",
+                    color: "var(--text-secondary)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 10px",
+                  }}
+                >
+                  <Icon name="mail" size={20} />
+                </div>
+                <p style={{ margin: "0 0 6px", fontWeight: 600, fontSize: "0.88rem" }}>
+                  Tidak ada pesan keluar yang menunggu
+                </p>
+                <p className="hint" style={{ margin: 0 }}>
+                  Seluruh pesan outreach telah diproses atau terkirim dengan aman.
+                </p>
+              </div>
             ) : (
               <div style={{ display: "grid", gap: 10, maxHeight: 360, overflowY: "auto" }}>
                 {outbox.map((msg) => (
@@ -273,23 +322,37 @@ export function EmailFeature() {
       {/* Tab: Audiences */}
       {tab === "audiences" && (
         <div className="white-panel">
-          <h3>Manajemen Daftar Kontak &amp; Kepatuhan UU PDP</h3>
-          <p className="hint">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--accent)", display: "flex" }}>
+              <Icon name="users" size={18} />
+            </span>
+            <h3 style={{ margin: 0 }}>Manajemen Daftar Kontak &amp; Kepatuhan UU PDP</h3>
+          </div>
+          <p className="hint" style={{ marginTop: 0, marginBottom: 16 }}>
             Setiap kontak dicatat dengan dasar pemrosesan data yang sah. Kontak yang memilih berhenti berlangganan dimasukkan ke daftar supresi permanen.
           </p>
           <div className="workspace-kpi-grid" style={{ marginBottom: 0 }}>
             <div className="kpi-card">
-              <span className="kpi-card-title">Kontak Aktif Diizinkan</span>
+              <div className="kpi-card-top" style={{ display: "flex", justifyContent: "space-between" }}>
+                <span className="kpi-card-title">Kontak Aktif Diizinkan</span>
+                <span style={{ color: "var(--ok)" }}><Icon name="users" size={16} /></span>
+              </div>
               <strong style={{ color: "var(--ok)" }}>{activeSubscribers.length}</strong>
               <span className="small muted">Siap menerima komunikasi</span>
             </div>
             <div className="kpi-card">
-              <span className="kpi-card-title">Daftar Supresi (Opt-Out)</span>
+              <div className="kpi-card-top" style={{ display: "flex", justifyContent: "space-between" }}>
+                <span className="kpi-card-title">Daftar Supresi (Opt-Out)</span>
+                <span style={{ color: "var(--bad)" }}><Icon name="shield" size={16} /></span>
+              </div>
               <strong style={{ color: "var(--bad)" }}>{suppressed.length}</strong>
               <span className="small muted">Diblokir otomatis oleh sistem</span>
             </div>
             <div className="kpi-card">
-              <span className="kpi-card-title">Prospek Terkualifikasi</span>
+              <div className="kpi-card-top" style={{ display: "flex", justifyContent: "space-between" }}>
+                <span className="kpi-card-title">Prospek Terkualifikasi</span>
+                <span style={{ color: "var(--info)" }}><Icon name="trend-up" size={16} /></span>
+              </div>
               <strong style={{ color: "var(--info)" }}>
                 {leads.filter((l) => (l.score ?? 0) >= 40).length}
               </strong>
@@ -302,7 +365,12 @@ export function EmailFeature() {
       {/* Tab: Workflows */}
       {tab === "workflows" && (
         <div className="white-panel">
-          <h3>Alur Otomatisasi Berbasis Pemicu (Trigger Workflows)</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <span style={{ color: "var(--accent)", display: "flex" }}>
+              <Icon name="zap" size={18} />
+            </span>
+            <h3 style={{ margin: 0 }}>Alur Otomatisasi Berbasis Pemicu (Trigger Workflows)</h3>
+          </div>
           <div style={{ display: "grid", gap: 10 }}>
             {workflows.map((wf) => (
               <div
@@ -329,8 +397,10 @@ export function EmailFeature() {
                   type="button"
                   className={wf.active ? "btn-primary-orange" : "btn-secondary"}
                   onClick={() => toggleWorkflow(wf.id)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
                 >
-                  {wf.active ? "Aktif" : "Nonaktif"}
+                  <Icon name={wf.active ? "check" : "close"} size={13} />
+                  <span>{wf.active ? "Aktif" : "Nonaktif"}</span>
                 </button>
               </div>
             ))}
@@ -341,7 +411,12 @@ export function EmailFeature() {
       {/* Tab: Deliverability & Policy */}
       {tab === "deliverability" && (
         <div className="white-panel">
-          <h3>Kebijakan Pengiriman &amp; Batas Frekuensi</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <span style={{ color: "var(--info)", display: "flex" }}>
+              <Icon name="shield" size={18} />
+            </span>
+            <h3 style={{ margin: 0 }}>Kebijakan Pengiriman &amp; Batas Frekuensi</h3>
+          </div>
           <div className="workspace-kpi-grid">
             <div className="kpi-card">
               <span className="kpi-card-title">Maks. Outreach Harian</span>
@@ -359,7 +434,7 @@ export function EmailFeature() {
               <span className="small muted">Kepatuhan privasi UU PDP</span>
             </div>
           </div>
-          <p className="hint" style={{ margin: 0 }}>
+          <p className="hint" style={{ margin: 0, marginTop: 12 }}>
             Setiap draf email dievaluasi oleh pemeriksa klaim produk (Claim Linter) dan pembatas kuota harian sebelum diizinkan masuk ke antrean pengiriman.
           </p>
         </div>

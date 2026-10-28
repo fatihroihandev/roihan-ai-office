@@ -75,8 +75,8 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     gemini_enabled: bool = False
     gemini_api_key: str = ""
-    gemini_default_model: str = "gemini-2.5-flash"
-    gemini_pro_model: str = "gemini-2.5-pro"
+    gemini_default_model: str = "gemini-3.5-flash-lite"
+    gemini_pro_model: str = "gemini-3.5-flash-lite"
     anthropic_enabled: bool = False
     anthropic_api_key: str = ""
 
@@ -89,6 +89,7 @@ class Settings(BaseSettings):
 
     restrict_workspace_access: bool = True
     require_approval_for_external_actions: bool = True
+    require_approval_for_paid_calls: bool = True
     redact_secrets_in_logs: bool = True
 
     data_dir: Path = REPO_ROOT / "data"

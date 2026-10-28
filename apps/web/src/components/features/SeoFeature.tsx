@@ -4,6 +4,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Loading, PageHero } from "@/components/ui/PageHero";
+import { Icon } from "@/components/ui/Icons";
 import { ApiError, api, type Project } from "@/lib/api";
 import { productsApi, type Product } from "@/lib/productsApi";
 import { SEO_METRICS, seoApi, type Artifact, type Kpis, type SeoCampaign, type SiteInfo } from "@/lib/seoApi";
@@ -106,7 +107,7 @@ export function SeoFeature() {
   return (
     <PageTransition>
 <main data-accent="cyan">
-      <p><Link href="/marketing">← {t("ext.back")}</Link></p>
+      <p><Link href="/marketing" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}><Icon name="arrow-left" size={14} /> {t("ext.back")}</Link></p>
       <PageHero
         code="04.2" route="SYS://SEO" art="marketing" title={t("seo.title")} hint={t("seo.hint")}
         stats={[
@@ -119,7 +120,7 @@ export function SeoFeature() {
       {notice && <p className="ok" role="status">{notice}</p>}
 
       <section className="card">
-        <h3>{t("seo.campaign.title")}</h3>
+        <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><Icon name="target" size={18} /> {t("seo.campaign.title")}</h3>
         <p className="small muted">{t("seo.campaign.hint")}</p>
         <form className="grid2" onSubmit={(e) => { e.preventDefault(); void run(async () => {
           const created = await seoApi.createCampaign({ name: campaignName, website_url: campaignUrl, site_id: campaignSiteId || undefined,
@@ -222,7 +223,7 @@ export function SeoFeature() {
 
       {siteList.length > 0 && (
         <section className="card">
-          <h3>{t("seo.sites.title")}</h3>
+          <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><Icon name="globe" size={18} /> {t("seo.sites.title")}</h3>
           <p className="small muted">{t("seo.sites.hint")}</p>
           <ul className="list">
             {siteList.map((s) => (
@@ -249,7 +250,7 @@ export function SeoFeature() {
       )}
 
       <section className="card">
-        <h3>{t("seo.kpi.title")}</h3>
+        <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><Icon name="chart" size={18} /> {t("seo.kpi.title")}</h3>
         {!k ? <Loading /> : (
           <>
             <div className="kpis">
@@ -278,7 +279,7 @@ export function SeoFeature() {
 
       <div className="duo">
         <form className="card" onSubmit={(e) => { e.preventDefault(); void run(() => seoApi.audit({ url, html, robots_txt: robots, sitemap_xml: sitemap }), t("seo.queued")); }}>
-          <h3>{t("seo.audit.title")}</h3>
+          <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><Icon name="shield" size={18} /> {t("seo.audit.title")}</h3>
           <p className="small muted">{t("seo.audit.hint")}</p>
           <label>URL<input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" /></label>
           <label>HTML<textarea rows={5} value={html} onChange={(e) => setHtml(e.target.value)} required /></label>
@@ -288,7 +289,7 @@ export function SeoFeature() {
         </form>
 
         <form className="card" onSubmit={(e) => e.preventDefault()}>
-          <h3>{t("seo.kw.title")}</h3>
+          <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><Icon name="search" size={18} /> {t("seo.kw.title")}</h3>
           <p className="small muted">{t("seo.kw.hint")}</p>
           <label>{t("seo.topic")}<input value={topic} onChange={(e) => setTopic(e.target.value)} minLength={2} /></label>
           <label>{t("seo.material")}<textarea rows={5} value={material} onChange={(e) => setMaterial(e.target.value)} /></label>
@@ -306,7 +307,7 @@ export function SeoFeature() {
       </div>
 
       <section className="card">
-        <h3>{t("seo.artifacts")}</h3>
+        <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><Icon name="folder" size={18} /> {t("seo.artifacts")}</h3>
         {!items ? <Loading /> : items.length === 0 ? <p className="muted">{t("seo.empty")}</p> : (
           <ul className="list">
             {items.map((a) => (

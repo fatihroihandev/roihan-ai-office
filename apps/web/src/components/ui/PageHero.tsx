@@ -1,11 +1,21 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLanguage } from "@/i18n/LanguageProvider";
+import { Icon } from "@/components/ui/Icons";
 
 export type Accent = "blue" | "cyan" | "violet" | "magenta" | "amber" | "teal";
 export type Art = "projects" | "tasks" | "products" | "marketing" | "approvals" | "ai";
 export type HeroStat = { label: string; value: number | string; tone?: "ok" | "warn" | "bad" };
+
+const ART_ICONS: Record<string, string> = {
+  projects: "folder",
+  tasks: "list-todo",
+  products: "box",
+  marketing: "target",
+  approvals: "check-circle",
+  ai: "sparkles",
+};
 
 /** Angka naik dari 0 ke nilai tujuan (dimatikan oleh preferensi gerak berkurang). Nilai berikutnya dianimasikan dari nilai sebelumnya. */
 export function CountUp({ value }: { value: number | string }) {
@@ -31,16 +41,51 @@ export function CountUp({ value }: { value: number | string }) {
   return <>{numeric ? shown : value}</>;
 }
 
-/** Kepala halaman bersih: judul, petunjuk, ringkasan angka, dan aksi. (`code`, `route`, `art` dipertahankan agar pemanggil lama tetap valid, tetapi tidak ditampilkan.) */
-export function PageHero({ title, hint, stats, actions }: {
-  code?: string; route?: string; title: string; hint?: string; art?: Art; stats: HeroStat[]; actions?: ReactNode;
+/** Kepala halaman bersih: judul, petunjuk, ringkasan angka, dan aksi. */
+export function PageHero({
+  title,
+  hint,
+  stats,
+  actions,
+  art,
+}: {
+  code?: string;
+  route?: string;
+  title: string;
+  hint?: string;
+  art?: Art;
+  stats: HeroStat[];
+  actions?: ReactNode;
 }) {
   const { t } = useLanguage();
+  const iconName = art ? ART_ICONS[art] : null;
+
   return (
     <section className="pagehero" aria-label={title}>
       <div className="pagehero-main">
-        <h2>{title}</h2>
-        {hint && <p className="pagehero-hint">{hint}</p>}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {iconName && (
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: "var(--radius-md)",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                boxShadow: "var(--shadow-xs)",
+                color: "var(--accent)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon name={iconName} size={20} />
+            </div>
+          )}
+          <h2 style={{ margin: 0 }}>{title}</h2>
+        </div>
+        {hint && <p className="pagehero-hint" style={{ marginTop: 8 }}>{hint}</p>}
         {stats.length > 0 && (
           <ul className="pagehero-stats" aria-label={t("deck.title")}>
             {stats.map((s) => (
@@ -56,6 +101,7 @@ export function PageHero({ title, hint, stats, actions }: {
     </section>
   );
 }
+
 /** Keadaan memuat: garis kerangka berkilau dan teks sinkronisasi. */
 export function Loading({ lines = 3 }: { lines?: number }) {
   const { t } = useLanguage();

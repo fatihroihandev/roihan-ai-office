@@ -52,7 +52,7 @@ class ModelGateway:
             self._block(*args, "provider_disabled", f"Provider '{provider_name}' dinonaktifkan")
         if entry.is_paid and not self._settings.budget_allow_paid_calls:
             self._block(*args, "paid_calls_disabled", "Pemanggilan API berbayar dinonaktifkan oleh kebijakan anggaran")
-        if entry.is_paid:
+        if entry.is_paid and getattr(self._settings, "require_approval_for_paid_calls", True):
             # Persetujuan manusia (Approval Center) baru tersedia di Phase 6: selalu tahan sampai ada.
             self._block(*args, "approval_required", "Pemanggilan API berbayar memerlukan approval")
         if not entry.implemented or entry.provider is None:

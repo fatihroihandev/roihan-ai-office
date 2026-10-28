@@ -1,0 +1,57 @@
+{
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "results": [
+    {
+      "test": "Health Check",
+      "success": true,
+      "details": "Status: ok"
+    },
+    {
+      "test": "Power Status",
+      "success": true,
+      "details": "State: RUNNING"
+    },
+    {
+      "test": "Create Product",
+      "success": true,
+      "details": "Product ID: a34b69cf-b278-4819-934c-47e81a78410c"
+    },
+    {
+      "test": "Create CRM Lead",
+      "success": true,
+      "details": "Lead ID: a2f94b79-8d24-4958-8fc2-f5a13b03f6ce, Score: 55"
+    },
+    {
+      "test": "Create SEO Campaign",
+      "success": true,
+      "details": "Campaign ID: 49695373-1d6d-478c-a918-27c29a9343b2, Status: draft"
+    },
+    {
+      "test": "Add Campaign Keyword",
+      "success": true,
+      "details": "Added keyword 'autonomous marketing agents'"
+    },
+    {
+      "test": "Run Technical SEO Audit",
+      "success": true,
+      "details": "Task ID: d03c4be2-aa98-45fa-bdac-0d85ae658aee"
+    },
+    {
+      "test": "Create Content Brief",
+      "success": true,
+      "details": "Task ID: c84b3a8f-18c8-4159-b6f7-560f463e997c"
+    },
+    {
+      "test": "List Tasks Queue",
+      "success": true,
+      "details": "Total tasks in system: 5"
+    },
+    {
+      "test": "Dashboard Telemetry",
+      "success": true,
+      "details": "Marketing leads: 3, AI Calls: 0"
+    }
+  ]
+}

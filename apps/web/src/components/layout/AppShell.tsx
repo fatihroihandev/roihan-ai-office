@@ -9,6 +9,7 @@ import { powerApi, type PowerState } from "@/lib/powerApi";
 import { tasksApi, type Approval, type Task } from "@/lib/tasksApi";
 import { authApi } from "@/lib/authApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
+import { Icon } from "@/components/ui/Icons";
 
 const ROUTE_SECTION: { prefix: string; view: DashboardView }[] = [
   { prefix: "/tasks", view: "operations" },
@@ -24,105 +25,7 @@ const ROUTE_SECTION: { prefix: string; view: DashboardView }[] = [
 ];
 
 export function NavIcon({ name }: { name: string }) {
-  const props = {
-    width: 18,
-    height: 18,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.85,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
-
-  switch (name) {
-    case "grid":
-      return (
-        <svg {...props}>
-          <rect x="3" y="3" width="7" height="7" rx="1.5" />
-          <rect x="14" y="3" width="7" height="7" rx="1.5" />
-          <rect x="14" y="14" width="7" height="7" rx="1.5" />
-          <rect x="3" y="14" width="7" height="7" rx="1.5" />
-        </svg>
-      );
-    case "target":
-      return (
-        <svg {...props}>
-          <circle cx="12" cy="12" r="9" />
-          <circle cx="12" cy="12" r="5" />
-          <circle cx="12" cy="12" r="1.5" />
-        </svg>
-      );
-    case "globe":
-      return (
-        <svg {...props}>
-          <circle cx="12" cy="12" r="9" />
-          <path d="M3.6 9h16.8M3.6 15h16.8" />
-          <path d="M12 3a14.5 14.5 0 0 0 0 18 14.5 14.5 0 0 0 0-18Z" />
-        </svg>
-      );
-    case "pen":
-      return (
-        <svg {...props}>
-          <path d="M12 20h9" />
-          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-        </svg>
-      );
-    case "share":
-      return (
-        <svg {...props}>
-          <circle cx="18" cy="5" r="3" />
-          <circle cx="6" cy="12" r="3" />
-          <circle cx="18" cy="19" r="3" />
-          <path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4" />
-        </svg>
-      );
-    case "users":
-      return (
-        <svg {...props}>
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      );
-    case "mail":
-      return (
-        <svg {...props}>
-          <rect x="2" y="4" width="20" height="16" rx="2" />
-          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-        </svg>
-      );
-    case "chart":
-      return (
-        <svg {...props}>
-          <path d="M3 3v18h18" />
-          <path d="m19 9-5 5-4-4-3 3" />
-        </svg>
-      );
-    case "shield":
-      return (
-        <svg {...props}>
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-      );
-    case "sliders":
-    default:
-      return (
-        <svg {...props}>
-          <line x1="4" y1="21" x2="4" y2="14" />
-          <line x1="4" y1="10" x2="4" y2="3" />
-          <line x1="12" y1="21" x2="12" y2="12" />
-          <line x1="12" y1="8" x2="12" y2="3" />
-          <line x1="20" y1="21" x2="20" y2="16" />
-          <line x1="20" y1="12" x2="20" y2="3" />
-          <line x1="2" y1="14" x2="6" y2="14" />
-          <line x1="10" y1="8" x2="14" y2="8" />
-          <line x1="18" y1="16" x2="22" y2="16" />
-        </svg>
-      );
-  }
+  return <Icon name={name} size={18} strokeWidth={1.85} />;
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -347,9 +250,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             title={collapsed ? "Perluas Sidebar" : "Ciutkan Sidebar"}
             aria-label={collapsed ? "Perluas Sidebar" : "Ciutkan Sidebar"}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
+            <Icon name={collapsed ? "chevron-right" : "chevron-left"} size={16} />
           </button>
         </div>
 
@@ -419,11 +320,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               title="Toggle Navigasi Sidebar"
               aria-label="Toggle Navigasi Sidebar"
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="15" y2="18" />
-              </svg>
+              <Icon name="sliders" size={17} />
             </button>
 
             <div className="navbar-breadcrumb">
@@ -436,21 +333,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="navbar-right">
             {/* Global Search */}
             <div className="workspace-search">
-              <svg
-                className="workspace-search-icon"
-                width="15"
-                height="15"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <circle cx="9" cy="9" r="6" />
-                <line x1="13.5" y1="13.5" x2="17.5" y2="17.5" />
-              </svg>
+              <Icon name="search" size={15} className="workspace-search-icon" />
               <input
                 type="search"
                 placeholder="Cari modul atau fitur..."
@@ -465,10 +348,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   onClick={() => setSearchQuery("")}
                   aria-label="Bersihkan pencarian"
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <Icon name="close" size={12} />
                 </button>
               )}
               {filteredSearch.length > 0 && (
@@ -515,10 +395,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 aria-label="Notifikasi & Persetujuan"
                 onClick={() => setShowNotifications(!showNotifications)}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
+                <Icon name="bell" size={16} />
                 {pendingApprovals > 0 && <span className="workspace-bell-badge" />}
               </button>
 
@@ -591,23 +468,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               title={theme === "light" ? "Aktifkan Dark Mode" : "Aktifkan Light Mode"}
               aria-label={theme === "light" ? "Aktifkan Dark Mode" : "Aktifkan Light Mode"}
             >
-              {theme === "light" ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="5" />
-                  <line x1="12" y1="1" x2="12" y2="3" />
-                  <line x1="12" y1="21" x2="12" y2="23" />
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                  <line x1="1" y1="12" x2="3" y2="12" />
-                  <line x1="21" y1="12" x2="23" y2="12" />
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                </svg>
-              )}
+              {theme === "light" ? <Icon name="moon" size={16} /> : <Icon name="sun" size={16} />}
             </button>
 
             {/* Owner Account & Logout */}
@@ -626,30 +487,29 @@ export function AppShell({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={async () => {
-                  if (window.confirm("Keluar dari sesi pemilik Roihan AI Office?")) {
-                    try {
-                      await authApi.logout();
-                    } catch {
-                      // Fallback bila backend tidak dapat dihubungi
-                    }
-                    window.location.reload();
+                  try {
+                    await authApi.logout();
+                  } catch {
+                    // Fallback bila backend tidak dapat dihubungi
                   }
+                  window.location.href = "/";
                 }}
                 title="Keluar Sesi (Logout)"
                 aria-label="Keluar Sesi (Logout)"
                 style={{
                   border: "none",
                   background: "transparent",
-                  padding: "2px 4px",
+                  padding: "4px 6px",
                   color: "var(--text-secondary)",
                   cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                  borderRadius: "4px",
+                  transition: "background 0.15s, color 0.15s",
                 }}
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+                <Icon name="logout" size={15} />
               </button>
             </div>
           </div>

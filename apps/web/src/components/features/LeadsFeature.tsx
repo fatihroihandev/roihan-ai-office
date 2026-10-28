@@ -9,6 +9,7 @@ import {
 } from "@/lib/marketingApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
+import { Icon } from "@/components/ui/Icons";
 
 const IDR = new Intl.NumberFormat("id-ID");
 
@@ -120,7 +121,12 @@ export function LeadsFeature() {
         <div className="duo">
           {policy && (
             <section className="card">
-              <h3>{t("mkt.policy")}</h3>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ color: "var(--info)", display: "flex" }}>
+                  <Icon name="shield" size={17} />
+                </span>
+                <h3 style={{ margin: 0 }}>{t("mkt.policy")}</h3>
+              </div>
               <p className="small">{t("mkt.policy.allowed")}: {policy.allowed_sources.map((s) => label(`mkt.source.${s.type}`)).join(", ")}</p>
               <p className="small">{t("mkt.policy.forbidden")}: {policy.forbidden_sources.map((s) => s.type).join(", ")}</p>
               <p className="small">
@@ -144,7 +150,12 @@ export function LeadsFeature() {
           )}
 
           <form className="card" onSubmit={onCreate}>
-            <h3>{t("mkt.newLead")}</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ color: "var(--accent)", display: "flex" }}>
+                <Icon name="plus" size={17} />
+              </span>
+              <h3 style={{ margin: 0 }}>{t("mkt.newLead")}</h3>
+            </div>
             <label>{t("mkt.company")}<input value={company} maxLength={200} onChange={(e) => setCompany(e.target.value)} required /></label>
             <div className="row">
               <label>{t("mkt.industry")}<input value={industry} onChange={(e) => setIndustry(e.target.value)} /></label>
@@ -173,14 +184,34 @@ export function LeadsFeature() {
               <label>{t("mkt.sourceUrl")}<input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://" /></label>
             </div>
             <div className="actions">
-              <button type="submit" disabled={busy || !company.trim()}>{t("mkt.create")}</button>
-              <button type="button" disabled={busy} onClick={() => { setCompany(""); setIndustry(""); setSize("unknown"); setCName(""); setCTitle(""); setCEmail(""); setCPhone(""); setSourceType("manual"); setSourceUrl(""); }}>{t("webfinder.clearInputs")}</button>
+              <button
+                type="submit"
+                disabled={busy || !company.trim()}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <Icon name="plus" size={14} />
+                <span>{t("mkt.create")}</span>
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => { setCompany(""); setIndustry(""); setSize("unknown"); setCName(""); setCTitle(""); setCEmail(""); setCPhone(""); setSourceType("manual"); setSourceUrl(""); }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <Icon name="close" size={13} />
+                <span>{t("webfinder.clearInputs")}</span>
+              </button>
             </div>
           </form>
         </div>
 
         <section className="card">
-          <h3>{t("mkt.pipeline")}</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--accent)", display: "flex" }}>
+              <Icon name="users" size={17} />
+            </span>
+            <h3 style={{ margin: 0 }}>{t("mkt.pipeline")}</h3>
+          </div>
           {leads === null && !error && <Loading />}
           {leads?.length === 0 && <p className="muted">{t("mkt.empty")}</p>}
           {PIPELINE.map((st) => {
@@ -200,8 +231,23 @@ export function LeadsFeature() {
                         <div className="small muted">{l.contact.name ?? "-"} · {l.contact.email ?? "-"}</div>
                       </div>
                       <div className="actions">
-                        <Link className="button" href={`/marketing/leads/${l.id}`}>{t("mkt.open")}</Link>
-                        <button type="button" disabled={busy} onClick={() => window.confirm(t("mkt.lead.deleteConfirm")) && void run(() => marketingApi.deleteLead(l.id), t("mkt.lead.deleted"))}>{t("mkt.lead.delete")}</button>
+                        <Link
+                          className="button"
+                          href={`/marketing/leads/${l.id}`}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+                        >
+                          <span>{t("mkt.open")}</span>
+                          <Icon name="arrow-right" size={12} />
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => window.confirm(t("mkt.lead.deleteConfirm")) && void run(() => marketingApi.deleteLead(l.id), t("mkt.lead.deleted"))}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+                        >
+                          <Icon name="trash" size={13} />
+                          <span>{t("mkt.lead.delete")}</span>
+                        </button>
                       </div>
                     </li>
                   ))}
@@ -212,7 +258,12 @@ export function LeadsFeature() {
         </section>
 
         <section className="card">
-          <h3>{t("mkt.opps")}</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--ok)", display: "flex" }}>
+              <Icon name="trend-up" size={17} />
+            </span>
+            <h3 style={{ margin: 0 }}>{t("mkt.opps")}</h3>
+          </div>
           {opps.length === 0 && <p className="muted">-</p>}
           <ul className="list">
             {opps.map((o) => (
@@ -222,7 +273,14 @@ export function LeadsFeature() {
                   <span className="badge">{label(`mkt.stage.${o.stage}`)}</span>
                   <span className="small muted"> {o.won_value_idr !== null ? `IDR ${IDR.format(o.won_value_idr)}` : o.value_estimate_idr !== null ? `~IDR ${IDR.format(o.value_estimate_idr)}` : ""}</span>
                 </div>
-                <Link className="button" href={`/marketing/leads/${o.lead_id}`}>{t("mkt.open")}</Link>
+                <Link
+                  className="button"
+                  href={`/marketing/leads/${o.lead_id}`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+                >
+                  <span>{t("mkt.open")}</span>
+                  <Icon name="arrow-right" size={12} />
+                </Link>
               </li>
             ))}
           </ul>

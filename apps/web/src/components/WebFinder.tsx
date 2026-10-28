@@ -7,6 +7,7 @@ import { productsApi, type Product } from "@/lib/productsApi";
 import { tasksApi } from "@/lib/tasksApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
+import { Icon } from "@/components/ui/Icons";
 
 /** Cari prospek atau riset pasar langsung dari web: backend mencari dan mengambil halaman, agent hanya mengekstrak/menyusun dari teksnya. */
 export function WebFinder({ onQueued }: { onQueued: () => void }) {
@@ -78,7 +79,12 @@ export function WebFinder({ onQueued }: { onQueued: () => void }) {
 
   return (
     <section className="card" aria-label={t("webfinder.title")}>
-      <h3>{t("webfinder.title")}</h3>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <span style={{ color: "var(--accent)", display: "flex" }}>
+          <Icon name="search" size={18} />
+        </span>
+        <h3 style={{ margin: 0 }}>{t("webfinder.title")}</h3>
+      </div>
       <p className="small muted">{t("webfinder.hint")}</p>
       <div className="row">
         <label>{t("webfinder.industry")}<input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder={t("webfinder.industryPlaceholder")} /></label>
@@ -89,9 +95,34 @@ export function WebFinder({ onQueued }: { onQueued: () => void }) {
       </div>
       <p className="small muted">{t("webfinder.sourceNote")}</p>
       <div className="actions">
-        <button type="button" className="primary-btn" disabled={busy || query.trim().length < 3 || !productId} onClick={() => void go("prospecting")}>{busy ? t("webfinder.working") : t("webfinder.prospect")}</button>
-        <button type="button" disabled={busy || query.trim().length < 3} onClick={() => void go("research")}>{t("webfinder.research")}</button>
-        <button type="button" disabled={busy || (!industry && !city && !need)} onClick={clearInputs}>{t("webfinder.clearInputs")}</button>
+        <button
+          type="button"
+          className="primary-btn"
+          disabled={busy || query.trim().length < 3 || !productId}
+          onClick={() => void go("prospecting")}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+        >
+          <Icon name="search" size={14} />
+          <span>{busy ? t("webfinder.working") : t("webfinder.prospect")}</span>
+        </button>
+        <button
+          type="button"
+          disabled={busy || query.trim().length < 3}
+          onClick={() => void go("research")}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+        >
+          <Icon name="globe" size={14} />
+          <span>{t("webfinder.research")}</span>
+        </button>
+        <button
+          type="button"
+          disabled={busy || (!industry && !city && !need)}
+          onClick={clearInputs}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+        >
+          <Icon name="close" size={13} />
+          <span>{t("webfinder.clearInputs")}</span>
+        </button>
       </div>
       {!productId && <p className="small muted">{t("webfinder.productRequired")}</p>}
       {productId && products.find((p) => p.id === productId)?.effective_permission === "not_allowed" && <p className="small muted">{t("webfinder.productNotReady")} <Link href={`/products/${productId}`}>{t("webfinder.prepareProduct")}</Link></p>}

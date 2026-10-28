@@ -1,0 +1,63 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: roihan-ai-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-roihan_owner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-RoihanSecretPassword2026!}
+      POSTGRES_DB: ${POSTGRES_DB:-roihan_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-roihan_owner} -d ${POSTGRES_DB:-roihan_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: roihan-ai-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      APP_MODE: production
+      APP_DEFAULT_LANGUAGE: id
+      APP_LOCAL_TOKEN: ${APP_LOCAL_TOKEN}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-roihan_owner}:${POSTGRES_PASSWORD:-RoihanSecretPassword2026!}@db:5432/${POSTGRES_DB:-roihan_db}
+      OWNER_EMAIL: ${OWNER_EMAIL:-owner@roihan.id}
+      GEMINI_ENABLED: ${GEMINI_ENABLED:-true}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_DEFAULT_MODEL: ${GEMINI_DEFAULT_MODEL:-gemini-3.5-flash-lite}
+      GEMINI_PRO_MODEL: ${GEMINI_PRO_MODEL:-gemini-3.5-flash-lite}
+      BUDGET_CURRENCY: IDR
+      BUDGET_MONTHLY_LIMIT: ${BUDGET_MONTHLY_LIMIT:-1000000}
+      BUDGET_ALLOW_PAID_CALLS: ${BUDGET_ALLOW_PAID_CALLS:-true}
+      REQUIRE_APPROVAL_FOR_PAID_CALLS: ${REQUIRE_APPROVAL_FOR_PAID_CALLS:-false}
+    ports:
+      - "8000:8000"
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: roihan-ai-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+      API_BASE_URL: http://api:8000
+      APP_LOCAL_TOKEN: ${APP_LOCAL_TOKEN}
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:

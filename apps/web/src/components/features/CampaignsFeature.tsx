@@ -10,6 +10,7 @@ import {
 } from "@/lib/marketingApi";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import type { MessageKey } from "@/i18n/dictionaries";
+import { Icon } from "@/components/ui/Icons";
 
 const IDR = new Intl.NumberFormat("id-ID");
 
@@ -97,242 +98,375 @@ export function CampaignsFeature() {
 
   return (
     <PageTransition>
-<main data-accent="magenta">
-      <PageHero
-        code="04" route="SYS://MARKETING" art="marketing" title={t("mkt.title")} hint={t("mkt.hint")}
-        stats={[
-          { label: t("hero.stat.leads"), value: stats?.leads_total ?? 0 },
-          { label: t("hero.stat.opps"), value: stats?.opportunities_open ?? 0, tone: "ok" },
-          { label: t("hero.stat.drafts"), value: drafts.filter((d) => d.status === "ready_for_review").length, tone: "warn" },
-          { label: t("office.stat.outbox"), value: drafts.filter((d) => d.status === "queued_for_dispatch").length },
-        ]}
-      />
-      <p className="actions"><Link className="button" href="/marketing/content">{t("mkt.nav.content")}</Link> <Link className="button" href="/marketing/seo">{t("mkt.nav.seo")}</Link></p>
-      {error && <p className="bad" role="alert">{error}</p>}
-      {notice && <p role="status">{notice}</p>}
-      <WebFinder onQueued={() => void reload()} />
+      <main data-accent="magenta">
+        <PageHero
+          code="04"
+          route="SYS://MARKETING"
+          art="marketing"
+          title={t("mkt.title")}
+          hint={t("mkt.hint")}
+          stats={[
+            { label: t("hero.stat.leads"), value: stats?.leads_total ?? 0 },
+            { label: t("hero.stat.opps"), value: stats?.opportunities_open ?? 0, tone: "ok" },
+            { label: t("hero.stat.drafts"), value: drafts.filter((d) => d.status === "ready_for_review").length, tone: "warn" },
+            { label: t("office.stat.outbox"), value: drafts.filter((d) => d.status === "queued_for_dispatch").length },
+          ]}
+        />
+        <p className="actions" style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+          <Link
+            className="button"
+            href="/marketing/content"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+          >
+            <Icon name="pen" size={14} />
+            <span>{t("mkt.nav.content")}</span>
+          </Link>
+          <Link
+            className="button"
+            href="/marketing/seo"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+          >
+            <Icon name="globe" size={14} />
+            <span>{t("mkt.nav.seo")}</span>
+          </Link>
+        </p>
+        {error && <p className="bad" role="alert">{error}</p>}
+        {notice && <p role="status">{notice}</p>}
+        <WebFinder onQueued={() => void reload()} />
 
-      <div className="duo">
-      {policy && (
-        <section className="card">
-          <h3>{t("mkt.policy")}</h3>
-          <p className="small">{t("mkt.policy.allowed")}: {policy.allowed_sources.map((s) => label(`mkt.source.${s.type}`)).join(", ")}</p>
-          <p className="small">{t("mkt.policy.forbidden")}: {policy.forbidden_sources.map((s) => s.type).join(", ")}</p>
-          <p className="small">
-            {t("mkt.policy.retention").replace("{a}", String(policy.retention.no_interaction_days)).replace("{b}", String(policy.retention.after_last_interaction_days))}
-          </p>
-          <p className="small">{t("mkt.policy.minScore").replace("{n}", String(policy.min_score_for_sales))}</p>
-          <p className="small muted">{t("mkt.suppression").replace("{n}", String(suppressed))}</p>
-          {retention && retention.due.length > 0 && (
-            <p>
-              <span className="bad">{t("mkt.retention.due").replace("{n}", String(retention.due.length))}</span>{" "}
-              <button
-                type="button" disabled={busy}
-                onClick={() => window.confirm(t("mkt.retention.confirm")) && void run(() => marketingApi.runRetention())}
-              >
-                {t("mkt.retention.apply")}
-              </button>
-            </p>
-          )}
-        </section>
-      )}
-
-      {stats && (
-        <section className="card">
-          <h3>{t("mkt.analytics")}</h3>
-          <dl>
-            <dt>{t("mkt.m.leads")}</dt><dd>{stats.leads_total}</dd>
-            <dt>{t("mkt.m.meeting")}</dt><dd>{pct(stats.lead_to_meeting_rate)}</dd>
-            <dt>{t("mkt.m.opps")}</dt><dd>{stats.opportunities_open}</dd>
-            <dt>{t("mkt.m.win")}</dt><dd>{pct(stats.win_rate)}</dd>
-            <dt>{t("mkt.m.revenue")}</dt><dd>{stats.revenue_recorded_idr === null ? unknown : IDR.format(stats.revenue_recorded_idr)}</dd>
-            <dt>{t("mkt.m.cac")}</dt><dd>{unknown}</dd>
-          </dl>
-        </section>
-      )}
-
-      </div>
-
-      <form className="card" onSubmit={onCreate}>
-        <h3>{t("mkt.newLead")}</h3>
-        <label>{t("mkt.company")}<input value={company} maxLength={200} onChange={(e) => setCompany(e.target.value)} required /></label>
-        <div className="row">
-          <label>{t("mkt.industry")}<input value={industry} onChange={(e) => setIndustry(e.target.value)} /></label>
-          <label>
-            {t("mkt.size")}
-            <select value={size} onChange={(e) => setSize(e.target.value)}>
-              {["unknown", "micro", "small", "medium", "large"].map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </label>
-        </div>
-        <div className="row">
-          <label>{t("mkt.contactName")}<input value={cName} onChange={(e) => setCName(e.target.value)} /></label>
-          <label>{t("mkt.contactTitle")}<input value={cTitle} onChange={(e) => setCTitle(e.target.value)} /></label>
-        </div>
-        <div className="row">
-          <label>{t("mkt.contactEmail")}<input type="email" value={cEmail} onChange={(e) => setCEmail(e.target.value)} /></label>
-          <label>{t("mkt.contactPhone")}<input value={cPhone} onChange={(e) => setCPhone(e.target.value)} /></label>
-        </div>
-        <div className="row">
-          <label>
-            {t("mkt.sourceType")}
-            <select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>
-              {SOURCE_TYPES.map((s) => <option key={s} value={s}>{label(`mkt.source.${s}`)}</option>)}
-            </select>
-          </label>
-          <label>{t("mkt.sourceUrl")}<input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://" /></label>
-        </div>
-        <div className="actions">
-          <button type="submit" disabled={busy || !company.trim()}>{t("mkt.create")}</button>
-          <button type="button" disabled={busy} onClick={() => { setCompany(""); setIndustry(""); setSize("unknown"); setCName(""); setCTitle(""); setCEmail(""); setCPhone(""); setSourceType("manual"); setSourceUrl(""); }}>{t("webfinder.clearInputs")}</button>
-        </div>
-      </form>
-
-      <section className="card">
-        <h3>{t("mkt.pipeline")}</h3>
-        {leads === null && !error && <Loading />}
-        {leads?.length === 0 && <p>{t("mkt.empty")}</p>}
-        {PIPELINE.map((st) => {
-          const rows = (leads ?? []).filter((l) => l.status === st);
-          if (rows.length === 0) return null;
-          return (
-            <div key={st}>
-              <h4>{label(`mkt.status.${st}`)} ({rows.length})</h4>
-              <ul className="list">
-                {rows.map((l) => (
-                  <li key={l.id} className="card">
-                    <div>
-                      <strong>{l.company.name}</strong>
-                      <span className="badge">{t("mkt.score")} {l.score ?? "-"}</span>
-                      <span className="badge">{label(`mkt.source.${l.source.type}`)}</span>
-                      {l.anonymized && <span className="badge">{t("mkt.lead.anonymized")}</span>}
-                      <div className="small muted">{l.contact.name ?? "-"} · {l.contact.email ?? "-"}</div>
-                    </div>
-                    <div className="actions">
-                      <Link className="button" href={`/marketing/leads/${l.id}`}>{t("mkt.open")}</Link>
-                      <button type="button" disabled={busy} onClick={() => window.confirm(t("mkt.lead.deleteConfirm")) && void run(() => marketingApi.deleteLead(l.id), t("mkt.lead.deleted"))}>{t("mkt.lead.delete")}</button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </section>
-
-      <section className="card">
-        <h3>{t("mkt.opps")}</h3>
-        {opps.length === 0 && <p className="muted">-</p>}
-        <ul className="list">
-          {opps.map((o) => (
-            <li key={o.id} className="card">
-              <div>
-                <strong>{o.title}</strong>
-                <span className="badge">{label(`mkt.stage.${o.stage}`)}</span>
-                <span className="small muted"> {o.won_value_idr !== null ? `IDR ${IDR.format(o.won_value_idr)}` : o.value_estimate_idr !== null ? `~IDR ${IDR.format(o.value_estimate_idr)}` : ""}</span>
+        <div className="duo">
+          {policy && (
+            <section className="card">
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ color: "var(--info)", display: "flex" }}>
+                  <Icon name="shield" size={17} />
+                </span>
+                <h3 style={{ margin: 0 }}>{t("mkt.policy")}</h3>
               </div>
-              <Link className="button" href={`/marketing/leads/${o.lead_id}`}>{t("mkt.open")}</Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="card">
-        <h3>{t("mkt.outreach")}</h3>
-        <p className="small muted">{t("mkt.outreach.sentNote")}</p>
-        {drafts.length === 0 && <p className="muted">{t("mkt.outreach.empty")}</p>}
-        <ul className="list">
-          {drafts.map((d) => (
-            <li key={d.id} className="card">
-              <div>
-                <strong>{d.subject}</strong>
-                <span className="badge" data-task={d.status === "ready_for_review" || d.status === "sent_manual" ? "completed" : "failed"}>{label(`mkt.ostatus.${d.status}`)}</span>
-                <pre className="output">{d.body}</pre>
-                {d.claim_check && !d.claim_check.ok && (
-                  <ul className="small bad">{d.claim_check.findings.map((f, i) => <li key={i}>{f.detail}{f.match ? ` — “${f.match}”` : ""}</li>)}</ul>
-                )}
-                <Link className="button" href={`/marketing/leads/${d.lead_id}`}>{t("mkt.openToSend")}</Link>
-              </div>
-              {d.status === "ready_for_review" && (
-                <div className="actions">
-                  <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.cancelOutreach(d.id))}>{t("mkt.outreach.cancel")}</button>
-                </div>
+              <p className="small">{t("mkt.policy.allowed")}: {policy.allowed_sources.map((s) => label(`mkt.source.${s.type}`)).join(", ")}</p>
+              <p className="small">{t("mkt.policy.forbidden")}: {policy.forbidden_sources.map((s) => s.type).join(", ")}</p>
+              <p className="small">
+                {t("mkt.policy.retention").replace("{a}", String(policy.retention.no_interaction_days)).replace("{b}", String(policy.retention.after_last_interaction_days))}
+              </p>
+              <p className="small">{t("mkt.policy.minScore").replace("{n}", String(policy.min_score_for_sales))}</p>
+              <p className="small muted">{t("mkt.suppression").replace("{n}", String(suppressed))}</p>
+              {retention && retention.due.length > 0 && (
+                <p>
+                  <span className="bad">{t("mkt.retention.due").replace("{n}", String(retention.due.length))}</span>{" "}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => window.confirm(t("mkt.retention.confirm")) && void run(() => marketingApi.runRetention())}
+                  >
+                    {t("mkt.retention.apply")}
+                  </button>
+                </p>
               )}
-            </li>
-          ))}
-        </ul>
-      </section>
+            </section>
+          )}
 
-      <form
-        className="card"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void run(async () => {
-            await marketingApi.runIntake({ source_type: intakeSource, url: intakeUrl }, rawText);
-            setRawText(""); setIntakeUrl("");
-          }, t("mkt.taskQueued"));
-        }}
-      >
-        <h3>{t("mkt.intake")}</h3>
-        <p className="muted small">{t("mkt.intake.hint")}</p>
-        <div className="row">
-          <label>
-            {t("mkt.sourceType")}
-            <select value={intakeSource} onChange={(e) => setIntakeSource(e.target.value)}>
-              {SOURCE_TYPES.map((s) => <option key={s} value={s}>{label(`mkt.source.${s}`)}</option>)}
-            </select>
-          </label>
-          <label>{t("mkt.sourceUrl")}<input value={intakeUrl} onChange={(e) => setIntakeUrl(e.target.value)} placeholder="https://" /></label>
+          {stats && (
+            <section className="card">
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ color: "var(--accent)", display: "flex" }}>
+                  <Icon name="chart" size={17} />
+                </span>
+                <h3 style={{ margin: 0 }}>{t("mkt.analytics")}</h3>
+              </div>
+              <dl>
+                <dt>{t("mkt.m.leads")}</dt><dd>{stats.leads_total}</dd>
+                <dt>{t("mkt.m.meeting")}</dt><dd>{pct(stats.lead_to_meeting_rate)}</dd>
+                <dt>{t("mkt.m.opps")}</dt><dd>{stats.opportunities_open}</dd>
+                <dt>{t("mkt.m.win")}</dt><dd>{pct(stats.win_rate)}</dd>
+                <dt>{t("mkt.m.revenue")}</dt><dd>{stats.revenue_recorded_idr === null ? unknown : IDR.format(stats.revenue_recorded_idr)}</dd>
+                <dt>{t("mkt.m.cac")}</dt><dd>{unknown}</dd>
+              </dl>
+            </section>
+          )}
         </div>
-        <label>{t("mkt.rawText")}<textarea rows={5} maxLength={8000} value={rawText} onChange={(e) => setRawText(e.target.value)} required /></label>
-        <div className="actions">
-          <button type="submit" disabled={busy || !rawText.trim()}>{t("mkt.runIntake")}</button>
-          <button type="button" disabled={busy} onClick={() => { setRawText(""); setIntakeUrl(""); setIntakeSource("event"); }}>{t("webfinder.clearInputs")}</button>
-        </div>
-      </form>
 
-      <form
-        className="card"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void run(async () => {
-            await marketingApi.runResearch(topic, material);
-            setMaterial(""); setTopic("");
-          }, t("mkt.taskQueued"));
-        }}
-      >
-        <h3>{t("mkt.research")}</h3>
-        <p className="muted small">{t("mkt.research.hint")}</p>
-        <label>{t("mkt.topic")}<input value={topic} maxLength={200} onChange={(e) => setTopic(e.target.value)} required minLength={3} /></label>
-        <label>{t("mkt.material")}<textarea rows={5} maxLength={8000} value={material} onChange={(e) => setMaterial(e.target.value)} required /></label>
-        <div className="actions">
-          <button type="submit" disabled={busy || topic.trim().length < 3 || !material.trim()}>{t("mkt.runResearch")}</button>
-          <button type="button" disabled={busy} onClick={() => { setTopic(""); setMaterial(""); }}>{t("webfinder.clearInputs")}</button>
-        </div>
-      </form>
+        <form className="card" onSubmit={onCreate}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--accent)", display: "flex" }}>
+              <Icon name="plus" size={17} />
+            </span>
+            <h3 style={{ margin: 0 }}>{t("mkt.newLead")}</h3>
+          </div>
+          <label>{t("mkt.company")}<input value={company} maxLength={200} onChange={(e) => setCompany(e.target.value)} required /></label>
+          <div className="row">
+            <label>{t("mkt.industry")}<input value={industry} onChange={(e) => setIndustry(e.target.value)} /></label>
+            <label>
+              {t("mkt.size")}
+              <select value={size} onChange={(e) => setSize(e.target.value)}>
+                {["unknown", "micro", "small", "medium", "large"].map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </label>
+          </div>
+          <div className="row">
+            <label>{t("mkt.contactName")}<input value={cName} onChange={(e) => setCName(e.target.value)} /></label>
+            <label>{t("mkt.contactTitle")}<input value={cTitle} onChange={(e) => setCTitle(e.target.value)} /></label>
+          </div>
+          <div className="row">
+            <label>{t("mkt.contactEmail")}<input type="email" value={cEmail} onChange={(e) => setCEmail(e.target.value)} /></label>
+            <label>{t("mkt.contactPhone")}<input value={cPhone} onChange={(e) => setCPhone(e.target.value)} /></label>
+          </div>
+          <div className="row">
+            <label>
+              {t("mkt.sourceType")}
+              <select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>
+                {SOURCE_TYPES.map((s) => <option key={s} value={s}>{label(`mkt.source.${s}`)}</option>)}
+              </select>
+            </label>
+            <label>{t("mkt.sourceUrl")}<input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://" /></label>
+          </div>
+          <div className="actions">
+            <button
+              type="submit"
+              disabled={busy || !company.trim()}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Icon name="plus" size={14} />
+              <span>{t("mkt.create")}</span>
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => { setCompany(""); setIndustry(""); setSize("unknown"); setCName(""); setCTitle(""); setCEmail(""); setCPhone(""); setSourceType("manual"); setSourceUrl(""); }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Icon name="close" size={13} />
+              <span>{t("webfinder.clearInputs")}</span>
+            </button>
+          </div>
+        </form>
 
-      {research.length > 0 && (
         <section className="card">
-          <h3>{t("mkt.research.results")}</h3>
-          {research.map((r) => (
-            <div key={r.id}>
-              <h4>{r.topic}</h4>
-              <p className="small muted">{t("mkt.research.verified").replace("{v}", String(r.verified_count)).replace("{u}", String(r.unverified_count))}</p>
-              <p>{r.summary}</p>
-              <ul>
-                {r.items.map((it, i) => (
-                  <li key={i}>
-                    {it.statement}
-                    <span className="badge" data-task={it.verified ? "completed" : "failed"}>{it.verified ? it.basis : "unverified"}</span>
-                    {it.verified && <div className="small muted">“{it.evidence_quote}”</div>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--accent)", display: "flex" }}>
+              <Icon name="users" size={17} />
+            </span>
+            <h3 style={{ margin: 0 }}>{t("mkt.pipeline")}</h3>
+          </div>
+          {leads === null && !error && <Loading />}
+          {leads?.length === 0 && <p>{t("mkt.empty")}</p>}
+          {PIPELINE.map((st) => {
+            const rows = (leads ?? []).filter((l) => l.status === st);
+            if (rows.length === 0) return null;
+            return (
+              <div key={st}>
+                <h4>{label(`mkt.status.${st}`)} ({rows.length})</h4>
+                <ul className="list">
+                  {rows.map((l) => (
+                    <li key={l.id} className="card">
+                      <div>
+                        <strong>{l.company.name}</strong>
+                        <span className="badge">{t("mkt.score")} {l.score ?? "-"}</span>
+                        <span className="badge">{label(`mkt.source.${l.source.type}`)}</span>
+                        {l.anonymized && <span className="badge">{t("mkt.lead.anonymized")}</span>}
+                        <div className="small muted">{l.contact.name ?? "-"} · {l.contact.email ?? "-"}</div>
+                      </div>
+                      <div className="actions">
+                        <Link
+                          className="button"
+                          href={`/marketing/leads/${l.id}`}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+                        >
+                          <span>{t("mkt.open")}</span>
+                          <Icon name="arrow-right" size={12} />
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => window.confirm(t("mkt.lead.deleteConfirm")) && void run(() => marketingApi.deleteLead(l.id), t("mkt.lead.deleted"))}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+                        >
+                          <Icon name="trash" size={13} />
+                          <span>{t("mkt.lead.delete")}</span>
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </section>
-      )}
-    </main>
-</PageTransition>
+
+        <section className="card">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--ok)", display: "flex" }}>
+              <Icon name="trend-up" size={17} />
+            </span>
+            <h3 style={{ margin: 0 }}>{t("mkt.opps")}</h3>
+          </div>
+          {opps.length === 0 && <p className="muted">-</p>}
+          <ul className="list">
+            {opps.map((o) => (
+              <li key={o.id} className="card">
+                <div>
+                  <strong>{o.title}</strong>
+                  <span className="badge">{label(`mkt.stage.${o.stage}`)}</span>
+                  <span className="small muted"> {o.won_value_idr !== null ? `IDR ${IDR.format(o.won_value_idr)}` : o.value_estimate_idr !== null ? `~IDR ${IDR.format(o.value_estimate_idr)}` : ""}</span>
+                </div>
+                <Link
+                  className="button"
+                  href={`/marketing/leads/${o.lead_id}`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+                >
+                  <span>{t("mkt.open")}</span>
+                  <Icon name="arrow-right" size={12} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="card">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--info)", display: "flex" }}>
+              <Icon name="send" size={17} />
+            </span>
+            <h3 style={{ margin: 0 }}>{t("mkt.outreach")}</h3>
+          </div>
+          <p className="small muted">{t("mkt.outreach.sentNote")}</p>
+          {drafts.length === 0 && <p className="muted">{t("mkt.outreach.empty")}</p>}
+          <ul className="list">
+            {drafts.map((d) => (
+              <li key={d.id} className="card">
+                <div>
+                  <strong>{d.subject}</strong>
+                  <span className="badge" data-task={d.status === "ready_for_review" || d.status === "sent_manual" ? "completed" : "failed"}>{label(`mkt.ostatus.${d.status}`)}</span>
+                  <pre className="output">{d.body}</pre>
+                  {d.claim_check && !d.claim_check.ok && (
+                    <ul className="small bad">{d.claim_check.findings.map((f, i) => <li key={i}>{f.detail}{f.match ? ` — “${f.match}”` : ""}</li>)}</ul>
+                  )}
+                  <Link className="button" href={`/marketing/leads/${d.lead_id}`}>{t("mkt.openToSend")}</Link>
+                </div>
+                {d.status === "ready_for_review" && (
+                  <div className="actions">
+                    <button type="button" disabled={busy} onClick={() => void run(() => marketingApi.cancelOutreach(d.id))}>{t("mkt.outreach.cancel")}</button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <form
+          className="card"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void run(async () => {
+              await marketingApi.runIntake({ source_type: intakeSource, url: intakeUrl }, rawText);
+              setRawText(""); setIntakeUrl("");
+            }, t("mkt.taskQueued"));
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--accent)", display: "flex" }}>
+              <Icon name="file-text" size={17} />
+            </span>
+            <h3 style={{ margin: 0 }}>{t("mkt.intake")}</h3>
+          </div>
+          <p className="muted small">{t("mkt.intake.hint")}</p>
+          <div className="row">
+            <label>
+              {t("mkt.sourceType")}
+              <select value={intakeSource} onChange={(e) => setIntakeSource(e.target.value)}>
+                {SOURCE_TYPES.map((s) => <option key={s} value={s}>{label(`mkt.source.${s}`)}</option>)}
+              </select>
+            </label>
+            <label>{t("mkt.sourceUrl")}<input value={intakeUrl} onChange={(e) => setIntakeUrl(e.target.value)} placeholder="https://" /></label>
+          </div>
+          <label>{t("mkt.rawText")}<textarea rows={5} maxLength={8000} value={rawText} onChange={(e) => setRawText(e.target.value)} required /></label>
+          <div className="actions">
+            <button
+              type="submit"
+              disabled={busy || !rawText.trim()}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Icon name="zap" size={14} />
+              <span>{t("mkt.runIntake")}</span>
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => { setRawText(""); setIntakeUrl(""); setIntakeSource("event"); }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Icon name="close" size={13} />
+              <span>{t("webfinder.clearInputs")}</span>
+            </button>
+          </div>
+        </form>
+
+        <form
+          className="card"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void run(async () => {
+              await marketingApi.runResearch(topic, material);
+              setMaterial(""); setTopic("");
+            }, t("mkt.taskQueued"));
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--info)", display: "flex" }}>
+              <Icon name="search" size={17} />
+            </span>
+            <h3 style={{ margin: 0 }}>{t("mkt.research")}</h3>
+          </div>
+          <p className="muted small">{t("mkt.research.hint")}</p>
+          <label>{t("mkt.topic")}<input value={topic} maxLength={200} onChange={(e) => setTopic(e.target.value)} required minLength={3} /></label>
+          <label>{t("mkt.material")}<textarea rows={5} maxLength={8000} value={material} onChange={(e) => setMaterial(e.target.value)} required /></label>
+          <div className="actions">
+            <button
+              type="submit"
+              disabled={busy || topic.trim().length < 3 || !material.trim()}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Icon name="search" size={14} />
+              <span>{t("mkt.runResearch")}</span>
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => { setTopic(""); setMaterial(""); }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Icon name="close" size={13} />
+              <span>{t("webfinder.clearInputs")}</span>
+            </button>
+          </div>
+        </form>
+
+        {research.length > 0 && (
+          <section className="card">
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ color: "var(--ok)", display: "flex" }}>
+                <Icon name="check-circle" size={17} />
+              </span>
+              <h3 style={{ margin: 0 }}>{t("mkt.research.results")}</h3>
+            </div>
+            {research.map((r) => (
+              <div key={r.id}>
+                <h4>{r.topic}</h4>
+                <p className="small muted">{t("mkt.research.verified").replace("{v}", String(r.verified_count)).replace("{u}", String(r.unverified_count))}</p>
+                <p>{r.summary}</p>
+                <ul>
+                  {r.items.map((it, i) => (
+                    <li key={i}>
+                      {it.statement}
+                      <span className="badge" data-task={it.verified ? "completed" : "failed"}>{it.verified ? it.basis : "unverified"}</span>
+                      {it.verified && <div className="small muted">“{it.evidence_quote}”</div>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </section>
+        )}
+      </main>
+    </PageTransition>
   );
 }

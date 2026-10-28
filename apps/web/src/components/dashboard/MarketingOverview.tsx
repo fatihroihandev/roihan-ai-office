@@ -3,6 +3,7 @@
 import type { Dashboard } from "@/lib/dashboardApi";
 import type { Kpis, SeoCampaign } from "@/lib/seoApi";
 import type { DashboardView } from "@/lib/dashboard/dock";
+import { Icon } from "@/components/ui/Icons";
 
 const NA = "Belum terhubung";
 const num = (v: number | null | undefined, digits = 0) =>
@@ -50,6 +51,16 @@ const ROLE_LABEL: Record<string, string> = {
   marketing_analytics: "Marketing Data Analyst",
 };
 
+const ROLE_ICONS: Record<string, string> = {
+  manager: "bot",
+  seo_specialist: "globe",
+  content_promotion: "pen",
+  lead_generation: "users",
+  sales_client_relations: "mail",
+  market_research: "search",
+  marketing_analytics: "chart",
+};
+
 type Props = {
   data: Dashboard | null;
   kpis: Kpis | null;
@@ -86,6 +97,8 @@ export function MarketingOverview({
     hint: string;
     view: DashboardView;
     accentColor: string;
+    bgTint: string;
+    icon: string;
   }[] = [
     {
       title: "Total Prospek (Leads)",
@@ -93,6 +106,8 @@ export function MarketingOverview({
       hint: `${num(kpis?.leads.qualified)} terkualifikasi • ${num(m?.opportunities_open)} peluang terbuka`,
       view: "leads",
       accentColor: "var(--accent)",
+      bgTint: "rgba(234, 88, 12, 0.1)",
+      icon: "users",
     },
     {
       title: "Klik Organik",
@@ -100,6 +115,8 @@ export function MarketingOverview({
       hint: `Impresi ${num(kpis?.organic.impressions)} • CTR ${pct(kpis?.organic.ctr)}`,
       view: "seo",
       accentColor: "var(--ok)",
+      bgTint: "rgba(22, 163, 74, 0.1)",
+      icon: "trend-up",
     },
     {
       title: "Posisi Rata-rata SEO",
@@ -107,13 +124,17 @@ export function MarketingOverview({
       hint: `Sesi organik ${num(kpis?.organic.organic_sessions)}`,
       view: "seo",
       accentColor: "var(--info)",
+      bgTint: "rgba(37, 99, 235, 0.1)",
+      icon: "globe",
     },
     {
       title: "Menunggu Persetujuan",
       value: num(pendingApprovals),
       hint: `${num(m?.outbox_waiting)} pesan keluar menunggu tinjauan`,
       view: "operations",
-      accentColor: pendingApprovals > 0 ? "var(--warn)" : "var(--text)",
+      accentColor: pendingApprovals > 0 ? "var(--warn)" : "var(--text-secondary)",
+      bgTint: pendingApprovals > 0 ? "rgba(217, 119, 6, 0.1)" : "var(--surface-subtle)",
+      icon: "shield",
     },
   ];
 
@@ -128,11 +149,23 @@ export function MarketingOverview({
           </p>
         </div>
         <div className="workspace-header-actions">
-          <button type="button" className="btn-secondary" onClick={onAudit}>
-            Audit SEO Cepat
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={onAudit}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7 }}
+          >
+            <Icon name="globe" size={15} />
+            <span>Audit SEO Cepat</span>
           </button>
-          <button type="button" className="btn-primary-orange" onClick={onLead}>
-            + Catat Prospek B2B
+          <button
+            type="button"
+            className="btn-primary-orange"
+            onClick={onLead}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7 }}
+          >
+            <Icon name="plus" size={15} />
+            <span>Catat Prospek B2B</span>
           </button>
         </div>
       </div>
@@ -150,14 +183,29 @@ export function MarketingOverview({
               if (e.key === "Enter" || e.key === " ") onNavigate(c.view);
             }}
           >
-            <div className="kpi-card-top">
+            <div className="kpi-card-top" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span className="kpi-card-title">{c.title}</span>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "var(--radius-md)",
+                  background: c.bgTint,
+                  color: c.accentColor,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Icon name={c.icon} size={16} />
+              </div>
             </div>
             <div className="kpi-card-stat stacked">
               <strong
                 style={{
                   color: c.accentColor,
-                  fontSize: c.value === NA ? "1rem" : undefined,
+                  fontSize: c.value === NA ? "1.05rem" : undefined,
                 }}
               >
                 {c.value}
@@ -172,19 +220,55 @@ export function MarketingOverview({
       <div className="workspace-middle-grid">
         <div className="white-panel">
           <div className="white-panel-header">
-            <span className="white-panel-title">Distribusi Pipeline Prospek</span>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span style={{ color: "var(--accent)", display: "flex" }}>
+                <Icon name="users" size={17} />
+              </span>
+              <span className="white-panel-title">Distribusi Pipeline Prospek</span>
+            </div>
             <button
               type="button"
               className="section-head-link"
               onClick={() => onNavigate("leads")}
+              style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
             >
-              Buka CRM →
+              <span>Buka CRM</span>
+              <Icon name="arrow-right" size={13} />
             </button>
           </div>
           {byStatus.length === 0 ? (
-            <p className="hint" style={{ margin: 0 }}>
-              Belum ada data prospek tercatat. Tambahkan prospek baru untuk memulai kualifikasi.
-            </p>
+            <div style={{ textAlign: "center", padding: "28px 16px" }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: "var(--surface-subtle)",
+                  color: "var(--text-secondary)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 10px",
+                }}
+              >
+                <Icon name="users" size={20} />
+              </div>
+              <p style={{ margin: "0 0 6px", fontWeight: 600, fontSize: "0.88rem" }}>
+                Belum ada data prospek tercatat
+              </p>
+              <p className="hint" style={{ margin: "0 auto 14px", maxWidth: 320 }}>
+                Tambahkan prospek baru untuk memulai analisis kesiapan sales dan otomatisasi outreach.
+              </p>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={onLead}
+                style={{ fontSize: "0.8rem", padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <Icon name="plus" size={14} />
+                <span>Tambah Prospek Sekarang</span>
+              </button>
+            </div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {byStatus.map(([s, n]) => (
@@ -227,19 +311,46 @@ export function MarketingOverview({
 
         <div className="white-panel">
           <div className="white-panel-header">
-            <span className="white-panel-title">Tindakan Perlu Keputusan</span>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span style={{ color: "var(--warn)", display: "flex" }}>
+                <Icon name="shield" size={17} />
+              </span>
+              <span className="white-panel-title">Tindakan Perlu Keputusan</span>
+            </div>
             <button
               type="button"
               className="section-head-link"
               onClick={() => onNavigate("operations")}
+              style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
             >
-              Pusat Operasi →
+              <span>Pusat Operasi</span>
+              <Icon name="arrow-right" size={13} />
             </button>
           </div>
           {decisions.length === 0 ? (
-            <p className="hint" style={{ margin: 0 }}>
-              Tidak ada tindakan yang tertahan. Seluruh alur kerja berjalan normal.
-            </p>
+            <div style={{ textAlign: "center", padding: "28px 16px" }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: "rgba(22, 163, 74, 0.1)",
+                  color: "var(--ok)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 10px",
+                }}
+              >
+                <Icon name="check" size={20} />
+              </div>
+              <p style={{ margin: "0 0 4px", fontWeight: 600, fontSize: "0.88rem" }}>
+                Seluruh Alur Kerja Aman &amp; Lancar
+              </p>
+              <p className="hint" style={{ margin: 0 }}>
+                Tidak ada tindakan berisiko yang tertahan atau membutuhkan intervensi persetujuan saat ini.
+              </p>
+            </div>
           ) : (
             <ul
               style={{
@@ -259,24 +370,32 @@ export function MarketingOverview({
                     background: "var(--surface-subtle)",
                     border: "1px solid var(--border)",
                     borderRadius: "var(--radius-md)",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 10,
                   }}
                 >
-                  <strong>{d.title}</strong>
-                  <span
-                    style={{
-                      display: "block",
-                      color: "var(--text-secondary)",
-                      fontSize: "0.74rem",
-                      marginTop: 2,
-                    }}
-                  >
-                    {d.kind === "approval"
-                      ? "Menunggu persetujuan"
-                      : d.kind === "task_blocked"
-                        ? "Tugas terblokir"
-                        : "Tugas gagal"}
-                    {d.reason ? ` • ${d.reason}` : ""}
+                  <span style={{ color: d.kind === "approval" ? "var(--warn)" : "var(--bad)", marginTop: 2, flexShrink: 0 }}>
+                    <Icon name={d.kind === "approval" ? "clock" : "alert-triangle"} size={16} />
                   </span>
+                  <div style={{ flex: 1 }}>
+                    <strong>{d.title}</strong>
+                    <span
+                      style={{
+                        display: "block",
+                        color: "var(--text-secondary)",
+                        fontSize: "0.74rem",
+                        marginTop: 2,
+                      }}
+                    >
+                      {d.kind === "approval"
+                        ? "Menunggu persetujuan"
+                        : d.kind === "task_blocked"
+                          ? "Tugas terblokir"
+                          : "Tugas gagal"}
+                      {d.reason ? ` • ${d.reason}` : ""}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -287,19 +406,55 @@ export function MarketingOverview({
       {/* Active SEO & Marketing Campaigns Table */}
       <div className="white-panel">
         <div className="white-panel-header">
-          <span className="white-panel-title">Kampanye SEO &amp; Pertumbuhan Berjalan</span>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "var(--ok)", display: "flex" }}>
+              <Icon name="target" size={17} />
+            </span>
+            <span className="white-panel-title">Kampanye SEO &amp; Pertumbuhan Berjalan</span>
+          </div>
           <button
             type="button"
             className="section-head-link"
             onClick={() => onNavigate("seo")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
           >
-            Kelola Kampanye SEO →
+            <span>Kelola Kampanye SEO</span>
+            <Icon name="arrow-right" size={13} />
           </button>
         </div>
         {activeCampaigns.length === 0 ? (
-          <p className="hint" style={{ margin: 0 }}>
-            Belum ada kampanye aktif. Buat kampanye dengan target terukur pada modul Website &amp; Growth.
-          </p>
+          <div style={{ textAlign: "center", padding: "28px 16px" }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                background: "var(--surface-subtle)",
+                color: "var(--text-secondary)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 10px",
+              }}
+            >
+              <Icon name="target" size={20} />
+            </div>
+            <p style={{ margin: "0 0 6px", fontWeight: 600, fontSize: "0.88rem" }}>
+              Belum ada kampanye aktif
+            </p>
+            <p className="hint" style={{ margin: "0 auto 14px", maxWidth: 360 }}>
+              Buat kampanye dengan target terukur pada modul Website &amp; Growth untuk memicu audit rutin dan pelacakan keyword.
+            </p>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => onNavigate("seo")}
+              style={{ fontSize: "0.8rem", padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Icon name="plus" size={14} />
+              <span>Buka Modul SEO</span>
+            </button>
+          </div>
         ) : (
           <table className="feature-data-table">
             <thead>
@@ -338,17 +493,24 @@ export function MarketingOverview({
         )}
       </div>
 
-      {/* Marketing AI Team & Telemetry Summary (Consolidated from former right panel) */}
+      {/* Marketing AI Team & Telemetry Summary */}
       <div className="workspace-middle-grid">
         <div className="white-panel">
           <div className="white-panel-header">
-            <span className="white-panel-title">Status Tim Agen Marketing AI</span>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span style={{ color: "var(--info)", display: "flex" }}>
+                <Icon name="bot" size={17} />
+              </span>
+              <span className="white-panel-title">Status Tim Agen Marketing AI</span>
+            </div>
             <button
               type="button"
               className="section-head-link"
               onClick={() => onNavigate("operations")}
+              style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
             >
-              Lihat Antrean Tugas →
+              <span>Lihat Antrean Tugas</span>
+              <Icon name="arrow-right" size={13} />
             </button>
           </div>
           {marketingAgents.length === 0 ? (
@@ -359,7 +521,7 @@ export function MarketingOverview({
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
                 gap: 10,
               }}
             >
@@ -371,35 +533,64 @@ export function MarketingOverview({
                     borderRadius: "var(--radius-md)",
                     border: "1px solid var(--border)",
                     background: "var(--surface-subtle)",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 10,
                   }}
                 >
                   <div
                     style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      color: "var(--accent)",
                       display: "flex",
-                      justifyContent: "space-between",
                       alignItems: "center",
-                      gap: 6,
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    <strong style={{ fontSize: "0.8rem" }}>
-                      {ROLE_LABEL[a.role] ?? a.role}
-                    </strong>
-                    <span className="badge" data-agent={a.status}>
-                      {a.status}
+                    <Icon name={ROLE_ICONS[a.role] ?? "bot"} size={16} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <strong
+                        style={{
+                          fontSize: "0.78rem",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                        title={ROLE_LABEL[a.role] ?? a.role}
+                      >
+                        {ROLE_LABEL[a.role] ?? a.role}
+                      </strong>
+                      <span className="badge" data-agent={a.status}>
+                        {a.status}
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: "0.72rem",
+                        color: "var(--text-secondary)",
+                        marginTop: 4,
+                      }}
+                    >
+                      {a.current_task_title
+                        ? a.current_task_title
+                        : `Antrean: ${a.queued} tugas`}
                     </span>
                   </div>
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: "0.72rem",
-                      color: "var(--text-secondary)",
-                      marginTop: 4,
-                    }}
-                  >
-                    {a.current_task_title
-                      ? a.current_task_title
-                      : `Antrean: ${a.queued} tugas`}
-                  </span>
                 </div>
               ))}
             </div>
@@ -408,13 +599,20 @@ export function MarketingOverview({
 
         <div className="white-panel">
           <div className="white-panel-header">
-            <span className="white-panel-title">Telemetri AI &amp; Konten (24 Jam)</span>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span style={{ color: "var(--accent)", display: "flex" }}>
+                <Icon name="sparkles" size={17} />
+              </span>
+              <span className="white-panel-title">Telemetri AI &amp; Konten (24 Jam)</span>
+            </div>
             <button
               type="button"
               className="section-head-link"
               onClick={() => onNavigate("settings")}
+              style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
             >
-              Pengaturan AI →
+              <span>Pengaturan AI</span>
+              <Icon name="arrow-right" size={13} />
             </button>
           </div>
           <div
@@ -432,15 +630,19 @@ export function MarketingOverview({
                 background: "var(--surface-subtle)",
               }}
             >
-              <span
-                style={{
-                  fontSize: "0.72rem",
-                  color: "var(--text-secondary)",
-                  display: "block",
-                }}
-              >
-                Panggilan AI 24j
-              </span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Panggilan AI 24j
+                </span>
+                <span style={{ color: "var(--info)", display: "flex" }}>
+                  <Icon name="zap" size={14} />
+                </span>
+              </div>
               <strong style={{ fontSize: "1.25rem" }}>
                 {data ? data.ai.calls_24h : "—"}
               </strong>
@@ -453,15 +655,19 @@ export function MarketingOverview({
                 background: "var(--surface-subtle)",
               }}
             >
-              <span
-                style={{
-                  fontSize: "0.72rem",
-                  color: "var(--text-secondary)",
-                  display: "block",
-                }}
-              >
-                Galat AI 24j
-              </span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Galat AI 24j
+                </span>
+                <span style={{ color: data && data.ai.errors_24h > 0 ? "var(--bad)" : "var(--text-secondary)", display: "flex" }}>
+                  <Icon name="alert-triangle" size={14} />
+                </span>
+              </div>
               <strong
                 style={{
                   fontSize: "1.25rem",
@@ -482,15 +688,19 @@ export function MarketingOverview({
                 background: "var(--surface-subtle)",
               }}
             >
-              <span
-                style={{
-                  fontSize: "0.72rem",
-                  color: "var(--text-secondary)",
-                  display: "block",
-                }}
-              >
-                Konten Siap Tinjau
-              </span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Konten Siap Tinjau
+                </span>
+                <span style={{ color: "var(--ok)", display: "flex" }}>
+                  <Icon name="file-text" size={14} />
+                </span>
+              </div>
               <strong style={{ fontSize: "1.25rem", color: "var(--ok)" }}>
                 {data ? data.marketing.content_ready : "—"}
               </strong>

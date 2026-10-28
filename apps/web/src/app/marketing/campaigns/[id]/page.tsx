@@ -2,6 +2,7 @@
 
 import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icons";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { marketingApi, METRICS, NEXT_CAMPAIGN, type Campaign } from "@/lib/marketingApi";
@@ -48,7 +49,7 @@ export default function CampaignPage() {
   return (
     <PageTransition>
 <main>
-      <p><Link href="/marketing/content">← {t("ext.back")}</Link></p>
+      <p><Link href="/marketing/content" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}><Icon name="arrow-left" size={14} /> {t("ext.back")}</Link></p>
       <h2>{camp.name} <span className="badge">{label(`ext.campstatus.${camp.status}`)}</span></h2>
       <p className="muted">{camp.objective}</p>
       <p className="small">{camp.channels.join(", ")} · {t("ext.campaign.budget")}</p>

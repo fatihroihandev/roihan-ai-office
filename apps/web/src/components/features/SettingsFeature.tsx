@@ -2,6 +2,22 @@
 
 import { useState } from "react";
 import { AiFeature } from "./AiFeature";
+import { Icon } from "@/components/ui/Icons";
+
+const SPECIALIST_ICONS: Record<number, string> = {
+  0: "bot",
+  1: "target",
+  2: "globe",
+  3: "pen",
+  4: "share",
+  5: "target",
+  6: "users",
+  7: "mail",
+  8: "send",
+  9: "trend-up",
+  10: "chart",
+  11: "zap",
+};
 
 export function SettingsFeature() {
   const [activeTab, setActiveTab] = useState<"ai" | "team" | "workspace" | "security">("ai");
@@ -20,29 +36,37 @@ export function SettingsFeature() {
             type="button"
             className={activeTab === "ai" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setActiveTab("ai")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            AI Provider &amp; Anggaran
+            <Icon name="sparkles" size={14} />
+            <span>AI Provider &amp; Anggaran</span>
           </button>
           <button
             type="button"
             className={activeTab === "team" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setActiveTab("team")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            12 Peran Spesialis AI
+            <Icon name="users" size={14} />
+            <span>12 Peran Spesialis AI</span>
           </button>
           <button
             type="button"
             className={activeTab === "workspace" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setActiveTab("workspace")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Profil Workspace
+            <Icon name="building" size={14} />
+            <span>Profil Workspace</span>
           </button>
           <button
             type="button"
             className={activeTab === "security" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setActiveTab("security")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Keamanan &amp; Privasi
+            <Icon name="shield" size={14} />
+            <span>Keamanan &amp; Privasi</span>
           </button>
         </div>
       </div>
@@ -51,14 +75,19 @@ export function SettingsFeature() {
 
       {activeTab === "team" && (
         <div className="white-panel">
-          <h3>12 Spesialis AI Marketing Terpadu</h3>
-          <p className="hint">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--accent)", display: "flex" }}>
+              <Icon name="users" size={18} />
+            </span>
+            <h3 style={{ margin: 0 }}>12 Spesialis AI Marketing Terpadu</h3>
+          </div>
+          <p className="hint" style={{ marginTop: 0, marginBottom: 16 }}>
             Setiap tugas pemasaran didelegasikan ke peran spesialis dengan batasan konteks dan aturan verifikasi yang spesifik.
           </p>
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
               gap: 12,
             }}
           >
@@ -119,28 +148,50 @@ export function SettingsFeature() {
                   borderRadius: "var(--radius-md)",
                   background: "var(--surface-subtle)",
                   border: "1px solid var(--border)",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 12,
                 }}
               >
                 <div
                   style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "var(--radius-md)",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    color: "var(--accent)",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 4,
+                    justifyContent: "center",
+                    flexShrink: 0,
                   }}
                 >
-                  <strong style={{ fontSize: "0.86rem" }}>{sp.role}</strong>
-                  <span className="badge">#{String(idx + 1).padStart(2, "0")}</span>
+                  <Icon name={SPECIALIST_ICONS[idx] ?? "bot"} size={18} />
                 </div>
-                <p
-                  style={{
-                    fontSize: "0.78rem",
-                    color: "var(--text-secondary)",
-                    margin: 0,
-                  }}
-                >
-                  {sp.desc}
-                </p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 4,
+                      gap: 6,
+                    }}
+                  >
+                    <strong style={{ fontSize: "0.86rem" }}>{sp.role}</strong>
+                    <span className="badge">#{String(idx + 1).padStart(2, "0")}</span>
+                  </div>
+                  <p
+                    style={{
+                      fontSize: "0.78rem",
+                      color: "var(--text-secondary)",
+                      margin: 0,
+                    }}
+                  >
+                    {sp.desc}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -149,7 +200,12 @@ export function SettingsFeature() {
 
       {activeTab === "workspace" && (
         <div className="white-panel">
-          <h3>Profil Workspace</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <span style={{ color: "var(--accent)", display: "flex" }}>
+              <Icon name="building" size={18} />
+            </span>
+            <h3 style={{ margin: 0 }}>Profil Workspace</h3>
+          </div>
           <div style={{ display: "grid", gap: 12, maxWidth: 480 }}>
             <label>
               Nama Platform
@@ -169,7 +225,12 @@ export function SettingsFeature() {
 
       {activeTab === "security" && (
         <div className="white-panel">
-          <h3>Kebijakan Keamanan &amp; Tata Kelola Data</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <span style={{ color: "var(--info)", display: "flex" }}>
+              <Icon name="shield" size={18} />
+            </span>
+            <h3 style={{ margin: 0 }}>Kebijakan Keamanan &amp; Tata Kelola Data</h3>
+          </div>
           <ul
             style={{
               margin: 0,

@@ -2,6 +2,7 @@
 
 import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icons";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { tasksApi, type TaskDetail } from "@/lib/tasksApi";
@@ -67,7 +68,7 @@ export default function TaskDetailPage() {
   return (
     <PageTransition>
 <main className="wide">
-      <p><Link href="/tasks">← {t("task.back")}</Link></p>
+      <p><Link href="/tasks" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}><Icon name="arrow-left" size={14} /> {t("task.back")}</Link></p>
       {error && <p className="bad" role="alert">{error}</p>}
       {!task && !error && <p>{t("common.loading")}</p>}
 

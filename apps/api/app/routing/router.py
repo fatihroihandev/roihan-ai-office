@@ -142,7 +142,7 @@ class ModelRouter:
                     size_rank,
                     m.validation_status != "benchmarked",                    # hasil benchmark untuk tugas setara
                     -(m.context_limit or 0) if heavy else 0,                 # task berat: konteks terbesar
-                    m.model_id != default_model, m.model_id)
+                    m.model_id != getattr(self._settings, f"{m.provider}_default_model", default_model), m.model_id)
         chosen, cap = sorted(eligible, key=rank)[0]
 
         reasons = [f"difficulty={task.difficulty_category}({task.difficulty_score})", f"risk={task.risk_level}",

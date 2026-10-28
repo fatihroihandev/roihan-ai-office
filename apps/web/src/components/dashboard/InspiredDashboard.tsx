@@ -5,6 +5,7 @@ import { useOfficeData } from "@/lib/office/useOfficeData";
 import { seoApi, type Kpis, type SeoCampaign } from "@/lib/seoApi";
 import { marketingApi } from "@/lib/marketingApi";
 import { tasksApi, type Approval } from "@/lib/tasksApi";
+import { Icon } from "@/components/ui/Icons";
 
 import { SeoFeature } from "@/components/features/SeoFeature";
 import { ContentFeature } from "@/components/features/ContentFeature";
@@ -243,13 +244,20 @@ export function InspiredDashboard() {
         >
           <div className="inspired-modal" onClick={(e) => e.stopPropagation()}>
             <div className="inspired-modal-header">
-              <h3>Jalankan Audit SEO Teknis</h3>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <span style={{ color: "var(--accent)", display: "flex" }}>
+                  <Icon name="globe" size={19} />
+                </span>
+                <h3 style={{ margin: 0 }}>Jalankan Audit SEO Teknis</h3>
+              </div>
               <button
                 type="button"
                 className="inspired-modal-close"
                 onClick={() => setAuditModalOpen(false)}
+                aria-label="Tutup Modal"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
               >
-                ✕
+                <Icon name="close" size={16} />
               </button>
             </div>
             <form onSubmit={handleRunAudit}>
@@ -286,8 +294,10 @@ export function InspiredDashboard() {
                   type="submit"
                   className="btn-primary-orange"
                   disabled={auditBusy}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                 >
-                  {auditBusy ? "Memproses..." : "Jalankan Audit"}
+                  <Icon name="globe" size={15} />
+                  <span>{auditBusy ? "Memproses..." : "Jalankan Audit"}</span>
                 </button>
               </div>
             </form>
@@ -303,13 +313,20 @@ export function InspiredDashboard() {
         >
           <div className="inspired-modal" onClick={(e) => e.stopPropagation()}>
             <div className="inspired-modal-header">
-              <h3>Catat Prospek B2B Baru</h3>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <span style={{ color: "var(--accent)", display: "flex" }}>
+                  <Icon name="users" size={19} />
+                </span>
+                <h3 style={{ margin: 0 }}>Catat Prospek B2B Baru</h3>
+              </div>
               <button
                 type="button"
                 className="inspired-modal-close"
                 onClick={() => setLeadModalOpen(false)}
+                aria-label="Tutup Modal"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
               >
-                ✕
+                <Icon name="close" size={16} />
               </button>
             </div>
             <form onSubmit={handleCreateLead}>
@@ -356,8 +373,10 @@ export function InspiredDashboard() {
                   type="submit"
                   className="btn-primary-orange"
                   disabled={leadBusy || !leadCompany.trim()}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                 >
-                  {leadBusy ? "Menyimpan..." : "Simpan Prospek ke CRM"}
+                  <Icon name="plus" size={15} />
+                  <span>{leadBusy ? "Menyimpan..." : "Simpan Prospek ke CRM"}</span>
                 </button>
               </div>
             </form>

@@ -2,6 +2,7 @@
 
 import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icons";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, FILE_KINDS, formatBytes, type FileKind, type Project, type ProjectFile } from "@/lib/api";
@@ -130,7 +131,7 @@ export default function ProjectDetailPage() {
   return (
     <PageTransition>
 <main>
-      <p><Link href="/projects">← {t("projects.back")}</Link></p>
+      <p><Link href="/projects" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}><Icon name="arrow-left" size={14} /> {t("projects.back")}</Link></p>
       {error && <p className="bad" role="alert">{error}</p>}
       {!project && !error && <p>{t("common.loading")}</p>}
 

@@ -172,7 +172,7 @@ def budgets(request: Request):
         spent = s.scalar(select(func.coalesce(func.sum(ModelUsage.cost_idr), 0.0)))
     return {
         "currency": cfg.budget_currency, "monthly_limit": cfg.budget_monthly_limit,
-        "allow_paid_calls": cfg.budget_allow_paid_calls, "require_approval_for_paid_calls": True,
+        "allow_paid_calls": cfg.budget_allow_paid_calls, "require_approval_for_paid_calls": getattr(cfg, "require_approval_for_paid_calls", True),
         "spent_total": spent, "routing": {"mode": "auto", "fallback_policy": "ask",
                                           "require_capability_match": True, "require_budget_check": True},
     }

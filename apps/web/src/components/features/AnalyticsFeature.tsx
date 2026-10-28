@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { marketingApi, type Analytics, type Lead } from "@/lib/marketingApi";
 import { seoApi, type Kpis, type SeoCampaign } from "@/lib/seoApi";
+import { Icon } from "@/components/ui/Icons";
 
 const IDR = new Intl.NumberFormat("id-ID");
 
@@ -79,30 +80,38 @@ export function AnalyticsFeature() {
             type="button"
             className={activeTab === "overview" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setActiveTab("overview")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Ringkasan Metrik
+            <Icon name="chart" size={14} />
+            <span>Ringkasan Metrik</span>
           </button>
           <button
             type="button"
             className={activeTab === "funnel" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setActiveTab("funnel")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Corong Konversi
+            <Icon name="filter" size={14} />
+            <span>Corong Konversi</span>
           </button>
           <button
             type="button"
             className={activeTab === "attribution" ? "btn-primary-orange" : "btn-secondary"}
             onClick={() => setActiveTab("attribution")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Atribusi Kanal
+            <Icon name="share" size={14} />
+            <span>Atribusi Kanal</span>
           </button>
           <button
             type="button"
             className="btn-secondary"
             onClick={handleExportCsv}
             title="Unduh laporan dalam format CSV"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            Ekspor CSV
+            <Icon name="arrow-up-right" size={14} />
+            <span>Ekspor CSV</span>
           </button>
         </div>
       </div>
@@ -110,7 +119,10 @@ export function AnalyticsFeature() {
       {/* Top 4 KPI Metrics */}
       <div className="workspace-kpi-grid">
         <div className="kpi-card">
-          <span className="kpi-card-title">Klik Organik</span>
+          <div className="kpi-card-top" style={{ display: "flex", justifyContent: "space-between" }}>
+            <span className="kpi-card-title">Klik Organik</span>
+            <span style={{ color: "var(--ok)" }}><Icon name="trend-up" size={16} /></span>
+          </div>
           <strong style={{ color: "var(--ok)" }}>{kpis?.organic.clicks ?? 0}</strong>
           <span className="small muted">
             Impresi: {kpis?.organic.impressions ?? 0} • CTR:{" "}
@@ -118,7 +130,10 @@ export function AnalyticsFeature() {
           </span>
         </div>
         <div className="kpi-card">
-          <span className="kpi-card-title">Total Prospek (Leads)</span>
+          <div className="kpi-card-top" style={{ display: "flex", justifyContent: "space-between" }}>
+            <span className="kpi-card-title">Total Prospek (Leads)</span>
+            <span style={{ color: "var(--accent)" }}><Icon name="users" size={16} /></span>
+          </div>
           <strong style={{ color: "var(--accent)" }}>{leadsTotal}</strong>
           <span className="small muted">
             {qualifiedTotal} terkualifikasi (
@@ -126,7 +141,10 @@ export function AnalyticsFeature() {
           </span>
         </div>
         <div className="kpi-card">
-          <span className="kpi-card-title">Peluang Terbuka (Deals)</span>
+          <div className="kpi-card-top" style={{ display: "flex", justifyContent: "space-between" }}>
+            <span className="kpi-card-title">Peluang Terbuka (Deals)</span>
+            <span style={{ color: "var(--info)" }}><Icon name="target" size={16} /></span>
+          </div>
           <strong style={{ color: "var(--info)" }}>{opportunitiesTotal}</strong>
           <span className="small muted">
             Win rate:{" "}
@@ -134,7 +152,10 @@ export function AnalyticsFeature() {
           </span>
         </div>
         <div className="kpi-card">
-          <span className="kpi-card-title">Pendapatan Tercatat</span>
+          <div className="kpi-card-top" style={{ display: "flex", justifyContent: "space-between" }}>
+            <span className="kpi-card-title">Pendapatan Tercatat</span>
+            <span style={{ color: "var(--ok)" }}><Icon name="check-circle" size={16} /></span>
+          </div>
           <strong>Rp {IDR.format(analytics?.revenue_recorded_idr ?? 0)}</strong>
           <span className="small muted">
             ROI Kampanye:{" "}
@@ -147,7 +168,12 @@ export function AnalyticsFeature() {
       {activeTab === "overview" && (
         <div className="workspace-middle-grid">
           <div className="white-panel">
-            <h3>Distribusi Sumber Prospek (Lead Sources)</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ color: "var(--accent)", display: "flex" }}>
+                <Icon name="users" size={18} />
+              </span>
+              <h3 style={{ margin: 0 }}>Distribusi Sumber Prospek (Lead Sources)</h3>
+            </div>
             {Object.keys(analytics?.by_source ?? {}).length === 0 ? (
               <p className="hint">Belum ada data sumber prospek tercatat.</p>
             ) : (
@@ -191,7 +217,12 @@ export function AnalyticsFeature() {
           </div>
 
           <div className="white-panel">
-            <h3>Kampanye SEO &amp; Target Anggaran</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ color: "var(--info)", display: "flex" }}>
+                <Icon name="target" size={18} />
+              </span>
+              <h3 style={{ margin: 0 }}>Kampanye SEO &amp; Target Anggaran</h3>
+            </div>
             {campaigns.length === 0 ? (
               <p className="hint">Belum ada kampanye SEO yang dikonfigurasi.</p>
             ) : (
@@ -231,7 +262,12 @@ export function AnalyticsFeature() {
       {/* Tab: Funnel */}
       {activeTab === "funnel" && (
         <div className="white-panel">
-          <h3>Corong Konversi Pemasaran (Full Marketing Funnel)</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <span style={{ color: "var(--accent)", display: "flex" }}>
+              <Icon name="filter" size={18} />
+            </span>
+            <h3 style={{ margin: 0 }}>Corong Konversi Pemasaran (Full Marketing Funnel)</h3>
+          </div>
           <div style={{ display: "grid", gap: 14 }}>
             {[
               {
@@ -323,7 +359,12 @@ export function AnalyticsFeature() {
       {/* Tab: Attribution */}
       {activeTab === "attribution" && (
         <div className="white-panel">
-          <h3>Evaluasi Atribusi Kanal Pemasaran</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ color: "var(--info)", display: "flex" }}>
+              <Icon name="share" size={18} />
+            </span>
+            <h3 style={{ margin: 0 }}>Evaluasi Atribusi Kanal Pemasaran</h3>
+          </div>
           <p className="hint">
             Ringkasan kontribusi kanal berdasarkan asal prospek (source provenance) dan status konversi peluang di database CRM.
           </p>

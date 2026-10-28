@@ -2,6 +2,7 @@
 
 import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icons";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -123,7 +124,7 @@ export default function ProductDetailPage() {
   return (
     <PageTransition>
 <main className="wide">
-      <p><Link href="/products">← {t("product.back")}</Link></p>
+      <p><Link href="/products" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}><Icon name="arrow-left" size={14} /> {t("product.back")}</Link></p>
       {error && <p className="bad" role="alert">{error}</p>}
       {!product && !error && <p>{t("common.loading")}</p>}
 

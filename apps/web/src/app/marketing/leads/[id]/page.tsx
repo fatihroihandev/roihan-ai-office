@@ -2,6 +2,7 @@
 
 import { PageTransition } from "@/components/ui/PageTransition";
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icons";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { INTERACTION_KINDS, marketingApi, NEXT_LEAD, NEXT_STAGE, type Lead } from "@/lib/marketingApi";
@@ -77,7 +78,7 @@ export default function LeadDetailPage() {
   return (
     <PageTransition>
 <main>
-      <p><Link href="/marketing">← {t("mkt.lead.back")}</Link></p>
+      <p><Link href="/marketing" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}><Icon name="arrow-left" size={14} /> {t("mkt.lead.back")}</Link></p>
       <h2>{lead.company.name}</h2>
       <div className="chips">
         <span className="badge">{label(`mkt.status.${lead.status}`)}</span>

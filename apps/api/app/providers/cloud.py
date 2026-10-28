@@ -78,6 +78,10 @@ class CloudProvider(ModelProvider, ABC):
         try:
             async with self._client(15) as client:
                 response = await client.get(path, params=params)
+                if response.status_code == 400 and "Developer instruction is not enabled" in response.text:
+                    body.pop("systemInstruction", None)
+                    body["contents"] = [{"role": "user", "parts": [{"text": f"{request.system}\n\n{request.prompt}"}]}]
+                    response = await client.post(f"/models/{model}:generateContent", json=body)
                 response.raise_for_status()
                 return response.json()
         except Exception as error:
@@ -169,6 +173,10 @@ class OpenAIProvider(CloudProvider):
         try:
             async with self._client() as client:
                 response = await client.post("/chat/completions", json=body)
+                if response.status_code == 400 and "Developer instruction is not enabled" in response.text:
+                    body.pop("systemInstruction", None)
+                    body["contents"] = [{"role": "user", "parts": [{"text": f"{request.system}\n\n{request.prompt}"}]}]
+                    response = await client.post(f"/models/{model}:generateContent", json=body)
                 response.raise_for_status()
         except Exception as error:
             raise self._map_error(error) from error
@@ -227,6 +235,10 @@ class GeminiProvider(CloudProvider):
         try:
             async with self._client() as client:
                 response = await client.post(f"/models/{model}:generateContent", json=body)
+                if response.status_code == 400 and "Developer instruction is not enabled" in response.text:
+                    body.pop("systemInstruction", None)
+                    body["contents"] = [{"role": "user", "parts": [{"text": f"{request.system}\n\n{request.prompt}"}]}]
+                    response = await client.post(f"/models/{model}:generateContent", json=body)
                 response.raise_for_status()
         except Exception as error:
             raise self._map_error(error) from error
@@ -286,6 +298,10 @@ class AnthropicProvider(CloudProvider):
         try:
             async with self._client() as client:
                 response = await client.post("/messages", json=body)
+                if response.status_code == 400 and "Developer instruction is not enabled" in response.text:
+                    body.pop("systemInstruction", None)
+                    body["contents"] = [{"role": "user", "parts": [{"text": f"{request.system}\n\n{request.prompt}"}]}]
+                    response = await client.post(f"/models/{model}:generateContent", json=body)
                 response.raise_for_status()
         except Exception as error:
             raise self._map_error(error) from error
