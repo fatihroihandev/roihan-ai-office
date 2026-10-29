@@ -17,4 +17,7 @@ describe("rute proxy mengekspor metode yang dipakai klien", () => {
   it("auth: GET, POST, PATCH, DELETE untuk single-owner authentication", () => {
     for (const m of ["GET", "POST", "PATCH", "DELETE"]) expect(route("auth")).toMatch(new RegExp(`export const ${m}`));
   });
+  it("backups: GET dan POST untuk manajemen cadangan", () => {
+    for (const m of ["GET", "POST"]) expect(route("backups")).toMatch(new RegExp(`export const ${m}`));
+  });
 });

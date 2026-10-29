@@ -2,22 +2,102 @@
 
 import { useState } from "react";
 import { AiFeature } from "./AiFeature";
-import { Icon } from "@/components/ui/Icons";
+import { Icon, type IconName } from "@/components/ui/Icons";
 
-const SPECIALIST_ICONS: Record<number, string> = {
-  0: "bot",
-  1: "target",
-  2: "globe",
-  3: "pen",
-  4: "share",
-  5: "target",
-  6: "users",
-  7: "mail",
-  8: "send",
-  9: "trend-up",
-  10: "chart",
-  11: "zap",
-};
+interface SpecialistRole {
+  key: string;
+  role: string;
+  dept: "coordination" | "marketing" | "engineering";
+  icon: IconName;
+  desc: string;
+}
+
+const SPECIALIST_ROLES: SpecialistRole[] = [
+  {
+    key: "manager",
+    role: "Marketing / Project Orchestrator",
+    dept: "coordination",
+    icon: "bot",
+    desc: "Memahami sasaran bisnis, membagi pekerjaan menjadi draft tasks terstruktur, memilih agen spesialis, dan menyusun laporan konsolidasi.",
+  },
+  {
+    key: "seo_specialist",
+    role: "SEO & Growth Specialist",
+    dept: "marketing",
+    icon: "globe",
+    desc: "Audit SEO teknis & on-page deterministik, riset kata kunci berbasis bukti sumber, analisis gap kompetitor, dan rekomendasi optimasi.",
+  },
+  {
+    key: "market_research",
+    role: "Market & Competitor Researcher",
+    dept: "marketing",
+    icon: "search",
+    desc: "Riset tren pasar, identifikasi lanskap persaingan, benchmark produk kompetitor, dan perumusan fakta grounding terverifikasi.",
+  },
+  {
+    key: "lead_generation",
+    role: "Lead Generation & CRM Intake",
+    dept: "marketing",
+    icon: "target",
+    desc: "Riset prospek B2B dari sumber publik sah, ekstraksi kontak bisnis, kalkulasi skor kecocokan deterministik, dan kepatuhan UU PDP.",
+  },
+  {
+    key: "content_promotion",
+    role: "Content & Copywriting Specialist",
+    dept: "marketing",
+    icon: "pen",
+    desc: "Penyusunan brief editorial, penulisan artikel, landing page, materi sosial media, newsletter, dan validasi linter klaim produk.",
+  },
+  {
+    key: "sales_client_relations",
+    role: "B2B Outreach & CRM Specialist",
+    dept: "marketing",
+    icon: "mail",
+    desc: "Penyusunan draf pesan pendekatan B2B dipersonalisasi dengan klausa unsubscribe, pengelolaan tahapan peluang, dan catatan interaksi.",
+  },
+  {
+    key: "marketing_analytics",
+    role: "Marketing Analytics & Growth",
+    dept: "marketing",
+    icon: "chart",
+    desc: "Validasi metrik organik, analisis corong konversi prospek, atribusi sumber performa kampanye, dan pelaporan ROI terukur.",
+  },
+  {
+    key: "analyst",
+    role: "System & Requirement Analyst",
+    dept: "engineering",
+    icon: "file-text",
+    desc: "Analisis kebutuhan fitur, spesifikasi teknis arsitektur, dan perumusan acceptance criteria tugas terukur.",
+  },
+  {
+    key: "developer",
+    role: "Full-Stack Developer",
+    dept: "engineering",
+    icon: "cpu",
+    desc: "Implementasi kode aplikasi web, integrasi API sistem, penyelesaian bug, dan penulisan unit test.",
+  },
+  {
+    key: "qa",
+    role: "Quality Assurance Specialist",
+    dept: "engineering",
+    icon: "check-circle",
+    desc: "Eksekusi automated test suite, validasi regresi, verifikasi acceptance criteria, dan pelaporan cacat perangkat lunak.",
+  },
+  {
+    key: "reviewer",
+    role: "Senior Code Reviewer & Security Gate",
+    dept: "engineering",
+    icon: "shield",
+    desc: "Audit review kode deterministik, verifikasi keamanan sandbox eksekusi, dan penegakan standar kode.",
+  },
+  {
+    key: "reporter",
+    role: "Technical Documentation Specialist",
+    dept: "engineering",
+    icon: "sparkles",
+    desc: "Penyusunan dokumentasi teknis, catatan rilis produk, panduan operasional pengguna, dan laporan kemajuan berkala.",
+  },
+];
 
 export function SettingsFeature() {
   const [activeTab, setActiveTab] = useState<"ai" | "team" | "workspace" | "security">("ai");
@@ -79,10 +159,10 @@ export function SettingsFeature() {
             <span style={{ color: "var(--accent)", display: "flex" }}>
               <Icon name="users" size={18} />
             </span>
-            <h3 style={{ margin: 0 }}>12 Spesialis AI Marketing Terpadu</h3>
+            <h3 style={{ margin: 0 }}>12 Peran Spesialis AI (Katalog Task Engine)</h3>
           </div>
           <p className="hint" style={{ marginTop: 0, marginBottom: 16 }}>
-            Setiap tugas pemasaran didelegasikan ke peran spesialis dengan batasan konteks dan aturan verifikasi yang spesifik.
+            Setiap pekerjaan didelegasikan ke peran spesialis terdaftar (Koordinasi, Marketing, Engineering) dengan batasan kewenangan deny-by-default.
           </p>
           <div
             style={{
@@ -91,58 +171,9 @@ export function SettingsFeature() {
               gap: 12,
             }}
           >
-            {[
-              {
-                role: "Marketing Director / Orchestrator",
-                desc: "Memahami tujuan bisnis, membagi pekerjaan, dan mengonsolidasi hasil lintas modul.",
-              },
-              {
-                role: "Marketing Strategist",
-                desc: "Menganalisis positioning produk, menyusun rencana kanal, dan menetapkan target KPI.",
-              },
-              {
-                role: "SEO & Growth Specialist",
-                desc: "Audit SEO teknis, riset kata kunci, analisis gap kompetitor, dan optimasi on-page.",
-              },
-              {
-                role: "Content Strategist & Writer",
-                desc: "Menyusun brief konten, menulis artikel/materi sosial, dan memvalidasi klaim produk.",
-              },
-              {
-                role: "Social Media Specialist",
-                desc: "Perencanaan distribusi konten multi-platform dan penjadwalan publikasi.",
-              },
-              {
-                role: "Campaign & Ads Specialist",
-                desc: "Strategi audiens kampanye, eksperimen pesan kreatif, dan pengendalian anggaran.",
-              },
-              {
-                role: "Lead Generation Specialist",
-                desc: "Riset prospek publik yang sah, ekstraksi fakta bisnis, dan penilaian awal.",
-              },
-              {
-                role: "CRM & Lifecycle Specialist",
-                desc: "Segmentasi kontak B2B, pengelolaan tahapan peluang, dan tindak lanjut klien.",
-              },
-              {
-                role: "Email Marketing Specialist",
-                desc: "Penyusunan draf email outreach terpersonalisasi dan kepatuhan opt-out.",
-              },
-              {
-                role: "CRO Specialist",
-                desc: "Evaluasi hambatan konversi halaman arahan dan rekomendasi peningkatan rasio klik.",
-              },
-              {
-                role: "Marketing Data Analyst",
-                desc: "Validasi metrik organik, corong konversi, atribusi sumber, dan pelaporan ROI.",
-              },
-              {
-                role: "Marketing Automation Specialist",
-                desc: "Pengelolaan alur kerja berbasis pemicu dan kebijakan retensi data otomatis.",
-              },
-            ].map((sp, idx) => (
+            {SPECIALIST_ROLES.map((sp, idx) => (
               <div
-                key={sp.role}
+                key={sp.key}
                 style={{
                   padding: 14,
                   borderRadius: "var(--radius-md)",
@@ -167,7 +198,7 @@ export function SettingsFeature() {
                     flexShrink: 0,
                   }}
                 >
-                  <Icon name={SPECIALIST_ICONS[idx] ?? "bot"} size={18} />
+                  <Icon name={sp.icon} size={18} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
@@ -180,7 +211,10 @@ export function SettingsFeature() {
                     }}
                   >
                     <strong style={{ fontSize: "0.86rem" }}>{sp.role}</strong>
-                    <span className="badge">#{String(idx + 1).padStart(2, "0")}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span className="badge" style={{ textTransform: "capitalize", fontSize: "0.68rem" }}>{sp.dept}</span>
+                      <span className="badge">#{String(idx + 1).padStart(2, "0")}</span>
+                    </div>
                   </div>
                   <p
                     style={{

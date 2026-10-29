@@ -52,8 +52,9 @@ def test_bootstrap_owner_success_and_locks_subsequent(client):
     res = r.json()
     assert res["status"] == "success"
     assert res["user"]["email"] == "owner@roihan.id"
-    assert "token" in res
-    token = res["token"]
+    assert "token" not in res
+    assert "roihan_session" in r.cookies
+    token = r.cookies["roihan_session"]
 
     # 2. Status sekarang terinisialisasi
     r_stat = client.get("/api/auth/status")
@@ -92,7 +93,9 @@ def test_login_and_logout_flow(client):
         json={"email": "owner@roihan.id", "password": "PasswordAman123!"},
     )
     assert r_ok.status_code == 200
-    token = r_ok.json()["token"]
+    assert "token" not in r_ok.json()
+    assert "roihan_session" in r_ok.cookies
+    token = r_ok.cookies["roihan_session"]
 
     # Akses endpoint protected /api/auth/me dengan Bearer token
     r_me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
@@ -130,7 +133,7 @@ def test_require_token_accepts_session_token_and_local_token(client):
         "/api/auth/bootstrap",
         json={"email": "owner@roihan.id", "password": "PasswordKuat123!", "full_name": "Roihan"},
     )
-    session_token = r_boot.json()["token"]
+    session_token = r_boot.cookies["roihan_session"]
 
     # 1. Akses API tasks dengan session_token pemilik
     r1 = client.get("/api/tasks", headers={"Authorization": f"Bearer {session_token}"})
@@ -143,3 +146,22 @@ def test_require_token_accepts_session_token_and_local_token(client):
     # 3. Akses API tasks tanpa token / token palsu -> DITOLAK 401
     r3 = client.get("/api/tasks", headers={"Authorization": "Bearer token-palsu-ngawur"})
     assert r3.status_code == 401
+
+
+def test_session_token_is_hashed_in_database(client):
+    r_boot = client.post(
+        "/api/auth/bootstrap",
+        json={"email": "owner@roihan.id", "password": "PasswordKuat123!", "full_name": "Roihan"},
+    )
+    raw_token = r_boot.cookies["roihan_session"]
+    from app.db.models import OwnerSession
+    from app.auth.service import hash_session_token
+    from sqlalchemy import select
+    app = client.app
+    with app.state.session_factory() as s:
+        sess = s.scalar(select(OwnerSession).limit(1))
+        assert sess is not None
+        # Database hanya menyimpan SHA-256 hash 64-karakter, bukan raw token
+        assert sess.session_token != raw_token
+        assert sess.session_token == hash_session_token(raw_token)
+        assert len(sess.session_token) == 64

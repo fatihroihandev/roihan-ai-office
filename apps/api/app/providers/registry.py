@@ -36,9 +36,19 @@ def build_registry(settings: Settings, overrides: dict[str, ModelProvider] | Non
         "ollama", "local", False, settings.ollama_enabled, True,
         OllamaProvider(settings.ollama_base_url, settings.ollama_timeout_s),
     )]
-    cloud = {"openai": OpenAIProvider, "gemini": GeminiProvider, "anthropic": AnthropicProvider}
-    entries += [ProviderEntry(n, "cloud", True, getattr(settings, f"{n}_enabled"), True,
-                              cloud[n](getattr(settings, f"{n}_api_key"))) for n in CLOUD]
+    gemini_is_paid = getattr(settings, "gemini_is_paid", False)
+    entries.append(ProviderEntry(
+        "openai", "cloud", True, settings.openai_enabled, True,
+        OpenAIProvider(settings.openai_api_key),
+    ))
+    entries.append(ProviderEntry(
+        "gemini", "cloud", gemini_is_paid, settings.gemini_enabled, True,
+        GeminiProvider(settings.gemini_api_key, is_paid=gemini_is_paid),
+    ))
+    entries.append(ProviderEntry(
+        "anthropic", "cloud", True, settings.anthropic_enabled, True,
+        AnthropicProvider(settings.anthropic_api_key),
+    ))
     registry = ProviderRegistry(entries)
     for name, provider in (overrides or {}).items():  # dipakai tes untuk menyuntikkan provider palsu
         e = registry.get(name) or ProviderEntry(name, "local" if provider.is_local else "cloud", provider.is_paid, True, True)

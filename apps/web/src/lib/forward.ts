@@ -20,8 +20,6 @@ export function makeProxyHandlers(prefix: string, timeoutMs: number) {
     const clientAuth = request.headers.get("authorization");
     if (clientAuth) {
       headers["Authorization"] = clientAuth;
-    } else if (prefix !== "api/auth" && process.env.APP_LOCAL_TOKEN) {
-      headers["Authorization"] = `Bearer ${process.env.APP_LOCAL_TOKEN}`;
     }
 
     const cookie = request.headers.get("cookie");

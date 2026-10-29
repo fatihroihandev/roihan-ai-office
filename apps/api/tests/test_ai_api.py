@@ -32,8 +32,9 @@ def test_endpoints_require_token(client):
 def test_providers_list_shows_cloud_as_disabled_without_key(client, auth):
     by = {p["name"]: p for p in client.get("/api/providers", headers=auth).json()}
     assert by["ollama"]["health"]["status"] == "up" and by["ollama"]["is_paid"] is False
-    for n in ("openai", "gemini", "anthropic"):
+    for n in ("openai", "anthropic"):
         assert (by[n]["enabled"], by[n]["implemented"], by[n]["is_paid"], by[n]["health"], by[n]["api_key_configured"]) == (False, True, True, None, False)
+    assert (by["gemini"]["enabled"], by["gemini"]["implemented"], by["gemini"]["is_paid"], by["gemini"]["health"], by["gemini"]["api_key_configured"]) == (False, True, False, None, False)
 
 
 def test_sync_populates_registry_with_unknowns_left_null(client, auth):

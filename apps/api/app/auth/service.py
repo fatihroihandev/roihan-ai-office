@@ -66,6 +66,10 @@ def generate_session_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+def hash_session_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
 def get_owner(session: Session) -> OwnerUser | None:
     """Ambil akun pemilik tunggal dari database."""
     return session.scalar(select(OwnerUser).limit(1))
@@ -86,7 +90,7 @@ def bootstrap_owner(
     bootstrap_token: str | None = None,
     ip_address: str | None = None,
     user_agent: str | None = None,
-) -> tuple[OwnerUser, OwnerSession]:
+) -> tuple[OwnerUser, OwnerSession, str]:
     """Inisialisasi akun pemilik pertama dan satu-satunya."""
     if is_initialized(session):
         raise AuthError("already_initialized", "Sistem telah diinisialisasi; pendaftaran pemilik ditutup permanen", 403)
@@ -111,9 +115,10 @@ def bootstrap_owner(
     session.add(user)
     session.flush()
 
+    raw_token = generate_session_token()
     sess = OwnerSession(
         user_id=user.id,
-        session_token=generate_session_token(),
+        session_token=hash_session_token(raw_token),
         ip_address=ip_address,
         user_agent=user_agent[:255] if user_agent else None,
         expires_at=utcnow() + timedelta(days=settings.session_ttl_days),
@@ -131,7 +136,7 @@ def bootstrap_owner(
     )
     session.add(audit)
     session.commit()
-    return user, sess
+    return user, sess, raw_token
 
 
 def login_owner(
@@ -142,7 +147,7 @@ def login_owner(
     password: str,
     ip_address: str | None = None,
     user_agent: str | None = None,
-) -> tuple[OwnerUser, OwnerSession]:
+) -> tuple[OwnerUser, OwnerSession, str]:
     """Login akun pemilik tunggal dengan rate limiting anti brute-force."""
     norm_email = email.lower().strip()
     user = session.scalar(select(OwnerUser).where(OwnerUser.email == norm_email))
@@ -173,9 +178,10 @@ def login_owner(
     user.locked_until = None
     user.last_login_at = now
 
+    raw_token = generate_session_token()
     sess = OwnerSession(
         user_id=user.id,
-        session_token=generate_session_token(),
+        session_token=hash_session_token(raw_token),
         ip_address=ip_address,
         user_agent=user_agent[:255] if user_agent else None,
         expires_at=now + timedelta(days=settings.session_ttl_days),
@@ -187,12 +193,13 @@ def login_owner(
     audit = AuditLog(actor=user.email, action="login_success", entity_type="owner_user", entity_id=user.id, details={"ip": ip_address})
     session.add(audit)
     session.commit()
-    return user, sess
+    return user, sess, raw_token
 
 
 def logout_session(session: Session, token: str) -> bool:
     """Cabut sesi aktif pemilik."""
-    sess = session.scalar(select(OwnerSession).where(OwnerSession.session_token == token))
+    token_hash = hash_session_token(token)
+    sess = session.scalar(select(OwnerSession).where(OwnerSession.session_token == token_hash))
     if sess:
         sess.revoked = True
         session.commit()
@@ -205,9 +212,10 @@ def verify_active_session(session: Session, token: str) -> OwnerUser | None:
     if not token or len(token) < 16:
         return None
     now = utcnow()
+    token_hash = hash_session_token(token)
     sess = session.scalar(
         select(OwnerSession).where(
-            OwnerSession.session_token == token,
+            OwnerSession.session_token == token_hash,
             OwnerSession.revoked.is_(False),
             OwnerSession.expires_at > now,
         )

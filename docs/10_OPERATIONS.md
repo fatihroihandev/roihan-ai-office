@@ -30,8 +30,8 @@ Fitur **Office Power Control** memungkinkan CEO menghentikan sementara seluruh a
 
 ### 2.2 Prosedur Menjeda Pekerjaan (OFF)
 1. Buka panel kontrol daya atau panggil `POST /api/power/off` lalu konfirmasi.
-2. Tunggu hingga status berpindah dari `PAUSING` menjadi **`PAUSED`** (jangan mematikan server lokal sebelum status terkonfirmasi `PAUSED`).
-3. Seluruh antrean, urutan dependensi, penggunaan token, dan perubahan file tersimpan utuh di database.
+2. Tunggu hingga status berpindah dari `PAUSING` menjadi **`PAUSED`** (jangan mematikan server sebelum status terkonfirmasi `PAUSED`).
+3. Seluruh antrean, urutan dependensi, penggunaan token, dan perubahan berkas tersimpan utuh di database.
 
 ### 2.3 Prosedur Melanjutkan Pekerjaan (ON)
 1. Tekan tombol **ON** (`POST /api/power/on`).
@@ -49,22 +49,23 @@ Jika sistem mengalami interupsi mendadak (*crash*, *cold-start* di tengah tugas 
 | Jenis Item (`item_type`) | Penyebab | Tindakan Resolusi yang Tersedia bagi CEO |
 | :--- | :--- | :--- |
 | `risky_task_interrupted` | Tugas berisiko tinggi/kritis terputus saat sedang berjalan; sistem menolak mengulangnya secara otomatis. | **Antre Ulang (`requeue`)** *(meminta approval baru)* atau **Batalkan (`cancel`)**. |
-| `uncertain_external_op` | Sistem tidak dapat memastikan apakah tindakan keluar (outreach/publikasi) sempat terkirim sebelum proses terputus. | Periksa di kanal tujuan terlebih dahulu, lalu pilih **Sudah Terjadi (`confirm_occurred`)** atau **Belum Terjadi (`confirm_not_occurred`)**. |
+| `uncertain_external_op` | Sistem tidak dapat memastikan apakah tindakan keluar (outreach/publikasi) sempat terkirim sebelum proses terputus. | Periksa di kanal tujuan terlebih dahulu, lalu pilih **Sudah Terjadi (`confirmed_done`)** atau **Belum Terjadi (`confirmed_not_done`)**. |
 | `missing_project_files` | Berkas kerja atau state Git pada salinan proyek tidak cocok dengan hash di checkpoint terakhir. | Periksa berkas proyek, lalu pilih **Antre Ulang (`requeue`)** atau **Batalkan (`cancel`)**. |
-| `stop_unconfirmed` | Tugas aktif tidak memberikan konfirmasi berhenti dalam batas waktu tenggang saat perintah OFF dijalankan. | Pilih **Tandai Dilihat (`acknowledge`)**, **Antre Ulang (`requeue`)**, atau **Batalkan (`cancel`)**. |
+| `stop_unconfirmed` | Tugas aktif tidak memberikan konfirmasi berhenti dalam batas waktu tenggang saat perintah OFF dijalankan. | Pilih **Tandai Dilihat (`acknowledged`)**, **Antre Ulang (`requeue`)**, atau **Batalkan (`cancel`)**. |
 | `invalid_checkpoint` | Checksum SHA-256 pada salinan checkpoint tidak cocok atau korup. | Pilih **Antre Ulang (`requeue`)** dari awal atau **Batalkan (`cancel`)**. |
 | `retries_exhausted` | Tugas gagal melampaui batas percobaan otomatis (`max_retries = 2`). | Periksa pesan error (mis. kuota Gemini habis), lalu pilih **Antre Ulang (`requeue`)** atau **Batalkan (`cancel`)**. |
 
-Begitu seluruh item pemulihan diselesaikan oleh CEO, status global kantor otomatis kembali ke **`RUNNING`**.
+> [!NOTE]
+> Resolusi item dikirimkan ke endpoint `POST /api/power/recovery/{id}/resolve`. Begitu seluruh item pemulihan diselesaikan oleh CEO, status global kantor otomatis kembali ke **`RUNNING`**.
 
 ---
 
 ## 4. Prosedur Backup & Disaster Recovery
 
-Roihan AI Office menyediakan dua lapis perlindungan cadangan data:
+Roihan AI Office menyediakan perlindungan cadangan data bertingkat:
 
 ### 4.1 Backup & Verifikasi Mandiri melalui CLI (`app.backup`)
-Utilitas CLI backend mencadangkan seluruh **48 tabel database PostgreSQL** ke dalam berkas terkompresi `database.jsonl.gz` beserta `manifest.json` (berisi checksum SHA-256 dan jumlah baris per tabel) serta opsional `projects.tar.gz`.
+Utilitas CLI backend mencadangkan seluruh **49 tabel database PostgreSQL** ke dalam berkas terkompresi `database.jsonl.gz` beserta `manifest.json` (berisi checksum SHA-256 dan jumlah baris per tabel) serta opsional `projects.tar.gz`.
 
 ```powershell
 # Masuk ke lingkungan Python backend
@@ -82,13 +83,13 @@ $env:PYTHONPATH="apps/api"
 
 ### 4.2 Pemulihan Database (Restore) dari Snapshot CLI
 Jika terjadi kerusakan data dan Anda ingin mengembalikan database ke snapshot tertentu:
-1. Hentikan proses backend sementara (agar tidak ada transaksi tulis yang berjalan).
-2. Jalankan perintah restore:
+1. Hentikan proses backend sementara (agar tidak ada transaksi tulis yang berjalan paralel).
+2. Jalankan perintah restore dengan flag `--force`:
    ```powershell
    $env:PYTHONPATH="apps/api"
-   & apps\api\.venv\Scripts\python.exe -m app.backup restore <NAMA_FOLDER_BACKUP> --yes
+   & apps\api\.venv\Scripts\python.exe -m app.backup restore <NAMA_FOLDER_BACKUP> --force
    ```
-   > **Catatan Keselamatan:** Sebelum menimpa data, CLI otomatis membuat cadangan penyelamatan bernama `...-pre-restore` yang tidak pernah dihapus oleh proses *pruning*, memverifikasi hash SHA-256 setiap berkas di `manifest.json`, memulihkan seluruh 48 tabel beserta sequence PostgreSQL, dan merestorasi folder proyek.
+   > **Catatan Keselamatan:** Jika database target telah berisi data, flag `--force` wajib disertakan. Sebelum menimpa data, CLI secara otomatis membuat cadangan penyelamatan bernama `...-pre-restore` yang tidak pernah dihapus oleh proses *pruning*, memverifikasi hash SHA-256 setiap berkas di `manifest.json`, membersihkan tabel, memasukkan ulang seluruh baris 49 tabel, menyetel ulang sequence identity PostgreSQL, dan mengekstrak berkas proyek.
 3. Nyalakan kembali proses backend.
 
 ### 4.3 Point-in-Time Recovery di Cloud (Neon PostgreSQL)
@@ -96,6 +97,9 @@ Untuk deployment online di Neon Serverless PostgreSQL:
 1. Buka dashboard [console.neon.tech](https://console.neon.tech) -> pilih project `roihan-ai-office-db`.
 2. Masuk ke menu **Branches / Restore**.
 3. Pilih titik waktu (*Point-in-Time Restore*) hingga menit mana pun dalam 7 hari terakhir untuk memulihkan database secara instan tanpa kehilangan transaksi terbaru.
+
+> [!WARNING]
+> Pada deployment Render Free, penyimpanan container bersifat *ephemeral*. Jika snapshot backup dibuat di dalam container (`data/backups/`), berkas tersebut akan hilang jika container mengalami restart. Segera unduh file snapshot via UI (`/api/backups`) atau andalkan Point-in-Time Restore pada Neon PostgreSQL untuk perlindungan bencana data cloud.
 
 ---
 

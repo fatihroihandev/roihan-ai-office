@@ -64,9 +64,9 @@ class ModelGateway:
             except ProviderError as e:
                 status = "cancelled" if e.kind == ProviderErrorKind.cancelled else "error"
                 self._log(provider=provider_name, model=model, req=req, purpose=purpose, status=status,
-                          is_paid=False, error_kind=e.kind.value)
+                          is_paid=entry.is_paid, error_kind=e.kind.value)
                 raise
-        self._log(provider=provider_name, model=model, req=req, purpose=purpose, status="ok", is_paid=False, result=result)
+        self._log(provider=provider_name, model=model, req=req, purpose=purpose, status="ok", is_paid=entry.is_paid, result=result)
         return result
 
     async def cancel(self, request_id: str) -> bool:

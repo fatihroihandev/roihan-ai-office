@@ -111,7 +111,10 @@ class ModelRouter:
                 why.append("paid_calls_disabled")
             if task.requires_tools and m.supports_tools is not True:
                 why.append("tools_unsupported" if m.supports_tools is False else "tools_unknown")
-            cap = min(MAX_NUM_CTX, m.context_limit or UNKNOWN_CONTEXT_CAP)  # 4. batas konteks
+            if m.provider == "ollama":
+                cap = min(MAX_NUM_CTX, m.context_limit or UNKNOWN_CONTEXT_CAP)  # 4. batas konteks lokal
+            else:
+                cap = m.context_limit or 1_000_000  # batas konteks cloud
             if need > cap:
                 why.append(f"context_exceeded(need={need},cap={cap})")
             candidates.append({"provider": m.provider, "model": m.model_id, "eligible": not why, "rejected_because": why})
@@ -138,18 +141,25 @@ class ModelRouter:
             size = parameter_size(m)
             # Task ringan menghemat memori/waktu dengan model kecil; task berat memakai model terbesar.
             size_rank = (size if light else -size if heavy else 0) if size is not None else 0
+            is_pro = "pro" in m.model_id.lower()
+            heavy_rank = -1 if (heavy and is_pro) else (1 if (light and is_pro) else 0)
+            target_default = getattr(self._settings, f"{m.provider}_pro_model" if heavy else f"{m.provider}_default_model", default_model)
             return (m.model_id != task.preferred_model,                      # preferensi eksplisit
                     size_rank,
+                    heavy_rank,
                     m.validation_status != "benchmarked",                    # hasil benchmark untuk tugas setara
                     -(m.context_limit or 0) if heavy else 0,                 # task berat: konteks terbesar
-                    m.model_id != getattr(self._settings, f"{m.provider}_default_model", default_model), m.model_id)
+                    m.model_id != target_default, m.model_id)
         chosen, cap = sorted(eligible, key=rank)[0]
 
         reasons = [f"difficulty={task.difficulty_category}({task.difficulty_score})", f"risk={task.risk_level}",
                    f"validation={chosen.validation_status}"]
         if task.preferred_model == chosen.model_id:
             reasons.append("preferred_model")
-        num_ctx = next((n for n in NUM_CTX_STEPS if n >= need and n <= cap), min(cap, MAX_NUM_CTX))
+        if chosen.provider == "ollama":
+            num_ctx = next((n for n in NUM_CTX_STEPS if n >= need and n <= cap), min(cap, MAX_NUM_CTX))
+        else:
+            num_ctx = min(cap, max(need, 4096))
 
         with self._session_factory() as s:                  # 8. catat routing decision
             dec = RoutingDecision(task_id=task.id, attempt_id=attempt_id, difficulty_score=task.difficulty_score,

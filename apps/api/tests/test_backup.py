@@ -253,3 +253,22 @@ def test_security_headers_on_api(client):
     r = client.get("/api/health")
     assert r.headers["x-content-type-options"] == "nosniff" and r.headers["x-frame-options"] == "DENY"
     assert r.headers["cache-control"] == "no-store" and r.headers["referrer-policy"] == "no-referrer"
+
+
+def test_backup_excludes_sensitive_files_from_projects_archive(env):
+    db, backups, projects = env
+    # Create sensitive files in project folder
+    (projects / "p0" / ".env").write_text("SECRET=123", encoding="utf-8")
+    (projects / "p0" / "web-access.json").write_text("{\"key\":\"brave\"}", encoding="utf-8")
+    (projects / "p0" / "ai-provider-settings.json").write_text("{\"key\":\"gemini\"}", encoding="utf-8")
+
+    b = svc.create_backup(db, backups, projects)
+    assert svc.verify_backup(b).ok
+
+    # Read archive members
+    with tarfile.open(b / "projects.tar.gz", "r:gz") as tar:
+        names = tar.getnames()
+        assert any("readme.txt" in n for n in names)
+        assert not any(".env" in n for n in names)
+        assert not any("web-access.json" in n for n in names)
+        assert not any("ai-provider-settings.json" in n for n in names)

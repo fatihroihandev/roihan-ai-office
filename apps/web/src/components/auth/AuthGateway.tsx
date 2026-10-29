@@ -7,6 +7,7 @@ import { authApi, type AuthStatus } from "@/lib/authApi";
 export function AuthGateway({ children }: { children: ReactNode }) {
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("Roihan");
@@ -15,17 +16,20 @@ export function AuthGateway({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
 
   const checkStatus = useCallback(async () => {
+    setLoading(true);
+    setConnectionError(false);
+    setError(null);
     try {
       const s = await authApi.status();
       setAuthStatus(s);
-    } catch {
-      // Offline / local development fallback
-      setAuthStatus({
-        initialized: true,
-        authenticated: true,
-        owner_email_configured: false,
-        user: { id: "local", email: "owner@roihan.id", full_name: "Roihan" },
-      });
+    } catch (err) {
+      setAuthStatus(null);
+      setConnectionError(true);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Tidak dapat terhubung ke server backend. Pastikan server aktif.",
+      );
     } finally {
       setLoading(false);
     }
@@ -89,6 +93,88 @@ export function AuthGateway({ children }: { children: ReactNode }) {
           <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", margin: 0 }}>
             Memverifikasi sesi pemilik...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (connectionError && !authStatus) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--bg)",
+          padding: 20,
+        }}
+      >
+        <div
+          className="card"
+          style={{
+            width: "100%",
+            maxWidth: 420,
+            padding: "32px 28px",
+            boxShadow: "var(--shadow-lg)",
+            marginBottom: 0,
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: "var(--radius-lg)",
+              overflow: "hidden",
+              margin: "0 auto 12px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Image
+              src="/brand/roihan-app-icon.png"
+              alt="Roihan Technologies Logo"
+              width={52}
+              height={52}
+              unoptimized
+              priority
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </div>
+          <h1 style={{ fontSize: "1.25rem", fontWeight: 700, margin: "0 0 4px" }}>
+            Backend Tidak Terjangkau
+          </h1>
+          <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", margin: "0 0 16px" }}>
+            Tidak dapat memverifikasi sesi pemilik. Backend sedang memulai (cold start) atau tidak dapat dihubungi.
+          </p>
+          {error && (
+            <div
+              role="alert"
+              style={{
+                padding: "10px 12px",
+                borderRadius: "var(--radius-md)",
+                background: "var(--bad-subtle)",
+                border: "1px solid var(--bad)",
+                color: "var(--bad)",
+                fontSize: "0.8rem",
+                fontWeight: 500,
+                marginBottom: 16,
+              }}
+            >
+              {error}
+            </div>
+          )}
+          <button
+            type="button"
+            className="btn-primary-orange"
+            onClick={() => void checkStatus()}
+            style={{ width: "100%", padding: "10px 14px" }}
+          >
+            Coba Hubungkan Ulang
+          </button>
         </div>
       </div>
     );

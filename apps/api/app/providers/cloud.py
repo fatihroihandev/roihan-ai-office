@@ -78,10 +78,6 @@ class CloudProvider(ModelProvider, ABC):
         try:
             async with self._client(15) as client:
                 response = await client.get(path, params=params)
-                if response.status_code == 400 and "Developer instruction is not enabled" in response.text:
-                    body.pop("systemInstruction", None)
-                    body["contents"] = [{"role": "user", "parts": [{"text": f"{request.system}\n\n{request.prompt}"}]}]
-                    response = await client.post(f"/models/{model}:generateContent", json=body)
                 response.raise_for_status()
                 return response.json()
         except Exception as error:
@@ -173,10 +169,6 @@ class OpenAIProvider(CloudProvider):
         try:
             async with self._client() as client:
                 response = await client.post("/chat/completions", json=body)
-                if response.status_code == 400 and "Developer instruction is not enabled" in response.text:
-                    body.pop("systemInstruction", None)
-                    body["contents"] = [{"role": "user", "parts": [{"text": f"{request.system}\n\n{request.prompt}"}]}]
-                    response = await client.post(f"/models/{model}:generateContent", json=body)
                 response.raise_for_status()
         except Exception as error:
             raise self._map_error(error) from error
@@ -196,6 +188,11 @@ class GeminiProvider(CloudProvider):
     name = "gemini"
     api_base = "https://generativelanguage.googleapis.com/v1beta"
     api_version = "v1beta"
+
+    def __init__(self, api_key: str, timeout_s: float = 120, base_url: str | None = None,
+                 transport: httpx.AsyncBaseTransport | None = None, is_paid: bool = False):
+        super().__init__(api_key, timeout_s, base_url, transport)
+        self.is_paid = is_paid
 
     def _headers(self) -> dict[str, str]:
         return {"x-goog-api-key": self._api_key}
@@ -298,10 +295,6 @@ class AnthropicProvider(CloudProvider):
         try:
             async with self._client() as client:
                 response = await client.post("/messages", json=body)
-                if response.status_code == 400 and "Developer instruction is not enabled" in response.text:
-                    body.pop("systemInstruction", None)
-                    body["contents"] = [{"role": "user", "parts": [{"text": f"{request.system}\n\n{request.prompt}"}]}]
-                    response = await client.post(f"/models/{model}:generateContent", json=body)
                 response.raise_for_status()
         except Exception as error:
             raise self._map_error(error) from error

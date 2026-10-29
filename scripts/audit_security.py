@@ -34,12 +34,12 @@ def check_tracked() -> list[str]:
     files = git("ls-files").splitlines()
     for f in files:
         name = Path(f).name
-        if name == ".env" or (name.startswith(".env.") and name != ".env.example") or f.endswith((".db", ".sqlite", ".pem", ".key")):
+        if name == ".env" or (name.startswith(".env.") and not name.endswith(".example")) or f.endswith((".db", ".sqlite", ".pem", ".key")):
             out.append(f"berkas sensitif terlacak git: {f}")
         if f in SCAN_EXEMPT:
             continue
         p = ROOT / f
-        if p.suffix.lower() not in TEXT_EXT and name != ".env.example" or not p.is_file() or p.stat().st_size > 2_000_000:
+        if p.suffix.lower() not in TEXT_EXT and not name.endswith(".example") or not p.is_file() or p.stat().st_size > 2_000_000:
             continue
         try:
             text = p.read_text(encoding="utf-8", errors="ignore")

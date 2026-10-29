@@ -104,7 +104,7 @@ def bootstrap(body: BootstrapBody, request: Request, response: Response, session
     ip = request.client.host if request.client else None
     ua = request.headers.get("user-agent")
     try:
-        user, sess = bootstrap_owner(
+        user, sess, raw_token = bootstrap_owner(
             session,
             request.app.state.settings,
             email=body.email,
@@ -117,11 +117,10 @@ def bootstrap(body: BootstrapBody, request: Request, response: Response, session
     except AuthError as e:
         raise HTTPException(e.status_code, e.message)
 
-    _set_auth_cookie(response, request, sess.session_token)
+    _set_auth_cookie(response, request, raw_token)
     return {
         "status": "success",
         "message": "Akun pemilik tunggal berhasil dibootstrap",
-        "token": sess.session_token,
         "user": {
             "id": user.id,
             "email": user.email,
@@ -136,7 +135,7 @@ def login(body: LoginBody, request: Request, response: Response, session: Sessio
     ip = request.client.host if request.client else None
     ua = request.headers.get("user-agent")
     try:
-        user, sess = login_owner(
+        user, sess, raw_token = login_owner(
             session,
             request.app.state.settings,
             email=body.email,
@@ -147,10 +146,9 @@ def login(body: LoginBody, request: Request, response: Response, session: Sessio
     except AuthError as e:
         raise HTTPException(e.status_code, e.message)
 
-    _set_auth_cookie(response, request, sess.session_token)
+    _set_auth_cookie(response, request, raw_token)
     return {
         "status": "success",
-        "token": sess.session_token,
         "user": {
             "id": user.id,
             "email": user.email,

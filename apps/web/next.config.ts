@@ -1,9 +1,23 @@
 import type { NextConfig } from "next";
 
 const dev = process.env.NODE_ENV !== "production";
+const wsUrl = process.env.NEXT_PUBLIC_API_WS_URL?.replace(/\/+$/, "");
+const apiUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL)?.replace(/\/+$/, "");
+
+const connectSrc = [
+  "'self'",
+  "ws://127.0.0.1:*",
+  "ws://localhost:*",
+  "http://127.0.0.1:*",
+  "http://localhost:*",
+  wsUrl,
+  apiUrl,
+  "https://*.onrender.com",
+  "wss://*.onrender.com",
+].filter(Boolean).join(" ");
 
 // CSP statis: Next menyisipkan skrip inline untuk hidrasi, jadi 'unsafe-inline' dibutuhkan pada script-src (tanpa nonce per permintaan).
-// Pertahanan utama tetap: tidak ada konten pihak ketiga, object/base/frame ditutup, dan koneksi hanya ke asal sendiri + backend lokal.
+// Pertahanan utama tetap: tidak ada konten pihak ketiga, object/base/frame ditutup, dan koneksi hanya ke asal sendiri + backend terpercaya.
 // 'unsafe-eval' hanya di mode dev (React/Turbopack membutuhkannya untuk debugging).
 const csp = [
   "default-src 'self'",
@@ -11,7 +25,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self' ws://127.0.0.1:* ws://localhost:* http://127.0.0.1:* http://localhost:*",
+  `connect-src ${connectSrc}`,
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",

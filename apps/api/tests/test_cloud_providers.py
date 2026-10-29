@@ -123,7 +123,7 @@ def test_cloud_settings_flow_never_returns_key_and_requires_key_to_enable(client
     assert r.status_code == 200 and r.json()["api_key_configured"] is True and r.json()["health"]["status"] == "up"
     assert "AIza-rahasia-123" not in r.text and "AIza-rahasia-123" not in client.get("/api/providers", headers=auth).text
     rows = client.post("/api/models/sync?provider=gemini", headers=auth).json()
-    assert [m["model_id"] for m in rows] == ["gemini-x"] and rows[0]["is_paid"] is True
+    assert [m["model_id"] for m in rows] == ["gemini-x"] and rows[0]["is_paid"] is False
     saved = json.loads((settings.data_dir / "ai-provider-settings.json").read_text(encoding="utf-8"))
     assert saved["gemini"]["enabled"] is True
     assert client.patch("/api/providers/gemini", json={"clear_api_key": True}, headers=auth).status_code == 422   # nonaktifkan dulu
@@ -135,8 +135,61 @@ def test_cloud_settings_flow_never_returns_key_and_requires_key_to_enable(client
 
 def test_paid_calls_stay_blocked_even_with_key_and_enabled(client, auth, monkeypatch):
     async def fake_get_json(self, path, params=None):
-        return {"models": []}
-    monkeypatch.setattr(GeminiProvider, "_get_json", fake_get_json)
-    client.patch("/api/providers/gemini", json={"enabled": True, "api_key": "AIza-x"}, headers=auth)
-    r = client.post("/api/ai/generate", json={"provider": "gemini", "model": "gemini-x", "prompt": "uji"}, headers=auth)
+        return {"data": []}
+    monkeypatch.setattr(OpenAIProvider, "_get_json", fake_get_json)
+    client.patch("/api/providers/openai", json={"enabled": True, "api_key": "sk-test-key"}, headers=auth)
+    r = client.post("/api/ai/generate", json={"provider": "openai", "model": "gpt-x", "prompt": "uji"}, headers=auth)
     assert r.status_code == 403 and r.json()["kind"] == "blocked"                       # budget_allow_paid_calls tetap false
+
+
+def test_gemini_free_tier_allows_generation_when_budget_disallows_paid(client, auth, monkeypatch):
+    from app.providers.base import GenerateResult, Usage
+    async def fake_get_json(self, path, params=None):
+        return {"models": [{"name": "models/gemini-2.5-flash", "supportedGenerationMethods": ["generateContent"]}]}
+    async def fake_do_generate(self, model, req):
+        return GenerateResult("jawaban gemini", model, Usage(10, 5, 100))
+
+    monkeypatch.setattr(GeminiProvider, "_get_json", fake_get_json)
+    monkeypatch.setattr(GeminiProvider, "_do_generate", fake_do_generate)
+
+    client.patch("/api/providers/gemini", json={"enabled": True, "api_key": "AIza-free-key"}, headers=auth)
+    r = client.post("/api/ai/generate", json={"provider": "gemini", "model": "gemini-2.5-flash", "prompt": "uji"}, headers=auth)
+    assert r.status_code == 200
+    assert r.json()["text"] == "jawaban gemini"
+
+
+def test_gemini_fallback_when_developer_instruction_not_enabled():
+    attempts = []
+
+    def handler(r):
+        attempts.append(json.loads(r.content))
+        if len(attempts) == 1:
+            return httpx.Response(400, text='{"error": {"message": "Developer instruction is not enabled"}}')
+        return httpx.Response(200, json={
+            "candidates": [{"content": {"parts": [{"text": "fallback sukses"}]}, "finishReason": "STOP"}],
+            "usageMetadata": {"promptTokenCount": 5, "candidatesTokenCount": 3}
+        })
+
+    from app.providers.base import GenerateRequest
+    res = asyncio.run(gemini(handler).generate("gemini-x", GenerateRequest(prompt="halo", system="aturan")))
+    assert res.text == "fallback sukses"
+    assert len(attempts) == 2
+    assert "systemInstruction" not in attempts[1]
+    assert attempts[1]["contents"][0]["parts"][0]["text"] == "aturan\n\nhalo"
+
+
+def test_openai_and_anthropic_error_400_raise_clean_provider_error():
+    from app.providers.base import GenerateRequest
+    oa = OpenAIProvider("sk-test", transport=httpx.MockTransport(
+        lambda r: httpx.Response(400, text='{"error": {"message": "Developer instruction is not enabled"}}')
+    ))
+    with pytest.raises(ProviderError) as e_oa:
+        asyncio.run(oa.generate("gpt-test", GenerateRequest(prompt="halo")))
+    assert e_oa.value.kind == K.invalid_request
+
+    an = AnthropicProvider("sk-test", transport=httpx.MockTransport(
+        lambda r: httpx.Response(400, text='{"error": {"message": "Developer instruction is not enabled"}}')
+    ))
+    with pytest.raises(ProviderError) as e_an:
+        asyncio.run(an.generate("claude-test", GenerateRequest(prompt="halo")))
+    assert e_an.value.kind == K.invalid_request

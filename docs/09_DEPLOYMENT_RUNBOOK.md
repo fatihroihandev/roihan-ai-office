@@ -45,7 +45,7 @@ Roihan AI Office dirancang agar dapat diakses secara online dari perangkat mana 
    | `APP_ENV` | `production` |
    | `APP_MODE` | `production` |
    | `DATABASE_URL` | `postgresql+psycopg://...` *(Connection string Neon dari Langkah 1)* |
-   | `APP_LOCAL_TOKEN` | *(String acak kuat minimal 32 karakter)* |
+   | `APP_LOCAL_TOKEN` | *(String acak kriptografis kuat minimal 32 karakter)* |
    | `OWNER_EMAIL` | `owner@roihan.id` *(Alamat email resmi pemilik tunggal)* |
    | `BOOTSTRAP_TOKEN` | *(Token rahasia sekali pakai untuk inisialisasi akun pemilik)* |
    | `GEMINI_ENABLED` | `true` |
@@ -55,7 +55,7 @@ Roihan AI Office dirancang agar dapat diakses secara online dari perangkat mana 
    | `WORKER_ENABLED` | `true` |
    | `CORS_ORIGINS` | `["https://roihan-ai-office.vercel.app"]` |
 
-4. Jalankan migrasi skema database ke revisi terbaru (`0015` head) melalui Render Shell atau pre-deploy hook:
+4. Jalankan migrasi skema database ke revisi terbaru (`0015` head) melalui Render Shell atau pre-deploy command:
    ```bash
    cd apps/api && python -m alembic upgrade head
    ```
@@ -71,23 +71,26 @@ Roihan AI Office dirancang agar dapat diakses secara online dari perangkat mana 
    - **Root Directory:** `apps/web`
 3. Tambahkan **Environment Variables** di Vercel:
 
-   | Variabel | Nilai Konfigurasi Produksi |
-   | :--- | :--- |
-   | `API_BASE_URL` | `https://roihan-ai-office-api.onrender.com` *(URL Render Backend)* |
-   | `APP_LOCAL_TOKEN` | *(Nilai yang sama persis dengan `APP_LOCAL_TOKEN` di Render)* |
+   | Variabel | Nilai Konfigurasi Produksi | Catatan Keamanan |
+   | :--- | :--- | :--- |
+   | `API_BASE_URL` | `https://roihan-ai-office-api.onrender.com` | URL Render Backend |
+   | `APP_LOCAL_TOKEN` | *(Sama persis dengan `APP_LOCAL_TOKEN` di Render)* | **Hanya server-side! DILARANG memakai prefix `NEXT_PUBLIC_`** |
+
+> [!WARNING]
+> `APP_LOCAL_TOKEN` adalah token rahasia server-ke-server yang hanya diakses oleh proses Node.js di sisi server Vercel (Next.js SSR Proxy) atau worker/CLI internal. Token ini **tidak pernah** dikirimkan ke browser pengguna. Browser pengguna diotentikasi secara eksklusif menggunakan cookie `HttpOnly` (`roihan_session`).
 
 4. Klik **Deploy** dan tunggu proses build Next.js selesai hingga URL publik `https://roihan-ai-office.vercel.app` aktif.
 
-### Langkah 4: Bootstrap Sekali Pakai Akun Pemilik ( dari HP / Laptop )
+### Langkah 4: Bootstrap Sekali Pakai Akun Pemilik (dari HP / Laptop)
 1. Buka `https://roihan-ai-office.vercel.app` melalui browser ponsel atau laptop.
-2. Karena tabel `owner_accounts` masih kosong, sistem otomatis menampilkan formulir **Inisialisasi Akun Pemilik (Setup Awal)**.
+2. Karena tabel `owner_users` masih kosong, sistem otomatis menampilkan formulir **Inisialisasi Akun Pemilik (Setup Awal)**.
 3. Isi formulir dengan:
    - **Nama Lengkap:** Nama pemilik (CEO)
    - **Email:** Wajib sama persis dengan nilai `OWNER_EMAIL` di server Render
    - **Kata Sandi:** Minimal 8 karakter kuat
    - **Token Bootstrap:** Nilai `BOOTSTRAP_TOKEN` yang diset di Render
 4. Klik **Inisialisasi Akun Pemilik**.
-5. Akun pemilik langsung terbentuk, endpoint `/api/auth/bootstrap` terkunci permanen (`HTTP 403`), sesi `HttpOnly` aktif, dan Anda diarahkan masuk ke Command Center!
+5. Akun pemilik langsung terbentuk di tabel `owner_users`, endpoint `/api/auth/bootstrap` terkunci permanen (`HTTP 403`), sesi aman `HttpOnly` aktif, dan Anda diarahkan masuk ke Command Center!
 
 ---
 
@@ -96,9 +99,15 @@ Roihan AI Office dirancang agar dapat diakses secara online dari perangkat mana 
 | Karakteristik Free-Tier | Perilaku Sistem & Penanganan di Roihan AI Office |
 | :--- | :--- |
 | **Spin-Down Render (Idle 15 Menit)** | Render menghentikan container sementara jika tidak ada trafik selama 15 menit. Saat aplikasi dibuka kembali, permintaan pertama memerlukan waktu *cold-start* ~25–30 detik. UI menampilkan indikator sinkronisasi tanpa error fatal. |
-| **Filesystem Ephemeral Render** | Setiap restart/deploy di Render menghapus disk lokal container. Seluruh data penting (48 tabel: sesi, task, kampanye, prospek, checkpoint, log) disimpan 100% di **Neon PostgreSQL**, sehingga tidak ada data yang hilang saat restart. |
+| **Filesystem Ephemeral Render** | Disk lokal container Render Free bersifat *ephemeral* (direset ke image awal setiap restart, deploy baru, atau pemulihan idle). Seluruh data bisnis penting (**49 tabel**: sesi, task, kampanye, prospek, checkpoint, log) disimpan 100% di **Neon PostgreSQL**, sehingga tidak ada data tabel yang hilang saat restart. |
 | **Interupsi Worker saat Container Restart** | Saat container Render hidup kembali pasca-restart, `PowerController.startup_recovery()` otomatis mendeteksi tugas yang terputus dan memulihkannya dari checkpoint valid terakhir di PostgreSQL. |
-| **Batas Penyimpanan Neon (0.5 GB)** | Sangat memadai untuk jutaan baris teks pemasaran, CRM, dan audit SEO. Hindari menyimpan berkas biner/video berukuran besar di dalam database; gunakan tautan eksternal untuk aset media besar. |
+| **Batas Penyimpanan Neon (0.5 GB)** | Sangat memadai untuk jutaan baris data pemasaran, CRM, dan audit SEO. Hindari menyimpan berkas biner/video berukuran besar di dalam database; gunakan tautan eksternal untuk aset media besar. |
+
+> [!CAUTION]
+> Pada lingkungan Render Free, direktori lokal seperti snapshot cadangan di `data/backups/`, berkas konfigurasi runtime di `data/*.json`, dan berkas kerja di `data/projects/` akan terhapus saat instance melakukan restart. Untuk lingkungan produksi online gratis:
+> 1. Tetapkan konfigurasi AI & kredensial langsung melalui Environment Variables di dashboard Render.
+> 2. Manfaatkan **Neon Point-in-Time Restore** untuk pemulihan database cloud.
+> 3. Jika membuat backup snapshot lewat UI (`/api/backups`), segera unduh berkas arsip snapshot ke komputer lokal Anda untuk penyimpanan permanen.
 
 ---
 
@@ -107,7 +116,10 @@ Roihan AI Office dirancang agar dapat diakses secara online dari perangkat mana 
 Jika pembaruan kode menyebabkan kendala pada lingkungan produksi:
 1. **Rollback Frontend (Vercel):** Buka dashboard Vercel -> tab **Deployments** -> pilih deployment stabil sebelumnya -> klik **Instant Rollback**.
 2. **Rollback Backend (Render):** Buka dashboard Render -> tab **Events / Deploys** -> pilih commit stabil sebelumnya -> klik **Rollback to this deploy**.
-3. **Rollback Database (Neon Point-in-Time Restore):** Buka [console.neon.tech](https://console.neon.tech) -> pilih project `roihan-ai-office-db` -> menu **Restore** -> kembalikan state database ke titik waktu (*timestamp*) sebelum deployment dilakukan, atau pulihkan melalui snapshot CLI `python -m app.backup restore <nama-backup> --yes`.
+3. **Rollback Database (Neon Point-in-Time Restore):** Buka [console.neon.tech](https://console.neon.tech) -> pilih project `roihan-ai-office-db` -> menu **Restore** -> kembalikan state database ke titik waktu (*timestamp*) sebelum deployment dilakukan, atau pulihkan melalui snapshot CLI dengan flag `--force`:
+   ```bash
+   python -m app.backup restore <nama-backup> --force
+   ```
 
 ---
 
@@ -116,6 +128,6 @@ Jika pembaruan kode menyebabkan kendala pada lingkungan produksi:
 - [x] URL Frontend Vercel dan Backend Render hanya dapat diakses melalui **HTTPS (TLS 1.3)**.
 - [x] `GET /api/health` melaporkan database PostgreSQL dan konfigurasi Gemini API sehat.
 - [x] Akun pemilik tunggal berhasil di-bootstrap dan percobaan akses ulang ke `/api/auth/bootstrap` ditolak dengan `403 Forbidden`.
-- [x] Cookie sesi memiliki atribut `HttpOnly`, `SameSite=Lax`, dan `Secure`.
-- [x] Koneksi WebSocket real-time (`/api/ws`) berhasil terhubung menggunakan tiket sekali pakai.
+- [x] Cookie sesi memiliki atribut `HttpOnly`, `SameSite=Lax`, dan `Secure` (di production).
+- [x] Koneksi WebSocket real-time (`/api/ws`) berhasil terhubung menggunakan tiket sekali pakai dari `POST /api/events/ticket`.
 - [x] `BUDGET_ALLOW_PAID_CALLS=false` aktif sebagai pengaman biaya awal Rp0.

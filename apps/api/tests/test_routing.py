@@ -164,3 +164,29 @@ def test_router_reports_unreachable_provider_as_retryable(migrated_db, tmp_path)
     with pytest.raises(ProviderError) as e:
         choose(env, tid)
     assert e.value.kind == K.unavailable and e.value.retryable
+
+
+def test_router_supports_gemini_free_tier_with_large_context_and_pro_routing(migrated_db, tmp_path):
+    gemini_p = FakeProvider("gemini", is_paid=False)
+    gemini_p.models = [
+        ModelInfo("gemini-2.5-flash", 1048576, supports_tools=True),
+        ModelInfo("gemini-2.5-pro", 2000000, supports_tools=True),
+    ]
+    env = build_env(migrated_db, tmp_path, ollama_enabled=False, gemini_enabled=True,
+                    gemini_api_key="AIza-test", provider=gemini_p)
+    from app.providers.registry import build_registry
+    env.router._registry = build_registry(env.settings, {"gemini": gemini_p})
+    tid = seed_task(env)
+
+    # Large prompt (>8192) works on cloud provider without capping to 8192
+    d_large = choose(env, tid, tokens=12000, max_tokens=2048)
+    assert d_large.provider == "gemini"
+    assert d_large.num_ctx >= 14048
+
+    # Heavy task prefers gemini-2.5-pro
+    d_heavy = choose(env, tid, snap={"difficulty_category": "heavy"})
+    assert d_heavy.model == "gemini-2.5-pro"
+
+    # Light task prefers gemini-2.5-flash
+    d_light = choose(env, tid, snap={"difficulty_category": "light"})
+    assert d_light.model == "gemini-2.5-flash"

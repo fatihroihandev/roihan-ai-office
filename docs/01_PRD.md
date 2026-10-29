@@ -51,6 +51,9 @@ Sistem menggunakan **6 peran logis agen pemasaran** yang dikoordinasikan oleh sa
 | 5 | **Campaign & Social Media Agent** | Merencanakan kampanye lintas kanal, menyiapkan jadwal distribusi, menyusun draf outreach B2B yang dipersonalisasi, serta melacak performa kampanye. | Tidak boleh mengirim pesan/publikasi otomatis tanpa approval CEO dan *outbox dispatch*. |
 | 6 | **Marketing Analytics Agent** (`marketing_analytics`) | Mengumpulkan metrik aktual (impresi, klik, CTR, posisi, konversi, pipeline, biaya, revenue), membandingkan dengan baseline, dan mengevaluasi efektivitas tindakan. | Hanya menghitung ROI/CAC jika data biaya dan atribusi pendapatan benar-benar tercatat. |
 
+> [!NOTE]
+> Selain 6 peran logis pemasaran di atas, Task Engine backend juga menyediakan 5 peran pendukung Engineering (`analyst`, `developer`, `qa`, `reviewer`, `reporter`) yang dapat dijadwalkan untuk pemeliharaan teknis internal, integrasi API, dan verifikasi otomatis. Total terdapat **12 peran spesialis terdaftar** di Task Engine.
+
 ---
 
 ## 4. Cakupan Modul Fungsional (Functional Scope)
@@ -97,6 +100,11 @@ Seluruh fitur diakses melalui satu **Unified Command Center Workspace** (`/`) de
 
 ### 4.10 Settings & AI Control Center (`/?view=settings` & `/?view=ai`)
 - Konfigurasi provider **Google Gemini API**, pemilihan model (`gemini-2.5-flash` / `gemini-2.5-pro`), pengaturan batas anggaran bulanan (`BUDGET_MONTHLY_LIMIT`), saklar akses web agen (Tavily/Brave Search + kuota harian), manajemen backup snapshot database, dan pengelolaan sesi akun pemilik.
+
+### 4.11 Mode Visualisasi Ruang Kerja Virtual (Opsional: `/office`)
+- Selain tampilan antarmuka utama Modern Minimalist SaaS Command Center, sistem menyediakan rute visualisasi ruang kerja kantor virtual (`/office`) berbasis **Three.js** (3D) dengan fallback Canvas (2D).
+- Menampilkan denah kantor tempat representasi avatar setiap agen spesialis berada di mejanya masing-masing dan mencerminkan status tugas backend secara jujur (`idle`, `working`, `awaiting_approval`, `paused`, `error`).
+- Dilengkapi mode interaktif penjelajahan kantor (*walk mode* orang ketiga dan orang pertama), pemilihan level kualitas rendering (low, med, high), serta panel kendali daya kantor (*Office Power Control*).
 
 ---
 

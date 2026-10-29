@@ -103,10 +103,16 @@ def known_revisions() -> tuple[set[str], str | None]:
 
 
 def _archive_projects(projects_dir: Path, target: Path) -> None:
+    excluded = {
+        "web-access.json", "ai-provider-settings.json",
+        "roihan.db", "roihan.db-wal", "roihan.db-shm",
+    }
     with tarfile.open(target, "w:gz") as tar:
         for path in sorted(projects_dir.rglob("*")):
             if path.is_symlink():
                 continue  # tautan simbolik tidak dicadangkan (hindari keluar dari folder proyek)
+            if path.name in excluded or path.name.startswith(".env"):
+                continue  # rahasia dan konfigurasi runtime tidak boleh masuk arsip cadangan
             tar.add(path, arcname=path.relative_to(projects_dir).as_posix(), recursive=False)
 
 

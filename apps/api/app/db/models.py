@@ -854,5 +854,5 @@ class AppendOnlyError(RuntimeError):
 @event.listens_for(Session, "before_flush")
 def _enforce_append_only(session, _ctx, _instances):
     for obj in list(session.dirty) + list(session.deleted):
-        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult, CodeReview, ProductReleaseCheck, MarketResearch, SeoCampaignEvent)) and (obj in session.deleted or session.is_modified(obj)):
+        if isinstance(obj, (AuditLog, ModelUsage, TaskEvent, RoutingDecision, Execution, TestRun, TestResult, CodeReview, ProductReleaseCheck, MarketResearch, SeoCampaignEvent, RecoveryLog)) and (obj in session.deleted or session.is_modified(obj)):
             raise AppendOnlyError(f"{obj.__tablename__} bersifat append-only")

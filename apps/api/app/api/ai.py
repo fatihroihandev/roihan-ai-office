@@ -83,7 +83,12 @@ async def update_provider(name: str, body: ProviderSettingsUpdate, request: Requ
         setattr(settings, f"{name}_api_key", api_key)
         entry.enabled = enabled
         provider_type = {"openai": OpenAIProvider, "gemini": GeminiProvider, "anthropic": AnthropicProvider}[name]
-        entry.provider = provider_type(api_key)
+        if name == "gemini":
+            gemini_is_paid = getattr(settings, "gemini_is_paid", False)
+            entry.provider = GeminiProvider(api_key, is_paid=gemini_is_paid)
+            entry.is_paid = gemini_is_paid
+        else:
+            entry.provider = provider_type(api_key)
     health = await _health_of(entry)
     return {"name": entry.name, "kind": entry.kind, "is_paid": entry.is_paid, "enabled": entry.enabled,
             "implemented": entry.implemented, "base_url": settings.ollama_base_url if name == "ollama" else None,

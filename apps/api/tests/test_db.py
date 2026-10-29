@@ -39,3 +39,17 @@ def test_audit_log_is_append_only(session):
     session.delete(log)
     with pytest.raises(AppendOnlyError):
         session.commit()
+
+
+def test_recovery_log_is_append_only(session):
+    from app.db.models import RecoveryLog
+    rec = RecoveryLog(action="startup_recovery", source="system")
+    session.add(rec)
+    session.commit()
+    rec.action = "diubah"
+    with pytest.raises(AppendOnlyError):
+        session.commit()
+    session.rollback()
+    session.delete(rec)
+    with pytest.raises(AppendOnlyError):
+        session.commit()
